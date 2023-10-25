@@ -28,6 +28,7 @@ func init() {
 		modelStatusMethod := rpc.Method(r.ModelStatus)
 		mongoVersionMethod := rpc.Method(r.MongoVersion)
 		watchModelSummariesMethod := rpc.Method(r.WatchModelSummaries)
+		initiateMigrationMethod := rpc.Method(r.InitiateMigration)
 
 		r.AddMethod("Controller", 3, "AllModels", allModelsMethod)
 		r.AddMethod("Controller", 3, "ControllerConfig", controllerConfigMethod)
@@ -78,6 +79,7 @@ func init() {
 		r.AddMethod("Controller", 9, "ModelStatus", modelStatusMethod)
 		r.AddMethod("Controller", 9, "MongoVersion", mongoVersionMethod)
 		r.AddMethod("Controller", 9, "WatchModelSummaries", watchModelSummariesMethod)
+		r.AddMethod("Controller", 9, "InitiateMigration", initiateMigrationMethod)
 
 		return []int{3, 4, 5, 6, 7, 8, 9}
 	}
@@ -203,4 +205,23 @@ func (r *controllerRoot) ModelConfig() (jujuparams.ModelConfigResults, error) {
 		Code:    jujuparams.CodeUnauthorized,
 		Message: "permission denied",
 	}
+}
+
+// InitiateMigration attempts to begin the migration of one or
+// more models to other controllers.
+func (r *controllerRoot) InitiateMigration(req jujuparams.InitiateMigrationArgs) (
+	jujuparams.InitiateMigrationResults, error,
+) {
+	results := jujuparams.InitiateMigrationResults{
+		Results: make([]jujuparams.InitiateMigrationResult, len(req.Specs)),
+	}
+	for i, spec := range req.Specs {
+		migrationResult, err := r.jem.InitiateMigration(context.Background(), r.identity, spec)
+		if err != nil {
+			results.Results[i].Error = mapError(err)
+		} else {
+			results.Results[i] = *migrationResult
+		}
+	}
+	return results, nil
 }
