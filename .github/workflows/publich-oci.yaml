@@ -26,6 +26,6 @@ jobs:
 
       - name: Push to github package
         run: |
-          new_tag=ghcr.io/canonical/jimm:${{ github.ref_name }}
+          new_tag=ghcr.io/kian99/jimm:${{ github.ref_name }}
           docker tag jimm:latest $new_tag
           docker push $new_tag
