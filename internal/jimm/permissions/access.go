@@ -60,13 +60,24 @@ func ToModelAccessString(relation openfga.Relation) string {
 	}
 }
 
-// ToModelAccessString maps relation to a controller access string.
+// ToControllerAccessString maps relation to a controller access string.
 func ToControllerAccessString(relation openfga.Relation) string {
 	switch relation {
 	case ofganames.AdministratorRelation:
 		return "superuser"
 	default:
 		return "login"
+	}
+}
+
+// ToControllerRelation returns a valid relation for the controller. Access
+// level can only be "superuser".
+func ToControllerRelation(accessLevel string) (openfga.Relation, error) {
+	switch accessLevel {
+	case "superuser":
+		return ofganames.AdministratorRelation, nil
+	default:
+		return ofganames.NoRelation, errors.E("unknown controller access")
 	}
 }
 
@@ -734,7 +745,7 @@ func (j *permissionManager) RevokeOfferAccess(ctx context.Context, user *openfga
 	}
 
 	if stillHasAccess {
-		return errors.E(op, "unable to completely revoke given access due to other relations; try to remove them as well, or use 'jimmctl' for more control")
+		return errors.E(op, "unable to completely revoke given access due to other relations; try to remove them as well")
 	}
 	return nil
 }
