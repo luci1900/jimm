@@ -1,4 +1,4 @@
-// Copyright 2024 Canonical.
+// Copyright 2025 Canonical.
 
 package openfga
 
@@ -17,7 +17,7 @@ import (
 
 var (
 	// resourceTypes contains a list of all resource kinds (i.e. tags) used throughout JIMM.
-	resourceTypes = [...]string{names.UserTagKind, names.ModelTagKind, names.ControllerTagKind, names.ApplicationOfferTagKind, jimmnames.GroupTagKind, jimmnames.ServiceAccountTagKind, jimmnames.RoleTagKind}
+	resourceTypes = [...]string{names.UserTagKind, names.ModelTagKind, names.ControllerTagKind, names.ApplicationOfferTagKind, jimmnames.GroupTagKind, jimmnames.RoleTagKind}
 )
 
 // Tuple represents a relation between an object and a target.
@@ -53,9 +53,17 @@ var (
 	CloudType Kind = names.CloudTagKind
 	// ControllerType represents a controller object.
 	ControllerType Kind = names.ControllerTagKind
-	// ServiceAccountType represents a service account.
-	ServiceAccountType Kind = jimmnames.ServiceAccountTagKind
 )
+
+// CheckResult is the result of a relation check.
+// It contains a boolean indicating whether the relation check was successful,
+// and an error if one occurred during the check.
+type CheckResult struct {
+	// Allowed indicates whether the relation check was successful.
+	Allowed bool
+	// Error contains any error that occurred during the check.
+	Error error
+}
 
 // OFGAClient contains convenient utility methods for interacting
 // with OpenFGA from OUR usecase. It wraps the provided pre-generated client

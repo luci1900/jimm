@@ -15,7 +15,6 @@ import (
 	"github.com/canonical/jimm/v3/internal/openfga"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
-	jimmnames "github.com/canonical/jimm/v3/pkg/names"
 )
 
 // PermissionManager is an implementation of the jujuapi.PermissionManager interface.
@@ -23,19 +22,19 @@ type PermissionManager struct {
 	AddRelation_            func(ctx context.Context, user *openfga.User, tuples []apiparams.RelationshipTuple) error
 	RemoveRelation_         func(ctx context.Context, user *openfga.User, tuples []apiparams.RelationshipTuple) error
 	CheckRelation_          func(ctx context.Context, user *openfga.User, tuple apiparams.RelationshipTuple, trace bool) (_ bool, err error)
+	CheckRelations_         func(ctx context.Context, user *openfga.User, tuples []apiparams.RelationshipTuple) ([]openfga.CheckResult, error)
 	ListRelationshipTuples_ func(ctx context.Context, user *openfga.User, tuple apiparams.RelationshipTuple, pageSize int32, continuationToken string) ([]openfga.Tuple, string, error)
 	ListObjectRelations_    func(ctx context.Context, user *openfga.User, object string, pageSize int32, continuationToken pagination.EntitlementToken) ([]openfga.Tuple, pagination.EntitlementToken, error)
 	ListResources_          func(ctx context.Context, user *openfga.User, filter pagination.LimitOffsetPagination, namePrefixFilter, typeFilter string) ([]db.Resource, error)
 
-	GetJimmControllerAccess_   func(ctx context.Context, user *openfga.User, tag names.UserTag) (string, error)
-	GetUserCloudAccess_        func(ctx context.Context, user *openfga.User, cloud names.CloudTag) (string, error)
-	GetUserControllerAccess_   func(ctx context.Context, user *openfga.User, controller names.ControllerTag) (string, error)
-	GetUserModelAccess_        func(ctx context.Context, user *openfga.User, model names.ModelTag) (string, error)
-	GrantAuditLogAccess_       func(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error
-	GrantCloudAccess_          func(ctx context.Context, user *openfga.User, ct names.CloudTag, ut names.UserTag, access string) error
-	GrantModelAccess_          func(ctx context.Context, user *openfga.User, mt names.ModelTag, ut names.UserTag, access jujuparams.UserAccessPermission) error
-	GrantOfferAccess_          func(ctx context.Context, u *openfga.User, offerURL string, ut names.UserTag, access jujuparams.OfferAccessPermission) error
-	GrantServiceAccountAccess_ func(ctx context.Context, u *openfga.User, svcAccTag jimmnames.ServiceAccountTag, entities []string) error
+	GetJimmControllerAccess_ func(ctx context.Context, user *openfga.User, tag names.UserTag) (string, error)
+	GetUserCloudAccess_      func(ctx context.Context, user *openfga.User, cloud names.CloudTag) (string, error)
+	GetUserControllerAccess_ func(ctx context.Context, user *openfga.User, controller names.ControllerTag) (string, error)
+	GetUserModelAccess_      func(ctx context.Context, user *openfga.User, model names.ModelTag) (string, error)
+	GrantAuditLogAccess_     func(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error
+	GrantCloudAccess_        func(ctx context.Context, user *openfga.User, ct names.CloudTag, ut names.UserTag, access string) error
+	GrantModelAccess_        func(ctx context.Context, user *openfga.User, mt names.ModelTag, ut names.UserTag, access jujuparams.UserAccessPermission) error
+	GrantOfferAccess_        func(ctx context.Context, u *openfga.User, offerURL string, ut names.UserTag, access jujuparams.OfferAccessPermission) error
 
 	RevokeAuditLogAccess_  func(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error
 	RevokeCloudAccess_     func(ctx context.Context, user *openfga.User, ct names.CloudTag, ut names.UserTag, access string) error
@@ -66,6 +65,13 @@ func (j *PermissionManager) CheckRelation(ctx context.Context, user *openfga.Use
 		return false, errors.E(errors.CodeNotImplemented)
 	}
 	return j.CheckRelation_(ctx, user, tuple, trace)
+}
+
+func (j *PermissionManager) CheckRelations(ctx context.Context, user *openfga.User, tuples []apiparams.RelationshipTuple) ([]openfga.CheckResult, error) {
+	if j.CheckRelations_ == nil {
+		return nil, errors.E(errors.CodeNotImplemented)
+	}
+	return j.CheckRelations_(ctx, user, tuples)
 }
 
 func (j *PermissionManager) ListRelationshipTuples(ctx context.Context, user *openfga.User, tuple apiparams.RelationshipTuple, pageSize int32, continuationToken string) ([]openfga.Tuple, string, error) {
@@ -143,13 +149,6 @@ func (j *PermissionManager) GrantOfferAccess(ctx context.Context, user *openfga.
 		return errors.E(errors.CodeNotImplemented)
 	}
 	return j.GrantOfferAccess_(ctx, user, offerURL, ut, access)
-}
-
-func (j *PermissionManager) GrantServiceAccountAccess(ctx context.Context, u *openfga.User, svcAccTag jimmnames.ServiceAccountTag, entities []string) error {
-	if j.GrantServiceAccountAccess_ == nil {
-		return errors.E(errors.CodeNotImplemented)
-	}
-	return j.GrantServiceAccountAccess_(ctx, u, svcAccTag, entities)
 }
 
 func (j *PermissionManager) RevokeAuditLogAccess(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error {

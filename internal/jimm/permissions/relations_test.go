@@ -4,6 +4,7 @@ package permissions_test
 
 import (
 	"context"
+	"slices"
 
 	qt "github.com/frankban/quicktest"
 
@@ -141,6 +142,28 @@ func (s *permissionManagerSuite) TestListRelationshipTuples(c *qt.C) {
 			}, 10, "")
 			c.Assert(err, qt.Equals, t.expectedError)
 			c.Assert(tuples, qt.HasLen, t.expectedLength)
+			// Sort the tuples by relation in ascending order
+			// to ensure the order is consistent for testing.
+			sortFunc := func(a, b openfga.Tuple) int {
+				if a.Relation < b.Relation {
+					return -1
+				}
+				if a.Relation > b.Relation {
+					return 1
+				}
+				return 0
+			}
+			slices.SortFunc(tuples, sortFunc)
+			sortFuncExpected := func(a, b ExpectedTuple) int {
+				if a.expectedRelation < b.expectedRelation {
+					return -1
+				}
+				if a.expectedRelation > b.expectedRelation {
+					return 1
+				}
+				return 0
+			}
+			slices.SortFunc(t.expectedTuples, sortFuncExpected)
 			for i, expectedTuple := range t.expectedTuples {
 				c.Assert(tuples[i].Relation.String(), qt.Equals, expectedTuple.expectedRelation)
 				c.Assert(tuples[i].Target.ID, qt.Equals, expectedTuple.expectedTargetId)
@@ -311,4 +334,94 @@ func (s *permissionManagerSuite) TestListResources(c *qt.C) {
 			}
 		})
 	}
+}
+
+func (s *permissionManagerSuite) TestCheckPermissions(c *qt.C) {
+	c.Parallel()
+	ctx := context.Background()
+
+	u := openfga.NewUser(&dbmodel.Identity{Name: "admin@canonical.com"}, s.ofgaClient)
+	u.JimmAdmin = true
+
+	user, group, controller, model, _, cloud, _, _ := jimmtest.CreateTestControllerEnvironment(ctx, c, s.db)
+	tuples := []apiparams.RelationshipTuple{
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.ReaderRelation.String(),
+			TargetObject: model.ResourceTag().String(),
+		},
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.WriterRelation.String(),
+			TargetObject: model.ResourceTag().String(),
+		},
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.AuditLogViewerRelation.String(),
+			TargetObject: controller.ResourceTag().String(),
+		},
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.AdministratorRelation.String(),
+			TargetObject: controller.ResourceTag().String(),
+		},
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.AdministratorRelation.String(),
+			TargetObject: cloud.ResourceTag().String(),
+		},
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.CanAddModelRelation.String(),
+			TargetObject: cloud.ResourceTag().String(),
+		},
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.MemberRelation.String(),
+			TargetObject: group.ResourceTag().String(),
+		},
+	}
+	err := s.manager.AddRelation(ctx, u, tuples)
+
+	c.Assert(err, qt.IsNil)
+	results, err := s.manager.CheckRelations(ctx, u, tuples)
+	c.Assert(err, qt.IsNil)
+	c.Assert(results, qt.HasLen, len(tuples))
+	for i := range tuples {
+		c.Assert(results[i].Allowed, qt.IsTrue)
+		c.Assert(results[i].Error, qt.IsNil)
+	}
+}
+
+func (s *permissionManagerSuite) TestCheckRelationsWithErrors(c *qt.C) {
+	c.Parallel()
+	ctx := context.Background()
+
+	u := openfga.NewUser(&dbmodel.Identity{Name: "admin@canonical.com"}, s.ofgaClient)
+	u.JimmAdmin = true
+
+	user, _, _, model, _, _, _, _ := jimmtest.CreateTestControllerEnvironment(ctx, c, s.db)
+	tuples := []apiparams.RelationshipTuple{
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.ReaderRelation.String(),
+			TargetObject: model.ResourceTag().String(),
+		},
+	}
+
+	err := s.manager.AddRelation(ctx, u, tuples)
+	c.Assert(err, qt.IsNil)
+	tuplesToCheck := tuples
+	tuplesToCheck = append(tuplesToCheck, apiparams.RelationshipTuple{
+		Object:       "invalid-object",
+		Relation:     names.WriterRelation.String(),
+		TargetObject: model.ResourceTag().String(),
+	})
+	results, err := s.manager.CheckRelations(ctx, u, tuplesToCheck)
+	c.Assert(err, qt.IsNil)
+	c.Assert(results, qt.HasLen, len(tuplesToCheck))
+	c.Assert(results[0].Allowed, qt.IsTrue)
+	c.Assert(results[0].Error, qt.IsNil)
+	c.Assert(results[1].Allowed, qt.IsFalse)
+	c.Assert(results[1].Error, qt.IsNotNil)
 }
