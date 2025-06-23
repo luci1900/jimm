@@ -10,10 +10,14 @@ import (
 
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/juju/juju/api/base"
+	jujucloud "github.com/juju/juju/cloud"
 	"github.com/juju/juju/core/crossmodel"
+	"github.com/juju/juju/core/migration"
+	coremigration "github.com/juju/juju/core/migration"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/version"
+	jujuversion "github.com/juju/juju/version"
 	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -65,7 +69,7 @@ func (d *Dialer) Dial(_ context.Context, ctl *dbmodel.Controller, _ names.ModelT
 	}
 	ctl.AgentVersion = d.AgentVersion
 	if ctl.AgentVersion == "" {
-		ctl.AgentVersion = version.Current.String()
+		ctl.AgentVersion = jujuversion.Current.String()
 	}
 	ctl.Addresses = dbmodel.HostPorts(d.Addresses)
 	return apiWrapper{
@@ -122,13 +126,16 @@ func (m DialerMap) Dial(ctx context.Context, ctl *dbmodel.Controller, mt names.M
 type API struct {
 	base.APICaller
 
-	AddCloud_                          func(context.Context, names.CloudTag, jujuparams.Cloud, bool) error
+	Activate_                          func(modelUUID string, sourceInfo coremigration.SourceControllerInfo, relatedModels []string) error
+	Abort_                             func(modelUUID string) error
+	AddCloud_                          func(names.CloudTag, jujucloud.Cloud, bool) error
+	AdoptResources_                    func(modelUUID string, controllerVersion version.Number) error
 	ChangeModelCredential_             func(context.Context, names.ModelTag, names.CloudCredentialTag) error
 	CheckCredentialModels_             func(context.Context, jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialModelResult, error)
+	CheckMachines_                     func(modelUUID string) ([]error, error)
 	Close_                             func() error
-	Cloud_                             func(context.Context, names.CloudTag, *jujuparams.Cloud) error
-	CloudInfo_                         func(context.Context, names.CloudTag, *jujuparams.CloudInfo) error
-	Clouds_                            func(context.Context) (map[names.CloudTag]jujuparams.Cloud, error)
+	Cloud_                             func(names.CloudTag, *jujucloud.Cloud) error
+	Clouds_                            func() (map[names.CloudTag]jujucloud.Cloud, error)
 	ControllerModelSummary_            func(context.Context, *jujuparams.ModelSummary) error
 	ControllerConfig_                  func(context.Context) (jujuparams.ControllerConfigResult, error)
 	CreateModel_                       func(context.Context, *jujuparams.ModelCreateArgs, *jujuparams.ModelInfo) error
@@ -140,7 +147,6 @@ type API struct {
 	GetApplicationOffer_               func(context.Context, *jujuparams.ApplicationOfferAdminDetailsV5) error
 	GetApplicationOfferConsumeDetails_ func(context.Context, names.UserTag, *jujuparams.ConsumeOfferDetails, bakery.Version) error
 	GrantApplicationOfferAccess_       func(context.Context, string, names.UserTag, jujuparams.OfferAccessPermission) error
-	GrantCloudAccess_                  func(context.Context, names.CloudTag, names.UserTag, string) error
 	GrantJIMMModelAdmin_               func(context.Context, names.ModelTag) error
 	GrantModelAccess_                  func(context.Context, names.ModelTag, names.UserTag, jujuparams.UserAccessPermission) error
 	IsBroken_                          bool
@@ -152,15 +158,15 @@ type API struct {
 	ListModelSummaries_                func(context.Context, jujuparams.ModelSummariesRequest) (jujuparams.ModelSummaryResults, error)
 	Offer_                             func(context.Context, crossmodel.OfferURL, jujuparams.AddApplicationOffer) error
 	Ping_                              func(context.Context) error
-	RemoveCloud_                       func(context.Context, names.CloudTag) error
+	RemoveCloud_                       func(names.CloudTag) error
+	Prechecks_                         func(migration.ModelInfo) error
 	RevokeApplicationOfferAccess_      func(context.Context, string, names.UserTag, jujuparams.OfferAccessPermission) error
-	RevokeCloudAccess_                 func(context.Context, names.CloudTag, names.UserTag, string) error
 	RevokeCredential_                  func(context.Context, names.CloudCredentialTag) error
 	RevokeModelAccess_                 func(context.Context, names.ModelTag, names.UserTag, jujuparams.UserAccessPermission) error
 	SupportsCheckCredentialModels_     bool
 	SupportsModelSummaryWatcher_       bool
 	Status_                            func(context.Context, []string) (*jujuparams.FullStatus, error)
-	UpdateCloud_                       func(context.Context, names.CloudTag, jujuparams.Cloud) error
+	UpdateCloud_                       func(names.CloudTag, jujucloud.Cloud) error
 	UpdateCredential_                  func(context.Context, jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialModelResult, error)
 	ValidateModelUpgrade_              func(context.Context, names.ModelTag, bool) error
 	WatchAllModelSummaries_            func(context.Context) (string, error)
@@ -170,11 +176,33 @@ type API struct {
 	ListModels_                        func(ctx context.Context) ([]base.UserModel, error)
 }
 
-func (a *API) AddCloud(ctx context.Context, tag names.CloudTag, cld jujuparams.Cloud, force bool) error {
+func (a *API) Activate(modelUUID string, sourceInfo coremigration.SourceControllerInfo, relatedModels []string) error {
+	if a.Activate_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return a.Activate_(modelUUID, sourceInfo, relatedModels)
+}
+
+// Abort aborts the current operation on the controller.
+func (a *API) Abort(modelUUID string) error {
+	if a.Abort_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return a.Abort_(modelUUID)
+}
+
+func (a *API) AddCloud(tag names.CloudTag, cld jujucloud.Cloud, force bool) error {
 	if a.AddCloud_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return a.AddCloud_(ctx, tag, cld, force)
+	return a.AddCloud_(tag, cld, force)
+}
+
+func (a *API) AdoptResources(modelUUID string, controllerVersion version.Number) error {
+	if a.AdoptResources_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return a.AdoptResources_(modelUUID, controllerVersion)
 }
 
 func (a *API) CheckCredentialModels(ctx context.Context, cred jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialModelResult, error) {
@@ -184,6 +212,13 @@ func (a *API) CheckCredentialModels(ctx context.Context, cred jujuparams.TaggedC
 	return a.CheckCredentialModels_(ctx, cred)
 }
 
+func (a *API) CheckMachines(modelUUID string) ([]error, error) {
+	if a.CheckMachines_ == nil {
+		return nil, errors.E(errors.CodeNotImplemented)
+	}
+	return a.CheckMachines_(modelUUID)
+}
+
 func (a *API) Close() error {
 	if a.Close_ == nil {
 		return nil
@@ -191,25 +226,18 @@ func (a *API) Close() error {
 	return a.Close_()
 }
 
-func (a *API) Cloud(ctx context.Context, tag names.CloudTag, ci *jujuparams.Cloud) error {
+func (a *API) Cloud(tag names.CloudTag, ci *jujucloud.Cloud) error {
 	if a.Cloud_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return a.Cloud_(ctx, tag, ci)
+	return a.Cloud_(tag, ci)
 }
 
-func (a *API) CloudInfo(ctx context.Context, tag names.CloudTag, ci *jujuparams.CloudInfo) error {
-	if a.CloudInfo_ == nil {
-		return errors.E(errors.CodeNotImplemented)
-	}
-	return a.CloudInfo_(ctx, tag, ci)
-}
-
-func (a *API) Clouds(ctx context.Context) (map[names.CloudTag]jujuparams.Cloud, error) {
+func (a *API) Clouds() (map[names.CloudTag]jujucloud.Cloud, error) {
 	if a.Clouds_ == nil {
 		return nil, errors.E(errors.CodeNotImplemented)
 	}
-	return a.Clouds_(ctx)
+	return a.Clouds_()
 }
 
 func (a *API) ControllerModelSummary(ctx context.Context, ms *jujuparams.ModelSummary) error {
@@ -289,13 +317,6 @@ func (a *API) GrantApplicationOfferAccess(ctx context.Context, offerURL string, 
 	return a.GrantApplicationOfferAccess_(ctx, offerURL, tag, p)
 }
 
-func (a *API) GrantCloudAccess(ctx context.Context, ct names.CloudTag, ut names.UserTag, access string) error {
-	if a.GrantCloudAccess_ == nil {
-		return errors.E(errors.CodeNotImplemented)
-	}
-	return a.GrantCloudAccess_(ctx, ct, ut, access)
-}
-
 func (a *API) GrantJIMMModelAdmin(ctx context.Context, tag names.ModelTag) error {
 	if a.GrantJIMMModelAdmin_ == nil {
 		return errors.E(errors.CodeNotImplemented)
@@ -370,11 +391,18 @@ func (a *API) Ping(ctx context.Context) error {
 	return a.Ping_(ctx)
 }
 
-func (a *API) RemoveCloud(ctx context.Context, tag names.CloudTag) error {
+func (a *API) Prechecks(model migration.ModelInfo) error {
+	if a.Prechecks_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return a.Prechecks_(model)
+}
+
+func (a *API) RemoveCloud(tag names.CloudTag) error {
 	if a.RemoveCloud_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return a.RemoveCloud_(ctx, tag)
+	return a.RemoveCloud_(tag)
 }
 
 func (a *API) RevokeApplicationOfferAccess(ctx context.Context, offerURL string, tag names.UserTag, p jujuparams.OfferAccessPermission) error {
@@ -382,13 +410,6 @@ func (a *API) RevokeApplicationOfferAccess(ctx context.Context, offerURL string,
 		return errors.E(errors.CodeNotImplemented)
 	}
 	return a.RevokeApplicationOfferAccess_(ctx, offerURL, tag, p)
-}
-
-func (a *API) RevokeCloudAccess(ctx context.Context, ct names.CloudTag, ut names.UserTag, access string) error {
-	if a.RevokeCloudAccess_ == nil {
-		return errors.E(errors.CodeNotImplemented)
-	}
-	return a.RevokeCloudAccess_(ctx, ct, ut, access)
 }
 
 func (a *API) RevokeCredential(ctx context.Context, tag names.CloudCredentialTag) error {
@@ -420,11 +441,11 @@ func (a *API) Status(ctx context.Context, patterns []string) (*jujuparams.FullSt
 	return a.Status_(ctx, patterns)
 }
 
-func (a *API) UpdateCloud(ctx context.Context, tag names.CloudTag, cloud jujuparams.Cloud) error {
+func (a *API) UpdateCloud(tag names.CloudTag, cloud jujucloud.Cloud) error {
 	if a.UpdateCloud_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return a.UpdateCloud_(ctx, tag, cloud)
+	return a.UpdateCloud_(tag, cloud)
 }
 
 func (a *API) UpdateCredential(ctx context.Context, cred jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialModelResult, error) {

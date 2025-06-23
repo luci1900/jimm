@@ -9,9 +9,12 @@ import (
 
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/juju/juju/api/base"
+	jujucloud "github.com/juju/juju/cloud"
 	"github.com/juju/juju/core/crossmodel"
+	"github.com/juju/juju/core/migration"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/openfga"
@@ -34,8 +37,20 @@ type API interface {
 	// use the juju api clients to interact with juju controllers.
 	base.APICallCloser
 
+	// Abort aborts a model migration.
+	Abort(modelUUID string) error
+
+	// Activate activates a model on the controller.
+	// It is used to activate a model that has been migrated from another controller.
+	Activate(modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error
+
 	// AddCloud adds a new cloud.
-	AddCloud(context.Context, names.CloudTag, jujuparams.Cloud, bool) error
+	AddCloud(names.CloudTag, jujucloud.Cloud, bool) error
+
+	// AdoptResources adopts resources from a model with the given UUID
+	// and controller version. This is used to adopt resources from a
+	// model that is being migrated.
+	AdoptResources(modelUUID string, controllerVersion version.Number) error
 
 	// ChangeModelCredential replaces cloud credential for a given model with the provided one.
 	ChangeModelCredential(context.Context, names.ModelTag, names.CloudCredentialTag) error
@@ -44,18 +59,18 @@ type API interface {
 	// with the associated models.
 	CheckCredentialModels(context.Context, jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialModelResult, error)
 
+	// CheckMachines compares the machines in state with the ones
+	// reported by the provider and reports any discrepancies.
+	CheckMachines(modelUUID string) ([]error, error)
+
 	// Close closes the API connection.
 	Close() error
 
 	// Cloud fetches the cloud data for the given cloud.
-	Cloud(context.Context, names.CloudTag, *jujuparams.Cloud) error
-
-	// CloudInfo fetches the cloud information for the cloud with the given
-	// tag.
-	CloudInfo(context.Context, names.CloudTag, *jujuparams.CloudInfo) error
+	Cloud(names.CloudTag, *jujucloud.Cloud) error
 
 	// Clouds returns the set of clouds supported by the controller.
-	Clouds(context.Context) (map[names.CloudTag]jujuparams.Cloud, error)
+	Clouds() (map[names.CloudTag]jujucloud.Cloud, error)
 
 	// ControllerModelSummary fetches the model summary of the model on the
 	// controller that hosts the controller machines.
@@ -98,9 +113,6 @@ type API interface {
 	// a user.
 	GrantApplicationOfferAccess(context.Context, string, names.UserTag, jujuparams.OfferAccessPermission) error
 
-	// GrantCloudAccess grants cloud access to a user.
-	GrantCloudAccess(context.Context, names.CloudTag, names.UserTag, string) error
-
 	// GrantJIMMModelAdmin makes the JIMM user an admin on a model.
 	GrantJIMMModelAdmin(context.Context, names.ModelTag) error
 
@@ -136,15 +148,15 @@ type API interface {
 	// Ping tests the connection is working.
 	Ping(context.Context) error
 
+	// PreChecks runs pre-checks for a model migration.
+	Prechecks(model migration.ModelInfo) error
+
 	// RemoveCloud removes a cloud.
-	RemoveCloud(context.Context, names.CloudTag) error
+	RemoveCloud(names.CloudTag) error
 
 	// RevokeApplicationOfferAccess revokes access to an application offer
 	// from a user.
 	RevokeApplicationOfferAccess(context.Context, string, names.UserTag, jujuparams.OfferAccessPermission) error
-
-	// RevokeCloudAccess revokes cloud access from a user.
-	RevokeCloudAccess(context.Context, names.CloudTag, names.UserTag, string) error
 
 	// RevokeCredential revokes a credential.
 	RevokeCredential(context.Context, names.CloudCredentialTag) error
@@ -164,7 +176,7 @@ type API interface {
 	Status(ctx context.Context, patterns []string) (*jujuparams.FullStatus, error)
 
 	// UpdateCloud updates a cloud definition.
-	UpdateCloud(context.Context, names.CloudTag, jujuparams.Cloud) error
+	UpdateCloud(names.CloudTag, jujucloud.Cloud) error
 
 	// UpdateCredential updates a credential.
 	UpdateCredential(context.Context, jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialModelResult, error)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/juju/juju/api/base"
+	jujucloud "github.com/juju/juju/cloud"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 
@@ -25,9 +26,10 @@ import (
 type JujuManager struct {
 	ControllerService
 	ModelManager
+	MigrationMocks
 	AddAuditLogEntry_                  func(ale *dbmodel.AuditLogEntry)
-	AddCloudToController_              func(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujuparams.Cloud, force bool) error
-	AddHostedCloud_                    func(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujuparams.Cloud, force bool) error
+	AddCloudToController_              func(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
+	AddHostedCloud_                    func(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
 	CopyCredential_                    func(ctx context.Context, originalUser *openfga.User, newUser *openfga.User, cred names.CloudCredentialTag) (names.CloudCredentialTag, []jujuparams.UpdateCredentialModelResult, error)
 	DestroyOffer_                      func(ctx context.Context, user *openfga.User, offerURL string, force bool) error
 	FindApplicationOffers_             func(ctx context.Context, user *openfga.User, filters ...jujuparams.OfferFilter) ([]jujuparams.ApplicationOfferAdminDetailsV5, error)
@@ -49,14 +51,14 @@ type JujuManager struct {
 	PurgeLogs_                         func(ctx context.Context, user *openfga.User, before time.Time) (int64, error)
 	RemoveCloud_                       func(ctx context.Context, u *openfga.User, ct names.CloudTag) error
 	RemoveCloudFromController_         func(ctx context.Context, u *openfga.User, controllerName string, ct names.CloudTag) error
-	RevokeCloudCredential_             func(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag, force bool) error
+	RevokeCloudCredential_             func(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag) error
 	UpdateApplicationOffer_            func(ctx context.Context, controller *dbmodel.Controller, offerUUID string, removed bool) error
-	UpdateCloud_                       func(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujuparams.Cloud) error
+	UpdateCloud_                       func(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujucloud.Cloud) error
 	UpdateCloudCredential_             func(ctx context.Context, u *openfga.User, args juju.UpdateCloudCredentialArgs) ([]jujuparams.UpdateCredentialModelResult, error)
 	ListModels_                        func(ctx context.Context, user *openfga.User) ([]base.UserModel, error)
 	GrantOfferAccessOnController_      func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
 	RevokeOfferAccessOnController_     func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
-
+	PrepareModelMigration_             func(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, userMapping map[string]string) error
 	// These mocks can be removed soon once the jujuManager interface is updated.
 	UpdateMetrics_         func(ctx context.Context)
 	CleanupNotFoundModels_ func(ctx context.Context) error
@@ -68,13 +70,13 @@ func (j *JujuManager) AddAuditLogEntry(ale *dbmodel.AuditLogEntry) {
 	}
 	j.AddAuditLogEntry(ale)
 }
-func (j *JujuManager) AddCloudToController(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujuparams.Cloud, force bool) error {
+func (j *JujuManager) AddCloudToController(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error {
 	if j.AddCloudToController_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
 	return j.AddCloudToController_(ctx, user, controllerName, tag, cloud, force)
 }
-func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujuparams.Cloud, force bool) error {
+func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error {
 	if j.AddHostedCloud_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
@@ -210,11 +212,11 @@ func (j *JujuManager) RemoveCloudFromController(ctx context.Context, u *openfga.
 	}
 	return j.RemoveCloudFromController_(ctx, u, controllerName, ct)
 }
-func (j *JujuManager) RevokeCloudCredential(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag, force bool) error {
+func (j *JujuManager) RevokeCloudCredential(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag) error {
 	if j.RevokeCloudCredential_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return j.RevokeCloudCredential_(ctx, user, tag, force)
+	return j.RevokeCloudCredential_(ctx, user, tag)
 }
 func (j *JujuManager) UpdateApplicationOffer(ctx context.Context, controller *dbmodel.Controller, offerUUID string, removed bool) error {
 	if j.UpdateApplicationOffer_ == nil {
@@ -222,7 +224,7 @@ func (j *JujuManager) UpdateApplicationOffer(ctx context.Context, controller *db
 	}
 	return j.UpdateApplicationOffer_(ctx, controller, offerUUID, removed)
 }
-func (j *JujuManager) UpdateCloud(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujuparams.Cloud) error {
+func (j *JujuManager) UpdateCloud(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujucloud.Cloud) error {
 	if j.UpdateCloud_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
@@ -265,4 +267,11 @@ func (j *JujuManager) RevokeOfferAccessOnController(ctx context.Context, user *o
 		return nil
 	}
 	return j.RevokeOfferAccessOnController_(ctx, user, ut, offerURL, access)
+}
+
+func (j *JujuManager) PrepareModelMigration(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, userMapping map[string]string) error {
+	if j.PrepareModelMigration_ == nil {
+		return nil
+	}
+	return j.PrepareModelMigration_(ctx, user, modelUUID, targetControllerName, userMapping)
 }

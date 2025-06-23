@@ -11,10 +11,13 @@ import (
 
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/juju/juju/api/base"
+	jujucloud "github.com/juju/juju/cloud"
 	jujucontroller "github.com/juju/juju/controller"
+	"github.com/juju/juju/core/migration"
+	coremigration "github.com/juju/juju/core/migration"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
-	"github.com/juju/version"
+	"github.com/juju/version/v2"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
 
@@ -30,6 +33,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimm/login"
+	"github.com/canonical/jimm/v3/internal/jimm/offer"
 	"github.com/canonical/jimm/v3/internal/jimm/permissions"
 	"github.com/canonical/jimm/v3/internal/jimm/role"
 	"github.com/canonical/jimm/v3/internal/jimm/ssh"
@@ -202,6 +206,12 @@ type ConfigManager interface {
 	GetConfig() (config.ControllerConfig, error)
 }
 
+// OfferAuthorizer provides methods to check if a user is a consumer of an application offer.
+type OfferAuthorizer interface {
+	// IsUserConsumerForOffer checks if a user is a consumer of an application offer.
+	IsUserConsumerForOffer(ctx context.Context, userTag names.UserTag, offerTag names.ApplicationOfferTag) (bool, error)
+}
+
 // JujuManager is the interface to manage all Juju related operations.
 type JujuManager interface {
 	// Controller related methods
@@ -236,10 +246,19 @@ type JujuManager interface {
 	UpdateMigratedModel(ctx context.Context, user *openfga.User, modelTag names.ModelTag, targetControllerName string) error
 	ValidateModelUpgrade(ctx context.Context, u *openfga.User, mt names.ModelTag, force bool) error
 
+	// Migration related methods
+	// The migration methods below are sorted roughly
+	// in the order they are expected to be called.
+	PrepareModelMigration(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, userMapping map[string]string) error
+	Prechecks(ctx context.Context, user *openfga.User, model migration.ModelInfo) error
+	CheckMachines(ctx context.Context, user *openfga.User, modelUUID string) ([]error, error)
+	AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error
+	AbortMigration(ctx context.Context, user *openfga.User, modelUUID string) error
+	Activate(ctx context.Context, modelTag names.ModelTag, migrationInfo coremigration.SourceControllerInfo, relatedModels []string) error
 	// Other methods
 
-	AddCloudToController(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujuparams.Cloud, force bool) error
-	AddHostedCloud(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujuparams.Cloud, force bool) error
+	AddCloudToController(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
+	AddHostedCloud(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
 	CopyCredential(ctx context.Context, originalUser *openfga.User, newUser *openfga.User, cred names.CloudCredentialTag) (names.CloudCredentialTag, []jujuparams.UpdateCredentialModelResult, error)
 	DestroyOffer(ctx context.Context, user *openfga.User, offerURL string, force bool) error
 	FindApplicationOffers(ctx context.Context, user *openfga.User, filters ...jujuparams.OfferFilter) ([]jujuparams.ApplicationOfferAdminDetailsV5, error)
@@ -259,9 +278,9 @@ type JujuManager interface {
 	Offer(ctx context.Context, user *openfga.User, offer juju.AddApplicationOfferParams) error
 	RemoveCloud(ctx context.Context, u *openfga.User, ct names.CloudTag) error
 	RemoveCloudFromController(ctx context.Context, u *openfga.User, controllerName string, ct names.CloudTag) error
-	RevokeCloudCredential(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag, force bool) error
+	RevokeCloudCredential(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag) error
 	RevokeOfferAccessOnController(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
-	UpdateCloud(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujuparams.Cloud) error
+	UpdateCloud(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujucloud.Cloud) error
 	UpdateCloudCredential(ctx context.Context, u *openfga.User, args juju.UpdateCloudCredentialArgs) ([]jujuparams.UpdateCredentialModelResult, error)
 
 	// These are methods on the Juju manager that don't need to be mocked and can be removed from this interface later.
@@ -456,6 +475,12 @@ func New(p Parameters) (*JIMM, error) {
 	}
 	j.configManager = configManager
 
+	offerAuthorizer, err := offer.NewOfferAuthorizer(j.Database, j.OpenFGAClient)
+	if err != nil {
+		return nil, err
+	}
+	j.offerAuthorizer = offerAuthorizer
+
 	return j, nil
 }
 
@@ -496,6 +521,9 @@ type JIMM struct {
 
 	// jujuManager provides a means to manage Juju resources within JIMM.
 	jujuManager JujuManager
+
+	// offerAuthorizer provides a means to check if a user is a consumer of an application offer.
+	offerAuthorizer OfferAuthorizer
 }
 
 // ResourceTag returns JIMM's controller tag stating its UUID.
@@ -567,4 +595,9 @@ func (j *JIMM) JujuManager() JujuManager {
 // This is used to expose the config via the ControllerConfig facade.
 func (j *JIMM) ConfigManager() ConfigManager {
 	return j.configManager
+}
+
+// OfferAuthorizer returns an authorizer that enables checking if a user is a consumer of an application offer.
+func (j *JIMM) OfferAuthorizer() OfferAuthorizer {
+	return j.offerAuthorizer
 }
