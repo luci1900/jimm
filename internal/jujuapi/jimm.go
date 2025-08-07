@@ -36,6 +36,7 @@ func init() {
 		grantAuditLogAccessMethod := rpc.Method(r.GrantAuditLogAccess)
 		importModelMethod := rpc.Method(r.ImportModel)
 		listControllersMethod := rpc.Method(r.ListControllers)
+		listMigratableControllersMethod := rpc.Method(r.ListMigratableControllers)
 		removeControllerMethod := rpc.Method(r.RemoveController)
 		revokeAuditLogAccessMethod := rpc.Method(r.RevokeAuditLogAccess)
 		setControllerDeprecatedMethod := rpc.Method(r.SetControllerDeprecated)
@@ -60,7 +61,6 @@ func init() {
 		listRolesMethod := rpc.Method(r.ListRoles)
 		crossModelQueryMethod := rpc.Method(r.CrossModelQuery)
 		purgeLogsMethod := rpc.Method(r.PurgeLogs)
-		listMigratableControllersMethod := rpc.Method(r.ListMigratableControllers)
 		migrateModel := rpc.Method(r.MigrateModel)
 		version := rpc.Method(r.Version)
 		prepareModelMigration := rpc.Method(r.PrepareModelMigration)
@@ -76,6 +76,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "GrantAuditLogAccess", grantAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "ImportModel", importModelMethod)
 		r.AddMethod("JIMM", 4, "ListControllers", listControllersMethod)
+		r.AddMethod("JIMM", 4, "ListMigratableControllers", listMigratableControllersMethod)
 		r.AddMethod("JIMM", 4, "RemoveController", removeControllerMethod)
 		r.AddMethod("JIMM", 4, "RevokeAuditLogAccess", revokeAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "SetControllerDeprecated", setControllerDeprecatedMethod)
@@ -83,7 +84,6 @@ func init() {
 		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
 		r.AddMethod("JIMM", 4, "RemoveCloudFromController", removeCloudFromControllerMethod)
 		r.AddMethod("JIMM", 4, "PurgeLogs", purgeLogsMethod)
-		r.AddMethod("JIMM", 4, "ListMigratableControllers", listMigratableControllersMethod)
 		r.AddMethod("JIMM", 4, "MigrateModel", migrateModel)
 		// JIMM ReBAC RPC
 		r.AddMethod("JIMM", 4, "AddGroup", addGroupMethod)
@@ -260,6 +260,29 @@ func (r *controllerRoot) ListControllers(ctx context.Context) (apiparams.ListCon
 		return apiparams.ListControllersResponse{}, errors.E(op, err)
 	}
 	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
+	for _, ctl := range dbControllers {
+		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
+	}
+	return apiparams.ListControllersResponse{
+		Controllers: controllersInfo,
+	}, nil
+}
+
+// ListMigratableControllers returns the list of juju controllers that the given
+// model could be migrated to.
+func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListControllersResponse, error) {
+	const op = errors.Op("jujuapi.ListMigratableControllers")
+
+	mt, err := names.ParseModelTag(req.ModelTag)
+	if err != nil {
+		return apiparams.ListControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
+	}
+
+	dbControllers, err := r.jimm.JujuManager().ListMigratableControllers(ctx, r.user, mt)
+	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
+	if err != nil {
+		return apiparams.ListControllersResponse{}, errors.E(op, err)
+	}
 	for _, ctl := range dbControllers {
 		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
 	}
@@ -500,29 +523,6 @@ func (r *controllerRoot) PurgeLogs(ctx context.Context, req apiparams.PurgeLogsR
 	}
 	return apiparams.PurgeLogsResponse{
 		DeletedCount: deleted_count,
-	}, nil
-}
-
-// ListMigratableControllers returns the list of juju controllers that the given
-// model could be migrated to.
-func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListControllersResponse, error) {
-	const op = errors.Op("jujuapi.ListMigratableControllers")
-
-	mt, err := names.ParseModelTag(req.ModelTag)
-	if err != nil {
-		return apiparams.ListControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
-	}
-
-	dbControllers, err := r.jimm.JujuManager().ListMigratableControllers(ctx, r.user, mt)
-	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
-	if err != nil {
-		return apiparams.ListControllersResponse{}, errors.E(op, err)
-	}
-	for _, ctl := range dbControllers {
-		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
-	}
-	return apiparams.ListControllersResponse{
-		Controllers: controllersInfo,
 	}, nil
 }
 
