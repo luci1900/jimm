@@ -505,7 +505,7 @@ func (r *controllerRoot) PurgeLogs(ctx context.Context, req apiparams.PurgeLogsR
 
 // ListMigratableControllers returns the list of juju controllers that the given
 // model could be migrated to.
-func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListMigratableControllersResponse, error) {
+func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListControllersResponse, error) {
 	const op = errors.Op("jujuapi.ListMigratableControllers")
 
 	mt, err := names.ParseModelTag(req.ModelTag)
