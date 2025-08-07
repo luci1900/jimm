@@ -6,6 +6,7 @@ import (
 	"context"
 
 	jujucontroller "github.com/juju/juju/controller"
+	"github.com/juju/names/v5"
 	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -22,6 +23,7 @@ type ControllerService struct {
 	ControllerInfo_                    func(ctx context.Context, name string) (*dbmodel.Controller, error)
 	EarliestControllerVersion_         func(ctx context.Context) (version.Number, error)
 	ListControllers_                   func(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
+	ListMigratableControllers_         func(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
 	RemoveController_                  func(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated_           func(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
 	ControllerConfig_                  func(ctx context.Context, controllerName string) (jujucontroller.Config, error)
@@ -67,6 +69,13 @@ func (j *ControllerService) ListControllers(ctx context.Context, user *openfga.U
 		return nil, errors.E(errors.CodeNotImplemented)
 	}
 	return j.ListControllers_(ctx, user)
+}
+
+func (j *ControllerService) ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
+	if j.ListMigratableControllers_ == nil {
+		return nil, errors.E(errors.CodeNotImplemented)
+	}
+	return j.ListMigratableControllers_(ctx, user, modelTag)
 }
 
 func (j *ControllerService) RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error {

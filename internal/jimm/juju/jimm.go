@@ -84,6 +84,34 @@ func (j *JujuManager) ListControllers(ctx context.Context, user *openfga.User) (
 	return controllers, nil
 }
 
+// ListMigratableControllers returns a list of controllers the model could be migrated to
+func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
+	const op = errors.Op("jimm.ListMigratableControllers")
+
+	if !user.JimmAdmin {
+		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	model, err := j.ModelInfo(ctx, user, modelTag)
+	if err != nil {
+		return nil, errors.E(op, err)
+
+	}
+
+	var controllers []dbmodel.Controller
+	err = j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
+		if model.CloudRegion == c.CloudRegion {
+			controllers = append(controllers, *c)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return controllers, nil
+}
+
 // SetControllerDeprecated records if the controller is to be deprecated.
 // No new models or clouds can be added to a deprecated controller.
 func (j *JujuManager) SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error {
@@ -159,34 +187,6 @@ func (j *JujuManager) RemoveController(ctx context.Context, user *openfga.User, 
 	}
 
 	return nil
-}
-
-// ListMigratableControllers returns a list of controllers the model could be migrated to
-func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
-	const op = errors.Op("jimm.ListMigratableControllers")
-
-	if !user.JimmAdmin {
-		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
-	}
-
-	model, err := j.ModelInfo(ctx, user, modelTag)
-	if err != nil {
-		return nil, errors.E(op, err)
-
-	}
-
-	var controllers []dbmodel.Controller
-	err = j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
-		if model.CloudRegion == c.CloudRegion {
-			controllers = append(controllers, *c)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	return controllers, nil
 }
 
 // FullModelStatus returns the full status of the juju model.

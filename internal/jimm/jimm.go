@@ -223,6 +223,7 @@ type JujuManager interface {
 	ControllerInfo(ctx context.Context, name string) (*dbmodel.Controller, error)
 	EarliestControllerVersion(ctx context.Context) (version.Number, error)
 	ListControllers(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
+	ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
 	RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
 	ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error)
@@ -254,8 +255,6 @@ type JujuManager interface {
 	// ControllerDetailsForIncomingModel retrieves details about the
 	// target controller for a model that is being migrated.
 	ControllerDetailsForIncomingModel(ctx context.Context, modelUUID string) (juju.ControllerConnectionDetails, error)
-
-	ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
 
 	// The remaining migration methods below are sorted roughly in the order they are expected to be called.
 	// Please MAINTAIN this order as it is helpful to understand the migration flow and which methods
