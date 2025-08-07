@@ -510,18 +510,18 @@ func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apip
 
 	mt, err := names.ParseModelTag(req.ModelTag)
 	if err != nil {
-		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
+		return apiparams.ListControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
 	}
 
 	dbControllers, err := r.jimm.JujuManager().ListMigratableControllers(ctx, r.user, mt)
 	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
 	if err != nil {
-		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err)
+		return apiparams.ListControllersResponse{}, errors.E(op, err)
 	}
 	for _, ctl := range dbControllers {
 		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
 	}
-	return apiparams.ListMigratableControllersResponse{
+	return apiparams.ListControllersResponse{
 		Controllers: controllersInfo,
 	}, nil
 }
