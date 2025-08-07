@@ -266,6 +266,34 @@ func (r *controllerRoot) ListControllers(ctx context.Context) (apiparams.ListCon
 	}, nil
 }
 
+func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListMigratableControllersResponse, error) {
+	const op = errors.Op("jujuapi.ListMigratableControllers")
+
+	mt, err := names.ParseModelTag(req.ModelTag)
+	if err != nil {
+		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
+	}
+
+	dbModel, err := r.jimm.JujuManager().ModelInfo(ctx, r.user, mt)
+	if err != nil {
+		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err)
+	}
+
+	dbControllers, err := r.jimm.JujuManager().ListControllers(ctx, r.user)
+	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
+	if err != nil {
+		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err)
+	}
+	for _, ctl := range dbControllers {
+		if dbModel.CloudRegion == ctl.CloudRegion {
+			controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
+		}
+	}
+	return apiparams.ListMigratableControllersResponse{
+		Controllers: controllersInfo,
+	}, nil
+}
+
 // RemoveController removes a controller.
 func (r *controllerRoot) RemoveController(ctx context.Context, req apiparams.RemoveControllerRequest) (apiparams.ControllerInfo, error) {
 	const op = errors.Op("jujuapi.RemoveController")

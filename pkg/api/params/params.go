@@ -218,6 +218,15 @@ type ListControllersResponse struct {
 	Controllers []ControllerInfo `json:"controllers" yaml:"controllers"`
 }
 
+type ListMigratableControllersRequest struct {
+	// ModelTag holds the tag of the model that could be migrated
+	ModelTag string `json:"model-tag"`
+}
+
+type ListMigratableControllersResponse struct {
+	Controllers []ControllerInfo `json:"controllers" yaml:"controllers"`
+}
+
 // A RemoveControllerRequest is the request that is sent in a
 // RemoveController method.
 type RemoveControllerRequest struct {
