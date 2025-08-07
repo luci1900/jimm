@@ -161,6 +161,34 @@ func (j *JujuManager) RemoveController(ctx context.Context, user *openfga.User, 
 	return nil
 }
 
+// ListMigratableControllers returns a list of controllers the model could be migrated to
+func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
+	const op = errors.Op("jimm.ListMigratableControllers")
+
+	if !user.JimmAdmin {
+		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	model, err := j.ModelInfo(ctx, user, modelTag)
+	if err != nil {
+		return nil, errors.E(op, err)
+
+	}
+
+	var controllers []dbmodel.Controller
+	err = j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
+		if model.CloudRegion == c.CloudRegion {
+			controllers = append(controllers, *c)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return controllers, nil
+}
+
 // FullModelStatus returns the full status of the juju model.
 func (j *JujuManager) FullModelStatus(ctx context.Context, user *openfga.User, modelTag names.ModelTag, patterns []string) (*jujuparams.FullStatus, error) {
 	const op = errors.Op("jimm.RemoveController")

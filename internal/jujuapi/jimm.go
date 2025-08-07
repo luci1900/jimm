@@ -60,6 +60,7 @@ func init() {
 		listRolesMethod := rpc.Method(r.ListRoles)
 		crossModelQueryMethod := rpc.Method(r.CrossModelQuery)
 		purgeLogsMethod := rpc.Method(r.PurgeLogs)
+		listMigratableControllersMethod := rpc.Method(r.ListMigratableControllers)
 		migrateModel := rpc.Method(r.MigrateModel)
 		version := rpc.Method(r.Version)
 		prepareModelMigration := rpc.Method(r.PrepareModelMigration)
@@ -82,6 +83,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
 		r.AddMethod("JIMM", 4, "RemoveCloudFromController", removeCloudFromControllerMethod)
 		r.AddMethod("JIMM", 4, "PurgeLogs", purgeLogsMethod)
+		r.AddMethod("JIMM", 4, "ListMigratableControllers", listMigratableControllersMethod)
 		r.AddMethod("JIMM", 4, "MigrateModel", migrateModel)
 		// JIMM ReBAC RPC
 		r.AddMethod("JIMM", 4, "AddGroup", addGroupMethod)
@@ -262,34 +264,6 @@ func (r *controllerRoot) ListControllers(ctx context.Context) (apiparams.ListCon
 		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
 	}
 	return apiparams.ListControllersResponse{
-		Controllers: controllersInfo,
-	}, nil
-}
-
-func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListMigratableControllersResponse, error) {
-	const op = errors.Op("jujuapi.ListMigratableControllers")
-
-	mt, err := names.ParseModelTag(req.ModelTag)
-	if err != nil {
-		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
-	}
-
-	dbModel, err := r.jimm.JujuManager().ModelInfo(ctx, r.user, mt)
-	if err != nil {
-		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err)
-	}
-
-	dbControllers, err := r.jimm.JujuManager().ListControllers(ctx, r.user)
-	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
-	if err != nil {
-		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err)
-	}
-	for _, ctl := range dbControllers {
-		if dbModel.CloudRegion == ctl.CloudRegion {
-			controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
-		}
-	}
-	return apiparams.ListMigratableControllersResponse{
 		Controllers: controllersInfo,
 	}, nil
 }
@@ -526,6 +500,29 @@ func (r *controllerRoot) PurgeLogs(ctx context.Context, req apiparams.PurgeLogsR
 	}
 	return apiparams.PurgeLogsResponse{
 		DeletedCount: deleted_count,
+	}, nil
+}
+
+// ListMigratableControllers returns the list of juju controllers that the given
+// model could be migrated to.
+func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListMigratableControllersResponse, error) {
+	const op = errors.Op("jujuapi.ListMigratableControllers")
+
+	mt, err := names.ParseModelTag(req.ModelTag)
+	if err != nil {
+		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
+	}
+
+	dbControllers, err := r.jimm.JujuManager().ListMigratableControllers(ctx, r.user, mt)
+	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
+	if err != nil {
+		return apiparams.ListMigratableControllersResponse{}, errors.E(op, err)
+	}
+	for _, ctl := range dbControllers {
+		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
+	}
+	return apiparams.ListMigratableControllersResponse{
+		Controllers: controllersInfo,
 	}, nil
 }
 

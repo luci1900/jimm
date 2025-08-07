@@ -255,6 +255,8 @@ type JujuManager interface {
 	// target controller for a model that is being migrated.
 	ControllerDetailsForIncomingModel(ctx context.Context, modelUUID string) (juju.ControllerConnectionDetails, error)
 
+	ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
+
 	// The remaining migration methods below are sorted roughly in the order they are expected to be called.
 	// Please MAINTAIN this order as it is helpful to understand the migration flow and which methods
 	// can use the IncomingModelMigration table versus which must use the plain Models table.
