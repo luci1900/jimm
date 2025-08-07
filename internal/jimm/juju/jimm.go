@@ -92,15 +92,15 @@ func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openf
 		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
 	}
 
-	model, err := j.ModelInfo(ctx, user, modelTag)
-	if err != nil {
+	var model dbmodel.Model
+	model.SetTag(modelTag)
+	if err := j.Database.GetModel(ctx, &model); err != nil {
 		return nil, errors.E(op, err)
-
 	}
 
 	var controllers []dbmodel.Controller
-	err = j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
-		if model.CloudRegion == c.CloudRegion {
+	err := j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
+		if model.CloudRegion.Name == c.CloudRegion {
 			controllers = append(controllers, *c)
 		}
 		return nil
