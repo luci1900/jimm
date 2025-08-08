@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -100,9 +101,19 @@ func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openf
 
 	var controllers []dbmodel.Controller
 	err := j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
+		currentVersion, err := version.Parse(model.Controller.AgentVersion)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
+		candidateVersion, err := version.Parse(c.AgentVersion)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
 		if model.Controller.ID != c.ID &&
-			model.Controller.AgentVersion <= c.AgentVersion &&
-			model.CloudRegion.Name == c.CloudRegion {
+			model.Controller.CloudRegion == c.CloudRegion &&
+			currentVersion.Compare(candidateVersion) <= 0 {
 			controllers = append(controllers, *c)
 		}
 		return nil

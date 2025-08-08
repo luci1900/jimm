@@ -152,7 +152,7 @@ controllers:
   uuid: 00000001-0000-0000-0000-000000000003
   cloud: test
   region: test-region-b
-  agent-version: 3.2.0
+  agent-version: 3.10.0
 - name: test4
   uuid: 00000001-0000-0000-0000-000000000004
   cloud: test
