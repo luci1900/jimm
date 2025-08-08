@@ -100,7 +100,9 @@ func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openf
 
 	var controllers []dbmodel.Controller
 	err := j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
-		if model.CloudRegion.Name == c.CloudRegion {
+		if model.Controller.ID != c.ID &&
+			model.Controller.AgentVersion <= c.AgentVersion &&
+			model.CloudRegion.Name == c.CloudRegion {
 			controllers = append(controllers, *c)
 		}
 		return nil

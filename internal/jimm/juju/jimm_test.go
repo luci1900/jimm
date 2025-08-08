@@ -152,6 +152,11 @@ controllers:
   uuid: 00000001-0000-0000-0000-000000000003
   cloud: test
   region: test-region-b
+  agent-version: 3.2.0
+- name: test4
+  uuid: 00000001-0000-0000-0000-000000000004
+  cloud: test
+  region: test-region-b
   agent-version: 2.1.0
 models:
 - name: test-migratable-1
@@ -191,7 +196,6 @@ func TestListMigratableControllers(t *testing.T) {
 		user:      env.User("alice@canonical.com").DBObject(c, j.Database),
 		jimmAdmin: true,
 		expectedControllers: []dbmodel.Controller{
-			env.Controller("test2").DBObject(c, j.Database),
 			env.Controller("test3").DBObject(c, j.Database),
 		},
 	}, {
