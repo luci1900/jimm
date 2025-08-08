@@ -72,6 +72,14 @@ func (c *Client) ListControllers() ([]params.ControllerInfo, error) {
 	return resp.Controllers, err
 }
 
+// ListMigratableControllers returns the list of juju controllers that the given
+// model could be migrated to.
+func (c *Client) ListMigratableControllers(req *params.ListMigratableControllersRequest) ([]params.ControllerInfo, error) {
+	var resp params.ListControllersResponse
+	err := c.caller.APICall("JUMM", 4, "", "ListMigratableControllers", req, nil)
+	return resp.Controllers, err
+}
+
 // RemoveCloudFromController removes the specified cloud from a specific controller.
 func (c *Client) RemoveCloudFromController(req *params.RemoveCloudFromControllerRequest) error {
 	return c.caller.APICall("JIMM", 4, "", "RemoveCloudFromController", req, nil)

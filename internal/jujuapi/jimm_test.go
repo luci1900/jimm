@@ -99,6 +99,60 @@ func (s *jimmSuite) TestListControllersUnauthorized(c *gc.C) {
 	}})
 }
 
+func (s *jimmSuite) TestListMigratableControllers(c *gc.C) {
+	s.AddController(c, "controller-0", s.APIInfo(c))
+	s.AddController(c, "controller-2", s.APIInfo(c))
+	s.AddModel(
+		c,
+		names.NewUserTag("charlie@canonical.com"),
+		"model-0",
+		names.NewCloudTag(jimmtest.TestCloudName),
+		jimmtest.TestCloudRegionName,
+		s.Model2.CloudCredential.ResourceTag(),
+	)
+
+	conn := s.open(c, nil, "alice")
+	defer conn.Close()
+
+	client := api.NewClient(conn)
+	cis, err := client.ListControllers()
+	c.Assert(err, gc.Equals, nil)
+	c.Check(cis, jc.DeepEquals, []apiparams.ControllerInfo{{
+		Name:          "controller-0",
+		UUID:          s.Model.Controller.UUID,
+		APIAddresses:  s.APIInfo(c).Addrs,
+		CACertificate: s.APIInfo(c).CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
+		CloudRegion:   jimmtest.TestCloudRegionName,
+		AgentVersion:  s.Model.Controller.AgentVersion,
+		Status: jujuparams.EntityStatus{
+			Status: "available",
+		},
+	}, {
+		Name:          "controller-1",
+		UUID:          s.Model.Controller.UUID,
+		APIAddresses:  s.APIInfo(c).Addrs,
+		CACertificate: s.APIInfo(c).CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
+		CloudRegion:   jimmtest.TestCloudRegionName,
+		AgentVersion:  s.Model.Controller.AgentVersion,
+		Status: jujuparams.EntityStatus{
+			Status: "available",
+		},
+	}, {
+		Name:          "controller-2",
+		UUID:          s.Model.Controller.UUID,
+		APIAddresses:  s.APIInfo(c).Addrs,
+		CACertificate: s.APIInfo(c).CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
+		CloudRegion:   jimmtest.TestCloudRegionName,
+		AgentVersion:  s.Model.Controller.AgentVersion,
+		Status: jujuparams.EntityStatus{
+			Status: "available",
+		},
+	}})
+}
+
 func (s *jimmSuite) TestAddControllerPublicAddressWithoutPort(c *gc.C) {
 	conn := s.open(c, nil, "alice")
 	defer conn.Close()
