@@ -103,12 +103,12 @@ func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openf
 	err := j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
 		currentVersion, err := version.Parse(model.Controller.AgentVersion)
 		if err != nil {
-			return errors.E(op, err)
+			return err
 		}
 
 		candidateVersion, err := version.Parse(c.AgentVersion)
 		if err != nil {
-			return errors.E(op, err)
+			return err
 		}
 
 		if model.Controller.ID != c.ID &&
