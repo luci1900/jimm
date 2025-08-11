@@ -262,9 +262,9 @@ func (c *Client) PrepareModelMigration(req *params.PrepareModelMigrationRequest)
 // ListMigrationTargets returns the list of juju controllers that the given
 // model could be migrated to.
 func (c *Client) ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
-	var resp params.ListControllersResponse
-	err := c.caller.APICall("JIMM", 4, "", "ListMigrationTargets", req, nil)
-	return resp.Controllers, err
+	var response params.ListControllersResponse
+	err := c.caller.APICall("JIMM", 4, "", "ListMigrationTargets", req, &response)
+	return response.Controllers, err
 }
 
 // BootstrapStatus retrieves the status and logs of a bootstrap job.
