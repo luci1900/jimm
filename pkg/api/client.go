@@ -72,11 +72,11 @@ func (c *Client) ListControllers() ([]params.ControllerInfo, error) {
 	return resp.Controllers, err
 }
 
-// ListMigratableControllers returns the list of juju controllers that the given
+// ListMigrationTargets returns the list of juju controllers that the given
 // model could be migrated to.
-func (c *Client) ListMigratableControllers(req *params.ListMigratableControllersRequest) ([]params.ControllerInfo, error) {
+func (c *Client) ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
 	var resp params.ListControllersResponse
-	err := c.caller.APICall("JUMM", 4, "", "ListMigratableControllers", req, nil)
+	err := c.caller.APICall("JIMM", 4, "", "ListMigrationTargets", req, nil)
 	return resp.Controllers, err
 }
 

@@ -223,7 +223,6 @@ type JujuManager interface {
 	ControllerInfo(ctx context.Context, name string) (*dbmodel.Controller, error)
 	EarliestControllerVersion(ctx context.Context) (version.Number, error)
 	ListControllers(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
-	ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
 	RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
 	ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error)
@@ -269,6 +268,7 @@ type JujuManager interface {
 	LatestLogTime(ctx context.Context, modelUUID string) (time.Time, error)
 	AbortMigration(ctx context.Context, user *openfga.User, modelUUID string) error
 	CleanupPartialModelMigrations(ctx context.Context) error
+	ListMigrationTargets(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
 
 	// Other methods
 	AddCloudToController(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error

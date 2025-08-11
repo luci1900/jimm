@@ -99,7 +99,7 @@ func (s *jimmSuite) TestListControllersUnauthorized(c *gc.C) {
 	}})
 }
 
-func (s *jimmSuite) TestListMigratableControllers(c *gc.C) {
+func (s *jimmSuite) TestListMigrationTargets(c *gc.C) {
 	s.AddController(c, "controller-0", s.APIInfo(c))
 	s.AddController(c, "controller-2", s.APIInfo(c))
 	s.AddModel(

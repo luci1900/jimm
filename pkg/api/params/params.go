@@ -218,12 +218,6 @@ type ListControllersResponse struct {
 	Controllers []ControllerInfo `json:"controllers" yaml:"controllers"`
 }
 
-// ListMigratableControllersRequest holds the model to query controllers for
-type ListMigratableControllersRequest struct {
-	// ModelTag holds the tag of the model that could be migrated
-	ModelTag string `json:"model-tag"`
-}
-
 // A RemoveControllerRequest is the request that is sent in a
 // RemoveController method.
 type RemoveControllerRequest struct {
@@ -565,6 +559,12 @@ type PrepareModelMigrationResponse struct {
 	// Token is the token that should be used to initiate the migration
 	// as it allows the source controller to authenticate with JIMM.
 	Token string `json:"token" yaml:"token"`
+}
+
+// ListMigrationTargetsRequest holds the model to query controllers for
+type ListMigrationTargetsRequest struct {
+	// ModelTag holds the tag of the model that could be migrated
+	ModelTag string `json:"model-tag"`
 }
 
 // BootstrapStatusRequest holds the request to get the status of a bootstrap job.

@@ -36,7 +36,6 @@ func init() {
 		grantAuditLogAccessMethod := rpc.Method(r.GrantAuditLogAccess)
 		importModelMethod := rpc.Method(r.ImportModel)
 		listControllersMethod := rpc.Method(r.ListControllers)
-		listMigratableControllersMethod := rpc.Method(r.ListMigratableControllers)
 		removeControllerMethod := rpc.Method(r.RemoveController)
 		revokeAuditLogAccessMethod := rpc.Method(r.RevokeAuditLogAccess)
 		setControllerDeprecatedMethod := rpc.Method(r.SetControllerDeprecated)
@@ -64,6 +63,7 @@ func init() {
 		migrateModel := rpc.Method(r.MigrateModel)
 		version := rpc.Method(r.Version)
 		prepareModelMigration := rpc.Method(r.PrepareModelMigration)
+		listMigrationTargetsMethod := rpc.Method(r.ListMigrationTargets)
 		bootstrapStatus := rpc.Method(r.BootstrapStatus)
 		bootstrapStart := rpc.Method(r.BootstrapStart)
 		bootstrapStop := rpc.Method(r.BootstrapStop)
@@ -76,7 +76,6 @@ func init() {
 		r.AddMethod("JIMM", 4, "GrantAuditLogAccess", grantAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "ImportModel", importModelMethod)
 		r.AddMethod("JIMM", 4, "ListControllers", listControllersMethod)
-		r.AddMethod("JIMM", 4, "ListMigratableControllers", listMigratableControllersMethod)
 		r.AddMethod("JIMM", 4, "RemoveController", removeControllerMethod)
 		r.AddMethod("JIMM", 4, "RevokeAuditLogAccess", revokeAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "SetControllerDeprecated", setControllerDeprecatedMethod)
@@ -106,6 +105,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "Version", version)
 		// JIMM Model Migrations
 		r.AddMethod("JIMM", 4, "PrepareModelMigration", prepareModelMigration)
+		r.AddMethod("JIMM", 4, "ListMigrationTargets", listMigrationTargetsMethod)
 		// JIMM Bootstrap
 		r.AddMethod("JIMM", 4, "BootstrapStatus", bootstrapStatus)
 		r.AddMethod("JIMM", 4, "BootstrapStart", bootstrapStart)
@@ -260,29 +260,6 @@ func (r *controllerRoot) ListControllers(ctx context.Context) (apiparams.ListCon
 		return apiparams.ListControllersResponse{}, errors.E(op, err)
 	}
 	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
-	for _, ctl := range dbControllers {
-		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
-	}
-	return apiparams.ListControllersResponse{
-		Controllers: controllersInfo,
-	}, nil
-}
-
-// ListMigratableControllers returns the list of juju controllers that the given
-// model could be migrated to.
-func (r *controllerRoot) ListMigratableControllers(ctx context.Context, req apiparams.ListMigratableControllersRequest) (apiparams.ListControllersResponse, error) {
-	const op = errors.Op("jujuapi.ListMigratableControllers")
-
-	mt, err := names.ParseModelTag(req.ModelTag)
-	if err != nil {
-		return apiparams.ListControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
-	}
-
-	dbControllers, err := r.jimm.JujuManager().ListMigratableControllers(ctx, r.user, mt)
-	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
-	if err != nil {
-		return apiparams.ListControllersResponse{}, errors.E(op, err)
-	}
 	for _, ctl := range dbControllers {
 		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
 	}
@@ -597,6 +574,29 @@ func (r *controllerRoot) PrepareModelMigration(ctx context.Context, args apipara
 	}
 
 	return resp, nil
+}
+
+// ListMigrationTargets returns the list of juju controllers that the given
+// model could be migrated to.
+func (r *controllerRoot) ListMigrationTargets(ctx context.Context, req apiparams.ListMigrationTargetsRequest) (apiparams.ListControllersResponse, error) {
+	const op = errors.Op("jujuapi.ListMigrationTargets")
+
+	mt, err := names.ParseModelTag(req.ModelTag)
+	if err != nil {
+		return apiparams.ListControllersResponse{}, errors.E(op, err, errors.CodeBadRequest)
+	}
+
+	dbControllers, err := r.jimm.JujuManager().ListMigrationTargets(ctx, r.user, mt)
+	controllersInfo := make([]apiparams.ControllerInfo, 0, len(dbControllers))
+	if err != nil {
+		return apiparams.ListControllersResponse{}, errors.E(op, err)
+	}
+	for _, ctl := range dbControllers {
+		controllersInfo = append(controllersInfo, ctl.ToAPIControllerInfo())
+	}
+	return apiparams.ListControllersResponse{
+		Controllers: controllersInfo,
+	}, nil
 }
 
 // BootstrapStatus retrieves the status of a bootstrap job, its logs and the watermark

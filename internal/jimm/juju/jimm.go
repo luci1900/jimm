@@ -85,46 +85,6 @@ func (j *JujuManager) ListControllers(ctx context.Context, user *openfga.User) (
 	return controllers, nil
 }
 
-// ListMigratableControllers returns a list of controllers the model could be migrated to
-func (j *JujuManager) ListMigratableControllers(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
-	const op = errors.Op("jimm.ListMigratableControllers")
-
-	if !user.JimmAdmin {
-		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
-	}
-
-	var model dbmodel.Model
-	model.SetTag(modelTag)
-	if err := j.Database.GetModel(ctx, &model); err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	var controllers []dbmodel.Controller
-	err := j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
-		currentVersion, err := version.Parse(model.Controller.AgentVersion)
-		if err != nil {
-			return err
-		}
-
-		candidateVersion, err := version.Parse(c.AgentVersion)
-		if err != nil {
-			return err
-		}
-
-		if model.Controller.ID != c.ID &&
-			model.Controller.CloudRegion == c.CloudRegion &&
-			currentVersion.Compare(candidateVersion) <= 0 {
-			controllers = append(controllers, *c)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	return controllers, nil
-}
-
 // SetControllerDeprecated records if the controller is to be deprecated.
 // No new models or clouds can be added to a deprecated controller.
 func (j *JujuManager) SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error {
@@ -367,4 +327,44 @@ func (j *JujuManager) PrepareModelMigration(
 	}
 
 	return migrationToken, nil
+}
+
+// ListMigrationTargets returns a list of controllers the model could be migrated to
+func (j *JujuManager) ListMigrationTargets(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
+	const op = errors.Op("jimm.ListMigrationTargets")
+
+	if !user.JimmAdmin {
+		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	var model dbmodel.Model
+	model.SetTag(modelTag)
+	if err := j.Database.GetModel(ctx, &model); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	var controllers []dbmodel.Controller
+	err := j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
+		currentVersion, err := version.Parse(model.Controller.AgentVersion)
+		if err != nil {
+			return err
+		}
+
+		candidateVersion, err := version.Parse(c.AgentVersion)
+		if err != nil {
+			return err
+		}
+
+		if model.Controller.ID != c.ID &&
+			model.Controller.CloudRegion == c.CloudRegion &&
+			currentVersion.Compare(candidateVersion) <= 0 {
+			controllers = append(controllers, *c)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return controllers, nil
 }
