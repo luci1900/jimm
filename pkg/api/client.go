@@ -72,14 +72,6 @@ func (c *Client) ListControllers() ([]params.ControllerInfo, error) {
 	return resp.Controllers, err
 }
 
-// ListMigrationTargets returns the list of juju controllers that the given
-// model could be migrated to.
-func (c *Client) ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
-	var resp params.ListControllersResponse
-	err := c.caller.APICall("JIMM", 4, "", "ListMigrationTargets", req, nil)
-	return resp.Controllers, err
-}
-
 // RemoveCloudFromController removes the specified cloud from a specific controller.
 func (c *Client) RemoveCloudFromController(req *params.RemoveCloudFromControllerRequest) error {
 	return c.caller.APICall("JIMM", 4, "", "RemoveCloudFromController", req, nil)
@@ -265,6 +257,14 @@ func (c *Client) PrepareModelMigration(req *params.PrepareModelMigrationRequest)
 	var response params.PrepareModelMigrationResponse
 	err := c.caller.APICall("JIMM", 4, "", "PrepareModelMigration", req, &response)
 	return response, err
+}
+
+// ListMigrationTargets returns the list of juju controllers that the given
+// model could be migrated to.
+func (c *Client) ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
+	var resp params.ListControllersResponse
+	err := c.caller.APICall("JIMM", 4, "", "ListMigrationTargets", req, nil)
+	return resp.Controllers, err
 }
 
 // BootstrapStatus retrieves the status and logs of a bootstrap job.
