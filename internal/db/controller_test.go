@@ -125,6 +125,10 @@ controllers:
   uuid: 00000001-0000-0000-0000-000000000001
   cloud: test
   region: test-region-1
+  cloud-regions:
+    - cloud: test
+      region: test-region
+      priority: 1
 - name: test2
   uuid: 00000001-0000-0000-0000-000000000002
   cloud: test
@@ -150,8 +154,12 @@ func (s *dbSuite) TestForEachController(c *qt.C) {
 	c.Check(err, qt.Equals, testError)
 
 	var controllers []string
+	var cloudRegions []string
 	err = s.Database.ForEachController(ctx, func(controller *dbmodel.Controller) error {
 		controllers = append(controllers, controller.UUID)
+		for _, i := range controller.CloudRegions {
+			cloudRegions = append(cloudRegions, i.CloudRegion.Name)
+		}
 		return nil
 	})
 	c.Assert(err, qt.IsNil)
@@ -159,6 +167,9 @@ func (s *dbSuite) TestForEachController(c *qt.C) {
 		"00000001-0000-0000-0000-000000000001",
 		"00000001-0000-0000-0000-000000000002",
 		"00000001-0000-0000-0000-000000000003",
+	})
+	c.Check(cloudRegions, qt.DeepEquals, []string{
+		"test-region",
 	})
 }
 

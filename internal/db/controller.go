@@ -134,22 +134,15 @@ func (d *Database) ForEachController(ctx context.Context, f func(*dbmodel.Contro
 
 	db := d.DB.WithContext(ctx)
 	db = db.Preload("CloudRegions").Preload("CloudRegions.CloudRegion").Preload("CloudRegions.CloudRegion.Cloud")
-	rows, err := db.Model(&dbmodel.Controller{}).Order("name asc").Rows()
-	if err != nil {
-		return errors.E(op, err)
+
+	var controllers []dbmodel.Controller
+	if err := db.Order("name asc").Find(&controllers).Error; err != nil {
+		return errors.E(op, dbError(err))
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var controller dbmodel.Controller
-		if err := db.ScanRows(rows, &controller); err != nil {
-			return errors.E(op, err)
-		}
-		if err := f(&controller); err != nil {
+	for _, c := range controllers {
+		if err := f(&c); err != nil {
 			return err
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return errors.E(op, dbError(err))
 	}
 	return nil
 }
