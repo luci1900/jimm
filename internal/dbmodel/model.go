@@ -182,3 +182,29 @@ func (m Model) MergeModelSummaryFromController(modelSummaryFromController *jujup
 	modelSummaryFromController.UserAccess = access
 	return *modelSummaryFromController
 }
+
+// MigrationFailed processes a failed migration by resetting the
+// MigrationMode to MigrationModeNone.
+func (m *Model) MigrationFailed() {
+	m.MigrationMode = MigrationModeNone
+}
+
+// InternalMigrationSuccess processes a successful internal migration
+// by setting the MigrationMode to MigrationModeNone and updating the ControllerID.
+func (m *Model) InternalMigrationSuccess(controllerID uint) {
+	m.MigrationMode = MigrationModeNone
+	m.ControllerID = controllerID
+	m.Controller = Controller{} // Clear the association to force GORM to use the new ControllerID.
+}
+
+// SetInternalMigration sets the model to be in the internal migration mode.
+// This is used when the model is being migrated internally within JIMM.
+func (m *Model) SetInternalMigration() {
+	m.MigrationMode = MigrationModeMigrateInternal
+}
+
+// SetExternalMigration sets the model to be in the external migration mode.
+// This is used when the model is being exported away from JIMM.
+func (m *Model) SetExternalMigration() {
+	m.MigrationMode = MigrationModeExporting
+}
