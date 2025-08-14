@@ -352,30 +352,22 @@ func (j *JujuManager) ListMigrationTargets(ctx context.Context, user *openfga.Us
 		return nil, errors.E(op, err)
 	}
 
-	var controllers []dbmodel.Controller
-	err = j.Database.ForEachController(ctx, func(c *dbmodel.Controller) error {
-		candidateVersion, err := version.Parse(c.AgentVersion)
-		if err != nil {
-			return err
-		}
-
-		hasRegion := false
-		for _, i := range c.CloudRegions {
-			if i.CloudRegion.ID == model.CloudRegion.ID {
-				hasRegion = true
-				break
-			}
-		}
-
-		if model.Controller.ID != c.ID &&
-			hasRegion &&
-			currentVersion.Compare(candidateVersion) <= 0 {
-			controllers = append(controllers, *c)
-		}
-		return nil
-	})
+	cloudRegion, err := j.Database.FindRegionByCloudName(ctx, model.CloudRegion.CloudName, model.CloudRegion.Name)
 	if err != nil {
 		return nil, errors.E(op, err)
+	}
+
+	var controllers []dbmodel.Controller
+	for _, ctl := range cloudRegion.Controllers {
+		candidateVersion, err := version.Parse(ctl.Controller.AgentVersion)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+
+		if model.Controller.ID != ctl.Controller.ID &&
+			currentVersion.Compare(candidateVersion) <= 0 {
+			controllers = append(controllers, ctl.Controller)
+		}
 	}
 
 	return controllers, nil
