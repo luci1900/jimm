@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -328,4 +329,46 @@ func (j *JujuManager) PrepareModelMigration(
 	}
 
 	return migrationToken, nil
+}
+
+// ListMigrationTargets returns the list of juju controllers that the given internal
+// model could be migrated to. This includes controllers that support the model's
+// cloud region and version, but excludes the controller the model is already on.
+func (j *JujuManager) ListMigrationTargets(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
+	const op = errors.Op("jimm.ListMigrationTargets")
+
+	if !user.JimmAdmin {
+		return nil, errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	var model dbmodel.Model
+	model.SetTag(modelTag)
+	if err := j.Database.GetModel(ctx, &model); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	currentVersion, err := version.Parse(model.Controller.AgentVersion)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	cloudRegion, err := j.Database.FindRegionByCloudName(ctx, model.CloudRegion.CloudName, model.CloudRegion.Name)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	var controllers []dbmodel.Controller
+	for _, ctl := range cloudRegion.Controllers {
+		candidateVersion, err := version.Parse(ctl.Controller.AgentVersion)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+
+		if model.Controller.ID != ctl.Controller.ID &&
+			currentVersion.Compare(candidateVersion) <= 0 {
+			controllers = append(controllers, ctl.Controller)
+		}
+	}
+
+	return controllers, nil
 }
