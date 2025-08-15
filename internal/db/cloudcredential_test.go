@@ -269,6 +269,10 @@ func (s *dbSuite) TestForEachCloudCredential(c *qt.C) {
 			var credentials []string
 			if test.f == nil {
 				test.f = func(cred *dbmodel.CloudCredential) error {
+					// Check preloads/joins are populated (not zero values)
+					c.Check(cred.Cloud.Name, qt.Matches, "cloud-.*")
+					c.Check(cred.Owner.Name, qt.Matches, ".*@canonical.com")
+
 					credentials = append(credentials, cred.Tag().String())
 					return nil
 				}
