@@ -86,19 +86,10 @@ func (d *Database) ListResources(ctx context.Context, limit, offset int, namePre
 	if err != nil {
 		return nil, err
 	}
-	rows, err := query.Rows()
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	resources := make([]Resource, 0)
-	for rows.Next() {
-		var res Resource
-		err := db.ScanRows(rows, &res)
-		if err != nil {
-			return nil, err
-		}
-		resources = append(resources, res)
+
+	var resources []Resource
+	if err := query.Find(&resources).Error; err != nil {
+		return nil, errors.E(op, dbError(err))
 	}
 	return resources, nil
 }
