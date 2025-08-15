@@ -86,33 +86,24 @@ func (d *Database) ForEachCloudCredential(ctx context.Context, identityName, clo
 	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
 
 	db := d.DB.WithContext(ctx)
-	mdb := db.Model(dbmodel.CloudCredential{})
+	db = db.Model(dbmodel.CloudCredential{})
+	db = db.Preload("Cloud").Preload("Owner").Preload("Models")
 	if cloud == "" {
-		mdb = mdb.Where("owner_identity_name = ?", identityName)
+		db = db.Where("owner_identity_name = ?", identityName)
 	} else {
-		mdb = mdb.Where("cloud_name = ? AND owner_identity_name = ?", cloud, identityName)
+		db = db.Where("cloud_name = ? AND owner_identity_name = ?", cloud, identityName)
 	}
-	rows, err := mdb.Rows()
-	if err != nil {
+
+	var creds []dbmodel.CloudCredential
+	if err := db.Find(&creds).Error; err != nil {
 		return errors.E(op, dbError(err))
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var cred dbmodel.CloudCredential
-		if err := db.ScanRows(rows, &cred); err != nil {
-			return errors.E(op, dbError(err))
-		}
-		err = d.GetCloudCredential(ctx, &cred)
-		if err != nil {
-			return err
-		}
-		if err := f(&cred); err != nil {
+	for _, c := range creds {
+		if err := f(&c); err != nil {
 			return err
 		}
 	}
-	if err := rows.Err(); err != nil {
-		return errors.E(op, dbError(err))
-	}
+
 	return nil
 }
 
