@@ -548,6 +548,12 @@ func (s *dbSuite) TestForEachModel(c *qt.C) {
 
 	var models []string
 	err = s.Database.ForEachModel(ctx, func(m *dbmodel.Model) error {
+		// Check preloads/joins are populated (not zero values)
+		c.Check(m.Owner.Name, qt.Matches, ".*@canonical.com")
+		c.Check(m.Controller.Name, qt.Equals, "test")
+		c.Check(m.CloudRegion.Name, qt.Equals, "test-region")
+		c.Check(m.CloudCredential.Name, qt.Equals, "test-cred")
+
 		models = append(models, m.UUID.String)
 		return nil
 	})
