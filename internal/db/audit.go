@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2024 Canonical.
 
 package db
 
@@ -105,14 +105,22 @@ func (d *Database) ForEachAuditLogEntry(ctx context.Context, filter AuditLogFilt
 		db = db.Offset(filter.Offset)
 	}
 
-	var ales []dbmodel.AuditLogEntry
-	if err := db.Find(&ales).Error; err != nil {
-		return errors.E(op, dbError(err))
+	rows, err := db.Rows()
+	if err != nil {
+		return errors.E(op, err)
 	}
-	for _, a := range ales {
-		if err := f(&a); err != nil {
+	defer rows.Close()
+	for rows.Next() {
+		var ale dbmodel.AuditLogEntry
+		if err := db.ScanRows(rows, &ale); err != nil {
+			return errors.E(op, err)
+		}
+		if err := f(&ale); err != nil {
 			return err
 		}
+	}
+	if rows.Err() != nil {
+		return errors.E(op, rows.Err())
 	}
 	return nil
 }
