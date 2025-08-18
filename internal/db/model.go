@@ -159,29 +159,15 @@ func (d *Database) ForEachModel(ctx context.Context, f func(m *dbmodel.Model) er
 
 	db := d.DB.WithContext(ctx)
 	db = preloadModel("", db)
-	rows, err := db.Model(&dbmodel.Model{}).Rows()
-	if err != nil {
-		return errors.E(op, err)
+
+	var models []dbmodel.Model
+	if err := db.Find(&models).Error; err != nil {
+		return errors.E(op, dbError(err))
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var m dbmodel.Model
-		if err := db.ScanRows(rows, &m); err != nil {
-			return errors.E(op, err)
-		}
-		// ScanRows does not use the preloads added on L141, therefore
-		// we need to fetch each model to load the associated
-		// fields otherwise the only populated fields will be association
-		// IDs.
-		if err := d.GetModel(ctx, &m); err != nil {
-			return errors.E(op, err)
-		}
+	for _, m := range models {
 		if err := f(&m); err != nil {
 			return err
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return errors.E(op, dbError(err))
 	}
 	return nil
 }
