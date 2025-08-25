@@ -7,10 +7,13 @@ on:
 jobs:
   startjimm:
     name: Test JIMM with Juju controller
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted-linux-amd64-jammy-large]
     steps:
       - name: Checkout JIMM repo
         uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -25,7 +28,7 @@ jobs:
         id: jaas
         with:
           jimm-version: dev
-          juju-channel: "3.6/edge" # Temporary change while 3.6.3 is on 3/stable and broken with JIMM.
+          juju-channel: "3.6/stable"
           ghcr-pat: ${{ secrets.GITHUB_TOKEN }}
 
       # Build the JAAS plugin to test any changes made 
