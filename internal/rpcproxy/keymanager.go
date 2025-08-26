@@ -124,8 +124,10 @@ func marshalAuthorizedKeyWithComment(key sshkeys.PublicKey) string {
 	e := base64.NewEncoder(base64.StdEncoding, b)
 	_, _ = e.Write(key.Marshal())
 	e.Close()
-	b.WriteByte(' ')
-	b.WriteString(key.Comment)
+	if key.Comment != "" {
+		b.WriteByte(' ')
+		b.WriteString(key.Comment)
+	}
 	return b.String()
 }
 

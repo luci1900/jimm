@@ -29,6 +29,7 @@ type keyManagerFacadeSuite struct {
 	keyManagerFacade        rpcproxy.KeyManagerFacade
 	key1                    sshkeys.PublicKey
 	key2                    sshkeys.PublicKey
+	key3                    sshkeys.PublicKey
 	addKeyF                 func(ctx context.Context, user *openfga.User, publicKey sshkeys.PublicKey) error
 	removeKeyByCommentF     func(ctx context.Context, user *openfga.User, comment string) error
 	removeKeyByFingerprintF func(ctx context.Context, user *openfga.User, fingerprint string) error
@@ -39,11 +40,16 @@ func (k *keyManagerFacadeSuite) Init(c *qt.C) {
 	c.Assert(err, qt.IsNil)
 	pk2, err := rsa.GenerateKey(rand.Reader, 2048)
 	c.Assert(err, qt.IsNil)
+	pk3, err := rsa.GenerateKey(rand.Reader, 2048)
+	c.Assert(err, qt.IsNil)
 
 	pubKey1, err := gossh.NewPublicKey(&pk1.PublicKey)
 	c.Assert(err, qt.IsNil)
 
 	pubKey2, err := gossh.NewPublicKey(&pk2.PublicKey)
+	c.Assert(err, qt.IsNil)
+
+	pubKey3, err := gossh.NewPublicKey(&pk3.PublicKey)
 	c.Assert(err, qt.IsNil)
 
 	k.key1 = sshkeys.PublicKey{
@@ -55,9 +61,14 @@ func (k *keyManagerFacadeSuite) Init(c *qt.C) {
 		PublicKey: pubKey2,
 		Comment:   "comment-2",
 	}
+
+	k.key3 = sshkeys.PublicKey{
+		PublicKey: pubKey3,
+		Comment:   "",
+	}
 	keyManager := mocks.SSHKeyManager{
 		ListUserPublicKeys_: func(ctx context.Context, user *openfga.User, model db.SSHKeyModelFilter) ([]sshkeys.PublicKey, error) {
-			return []sshkeys.PublicKey{k.key1, k.key2}, nil
+			return []sshkeys.PublicKey{k.key1, k.key2, k.key3}, nil
 		},
 		AddUserPublicKey_: func(ctx context.Context, user *openfga.User, model db.SSHKeyModelFilter, publicKey sshkeys.PublicKey) error {
 			return k.addKeyF(ctx, user, publicKey)
@@ -81,7 +92,7 @@ func (k *keyManagerFacadeSuite) TestListKeysShort(c *qt.C) {
 	res, err := k.keyManagerFacade.ListKeys(ctx, params.ListSSHKeys{Mode: ssh.Fingerprints})
 	c.Assert(err, qt.IsNil)
 
-	c.Assert(res.Results[0].Result, qt.HasLen, 2)
+	c.Assert(res.Results[0].Result, qt.HasLen, 3)
 	c.Assert(res.Results[0].Result[0], qt.Matches, `.+ \(comment-1\)`)
 	c.Assert(isFingerprintRegex.MatchString(res.Results[0].Result[0]), qt.IsTrue)
 	c.Assert(res.Results[0].Result[1], qt.Matches, `.+ \(comment-2\)`)
@@ -95,9 +106,11 @@ func (k *keyManagerFacadeSuite) TestListKeysFull(c *qt.C) {
 	res, err := k.keyManagerFacade.ListKeys(ctx, params.ListSSHKeys{Mode: ssh.FullKeys})
 	c.Assert(err, qt.IsNil)
 
-	c.Assert(res.Results[0].Result, qt.HasLen, 2)
+	c.Assert(res.Results[0].Result, qt.HasLen, 3)
 	c.Assert(res.Results[0].Result[0], qt.Matches, `ssh-rsa .+ comment-1`)
 	c.Assert(res.Results[0].Result[1], qt.Matches, `ssh-rsa .+ comment-2`)
+	c.Assert(res.Results[0].Result[2], qt.Matches, `ssh-rsa .+`)
+
 }
 
 func (k *keyManagerFacadeSuite) TestAddKeys(c *qt.C) {
