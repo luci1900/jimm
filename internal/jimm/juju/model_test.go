@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/core/life"
+	jujurpc "github.com/juju/juju/rpc"
 	"github.com/juju/juju/rpc/params"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/juju/state"
@@ -1454,6 +1455,10 @@ controllers:
   uuid: 00000001-0000-0000-0000-000000000001
   cloud: test-cloud
   region: test-cloud-region
+- name: controller-2
+  uuid: 00000001-0000-0000-0000-000000000002
+  cloud: test-cloud
+  region: test-cloud-region
 models:
 - name: model-1
   uuid: 00000002-0000-0000-0000-000000000001
@@ -1722,6 +1727,67 @@ func TestModelInfoNotFound(t *testing.T) {
 
 }
 
+func TestModelInfoRedirect(t *testing.T) {
+	c := qt.New(t)
+
+	j := newTestJujuManager(c, &parameters{
+		Dialer: &jimmtest.Dialer{
+			API: &jimmtest.API{
+				ModelInfo_: func(_ context.Context, mi *jujuparams.ModelInfo) error {
+					return errors.E(errors.CodeNotFound, "model not found")
+				},
+			},
+		},
+	})
+
+	env := jimmtest.ParseEnvironment(c, modelInfoTestEnv)
+	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
+	dbUser, err := dbmodel.NewIdentity("alice@canonical.com")
+	c.Assert(err, qt.IsNil)
+
+	user := openfga.NewUser(dbUser, j.OpenFGAClient)
+	mt := names.NewModelTag("00000002-0000-0000-0000-000000000001")
+
+	ok, err := user.IsModelReader(c.Context(), mt)
+	c.Assert(err, qt.IsNil)
+	c.Assert(ok, qt.IsTrue)
+
+	model := env.Models[0].DBObject(c, j.Database)
+	model.MigrationMode = dbmodel.MigrationModeMigrateInternal
+	err = j.Database.UpdateModel(t.Context(), &model)
+	c.Assert(err, qt.IsNil)
+
+	sourceController := env.Controllers[0].DBObject(c, j.Database)
+	targetController := env.Controllers[1].DBObject(c, j.Database)
+	c.Assert(model.ControllerID, qt.Equals, sourceController.ID)
+	numCalls := 0
+	j.Dialer = &jimmtest.Dialer{
+		API: &jimmtest.API{
+			ModelInfo_: func(ctx context.Context, mi *jujuparams.ModelInfo) error {
+				if numCalls == 0 {
+					numCalls++
+					return &jujurpc.RequestError{
+						Message: "redirect",
+						Code:    jujuparams.CodeRedirect,
+						Info: jujuparams.RedirectErrorInfo{
+							ControllerAlias: env.Controllers[1].Name,
+						}.AsMap(),
+					}
+				} else {
+					return nil
+				}
+			},
+		},
+	}
+
+	modelInfo, err := j.ModelInfo(t.Context(), user, names.NewModelTag(model.UUID.String))
+	c.Assert(err, qt.IsNil)
+	c.Assert(modelInfo.ControllerUUID, qt.Equals, targetController.UUID)
+
+	_, err = j.ModelInfo(t.Context(), user, names.NewModelTag(model.UUID.String))
+	c.Assert(err, qt.IsNil)
+	c.Assert(modelInfo.ControllerUUID, qt.Equals, targetController.UUID)
+}
 func TestModelStatusNotFound(t *testing.T) {
 	c := qt.New(t)
 

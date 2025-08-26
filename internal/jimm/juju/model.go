@@ -261,23 +261,83 @@ func (j *JujuManager) ModelInfo(ctx context.Context, user *openfga.User, mt name
 	}
 	defer api.Close()
 
-	mi := &jujuparams.ModelInfo{
-		UUID: mt.Id(),
-	}
-	if err := api.ModelInfo(ctx, mi); err != nil {
-		// If the model is not found or code not authorized on the backing controller then
-		// we delete the model from JIMM.
-		// Juju returns CodeAuthorized when the model is not found for this facade.
-		if errors.ErrorCode(err) == errors.CodeNotFound || errors.ErrorCode(err) == errors.CodeUnauthorized {
-			errDelete := j.deleteModel(ctx, mt)
-			if errDelete != nil {
-				return nil, errors.E(op, errDelete)
-			}
-		}
+	modelInfo, err := j.modelInfo(ctx, &m, api)
+	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	return j.mergeModelInfo(ctx, user, mi, m)
+	return j.mergeModelInfo(ctx, user, modelInfo, m)
+}
+
+// modelInfo retrieves the model information from the controller and reacts
+// to the error to update JIMM's state.
+func (j *JujuManager) modelInfo(ctx context.Context, model *dbmodel.Model, api API) (*jujuparams.ModelInfo, error) {
+	modelInfo := &jujuparams.ModelInfo{UUID: model.UUID.String}
+	errFromAPI := api.ModelInfo(ctx, modelInfo)
+
+	if errFromAPI == nil {
+		return j.reactToModelInfoSuccess(ctx, model, modelInfo)
+	} else {
+		return j.reactToModelInfoError(ctx, errFromAPI, model, modelInfo)
+	}
+}
+
+func (j *JujuManager) reactToModelInfoError(ctx context.Context, errFromAPI error, model *dbmodel.Model, modelInfo *jujuparams.ModelInfo) (*jujuparams.ModelInfo, error) {
+	switch model.MigrationMode {
+	case dbmodel.MigrationModeNone:
+		err := j.maybeCleanupModel(ctx, errFromAPI, model)
+		if err != nil {
+			zapctx.Error(ctx, "error cleaning model", zap.Error(err))
+			return nil, errors.E("internal server error")
+		}
+		// propagate the error to the caller.
+		return nil, errFromAPI
+	case dbmodel.MigrationModeMigrateInternal:
+		err := j.checkModelMigratedInternal(ctx, errFromAPI, model)
+		if err != nil {
+			zapctx.Error(ctx, "error checking model migration", zap.Error(err))
+			return nil, errors.E("internal server error")
+		}
+		// If the model has been migrated internally, we call api.ModelInfo again
+		// to get the updated model information from the new controller.
+		if err := j.Database.GetModel(ctx, model); err != nil {
+			return nil, err
+		}
+		api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer api.Close()
+		errFromAPI := api.ModelInfo(ctx, modelInfo)
+		return modelInfo, errFromAPI
+	// If the migration mode is exporting or importing, we return the error as is.
+	case dbmodel.MigrationModeExporting, dbmodel.MigrationModeImporting:
+		return nil, errFromAPI
+	default:
+		return nil, errors.E("model in unsupported migration mode")
+	}
+
+}
+
+func (j *JujuManager) reactToModelInfoSuccess(ctx context.Context, model *dbmodel.Model, modelInfo *jujuparams.ModelInfo) (*jujuparams.ModelInfo, error) {
+	switch model.MigrationMode {
+	case dbmodel.MigrationModeNone, dbmodel.MigrationModeExporting, dbmodel.MigrationModeImporting:
+		return modelInfo, nil
+	case dbmodel.MigrationModeMigrateInternal:
+		// If the migration end time is set, it means the model has
+		// failed to migrate otherwise we'd expect a redirect error.
+		if modelInfo.Migration.End != nil {
+			model.MigrationFailed()
+			if err := j.Database.UpdateModel(ctx, model); err != nil {
+				return nil, errors.E(fmt.Errorf("failed to update model after failed migration: %w", err))
+			}
+			return modelInfo, nil
+		}
+		return modelInfo, nil
+	default:
+		return nil, errors.E("model in unsupported migration mode")
+	}
+
 }
 
 // modelSummariesMap is a safe map to add records concurrently because the access is guarded by a Mutex.

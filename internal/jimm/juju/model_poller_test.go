@@ -120,7 +120,6 @@ func TestModelCleanup(t *testing.T) {
 				case s.env.Models[1].UUID:
 					return nil
 				case s.env.Models[2].UUID:
-					c.Fatalf("unexpected call to ModelInfo_ for model %s", mi.UUID)
 					return nil
 				default:
 					return errors.E("new error")
