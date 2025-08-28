@@ -1,3 +1,5 @@
+// Copyright 2025 Canonical.
+
 package db_test
 
 import (
@@ -5,7 +7,6 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
-	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/juju/caas/kubernetes/provider/proxy"
 )
@@ -28,26 +29,24 @@ func (s *dbSuite) TestAddControllerProxy(c *qt.C) {
 	err = s.Database.AddController(context.Background(), controller)
 	c.Assert(err, qt.Equals, nil)
 
-	controllerProxy := dbmodel.ControllerProxy{
-		ControllerId: controller.ID,
-		Type:         proxy.ProxierTypeKey,
-		Config: map[string]interface{}{
-			"api-host": "https://local",
-		},
+	proxyType := proxy.ProxierTypeKey
+	config := map[string]interface{}{
+		"api-host": "https://local",
 	}
 
-	err = s.Database.AddControllerProxy(c.Context(), controllerProxy)
+	err = s.Database.PutControllerProxy(c.Context(), controller.Name, proxyType, config)
 	c.Assert(err, qt.IsNil)
 
-	storedProxy, err := s.Database.GetControllerProxy(c.Context(), controllerProxy.ControllerId)
+	storedType, storedConfig, err := s.Database.GetControllerProxy(c.Context(), controller.Name)
 	c.Assert(err, qt.IsNil)
-	c.Assert(storedProxy, jimmtest.DBObjectEquals, &controllerProxy)
+	c.Assert(storedType, qt.Equals, proxyType)
+	c.Assert(storedConfig, qt.DeepEquals, config)
 }
 
 func (s *dbSuite) TestGetControllerProxy_NotFound(c *qt.C) {
 	err := s.Database.Migrate(context.Background())
 	c.Assert(err, qt.IsNil)
 
-	_, err = s.Database.GetControllerProxy(c.Context(), 999)
+	_, _, err = s.Database.GetControllerProxy(c.Context(), "non-existent-controller")
 	c.Assert(errors.ErrorCode(err), qt.Equals, errors.CodeNotFound)
 }

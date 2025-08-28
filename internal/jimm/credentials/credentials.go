@@ -19,6 +19,7 @@ import (
 //   - JWK expiry
 //   - JWK private key
 //   - OAuth session signing secret
+//   - Controller proxy config
 type CredentialStore interface {
 	// Get retrieves the stored attributes of a cloud credential.
 	Get(context.Context, names.CloudCredentialTag) (map[string]string, error)
@@ -54,4 +55,13 @@ type CredentialStore interface {
 
 	// PutJWKSExpiry sets the expiry time for the current JWKS within the store.
 	PutJWKSExpiry(ctx context.Context, expiry time.Time) error
+
+	// GetControllerProxy retrieves the proxy configuration for the specified controller name.
+	GetControllerProxy(ctx context.Context, controllerName string) (_ string, _ map[string]interface{}, err error)
+
+	// PutControllerProxy stores the proxy configuration for the specified controller name.
+	PutControllerProxy(ctx context.Context, controllerName string, proxyType string, config map[string]interface{}) (err error)
+
+	// DeleteControllerProxy removes the proxy configuration for the specified controller name.
+	DeleteControllerProxy(ctx context.Context, controllerName string) (err error)
 }

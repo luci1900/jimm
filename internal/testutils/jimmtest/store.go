@@ -29,6 +29,7 @@ type InMemoryCredentialStore struct {
 	oauthSessionStoreSecret   []byte
 	controllerCredentials     map[string]controllerCredentials
 	cloudCredentialAttributes map[string]map[string]string
+	controllerProxyConfigs    map[string]controllerProxyConfig
 }
 
 // NewInMemoryCredentialStore returns a new instance of `InMemoryCredentialStore`
@@ -187,5 +188,77 @@ func (s *InMemoryCredentialStore) PutJWKSExpiry(ctx context.Context, expiry time
 
 	s.expiry = expiry
 
+	return nil
+}
+
+// controllerProxyConfig holds proxy configuration for a controller.
+type controllerProxyConfig struct {
+	proxyType string
+	config    map[string]interface{}
+}
+
+// Add a field to store proxy configurations.
+func (s *InMemoryCredentialStore) ensureControllerProxyConfig() {
+	if s.controllerProxyConfigs == nil {
+		s.controllerProxyConfigs = make(map[string]controllerProxyConfig)
+	}
+}
+
+// GetControllerProxy retrieves the proxy configuration for the specified controller name.
+func (s *InMemoryCredentialStore) GetControllerProxy(ctx context.Context, controllerName string) (string, map[string]interface{}, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.controllerProxyConfigs == nil {
+		return "", nil, errors.E(errors.CodeNotFound)
+	}
+
+	cfg, ok := s.controllerProxyConfigs[controllerName]
+	if !ok {
+		return "", nil, errors.E(errors.CodeNotFound)
+	}
+
+	// Deep copy config map
+	configCopy := make(map[string]interface{}, len(cfg.config))
+	for k, v := range cfg.config {
+		configCopy[k] = v
+	}
+
+	return cfg.proxyType, configCopy, nil
+}
+
+// PutControllerProxy stores the proxy configuration for the specified controller name.
+func (s *InMemoryCredentialStore) PutControllerProxy(ctx context.Context, controllerName string, proxyType string, config map[string]interface{}) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.ensureControllerProxyConfig()
+
+	configCopy := make(map[string]interface{}, len(config))
+	for k, v := range config {
+		configCopy[k] = v
+	}
+
+	s.controllerProxyConfigs[controllerName] = controllerProxyConfig{
+		proxyType: proxyType,
+		config:    configCopy,
+	}
+	return nil
+}
+
+// DeleteControllerProxy removes the proxy configuration for the specified controller name.
+func (s *InMemoryCredentialStore) DeleteControllerProxy(ctx context.Context, controllerName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.controllerProxyConfigs == nil {
+		return errors.E(errors.CodeNotFound)
+	}
+
+	if _, ok := s.controllerProxyConfigs[controllerName]; !ok {
+		return errors.E(errors.CodeNotFound)
+	}
+
+	delete(s.controllerProxyConfigs, controllerName)
 	return nil
 }

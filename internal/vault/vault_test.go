@@ -18,6 +18,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 
+	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/internal/vault"
 )
@@ -183,4 +184,73 @@ func TestGetAndPutJWKSPrivateKey(t *testing.T) {
 	keyPem, err := store.GetJWKSPrivateKey(ctx)
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(keyPem), qt.Contains, "-----BEGIN RSA PRIVATE KEY-----")
+}
+
+func TestGetAndPutControllerProxy(t *testing.T) {
+	c := qt.New(t)
+
+	st := newStore(c)
+	ctx := context.Background()
+	controllerName := "controller-1"
+	proxyType := "http"
+	config := map[string]interface{}{
+		"host": "proxy.example.com",
+		"port": "8080",
+	}
+	err := st.PutControllerProxy(ctx, controllerName, proxyType, config)
+	c.Assert(err, qt.IsNil)
+	gotType, gotConfig, err := st.GetControllerProxy(ctx, controllerName)
+	c.Assert(err, qt.IsNil)
+	c.Check(gotType, qt.Equals, proxyType)
+	c.Check(gotConfig, qt.DeepEquals, config)
+}
+
+func TestPutControllerProxyNotValid(t *testing.T) {
+	c := qt.New(t)
+
+	st := newStore(c)
+	ctx := context.Background()
+	controllerName := "controller-1"
+
+	err := st.PutControllerProxy(ctx, controllerName, "", map[string]interface{}{"a": "A"})
+	c.Assert(err, qt.ErrorMatches, "proxy type cannot be empty")
+
+	err = st.PutControllerProxy(ctx, controllerName, "http", nil)
+	c.Assert(err, qt.ErrorMatches, "config cannot be empty")
+}
+
+func TestGetControllerProxyNotFound(t *testing.T) {
+	c := qt.New(t)
+
+	st := newStore(c)
+	ctx := context.Background()
+	controllerName := "controller-not-found"
+
+	_, _, err := st.GetControllerProxy(ctx, controllerName)
+	c.Assert(errors.ErrorCode(err), qt.Equals, errors.CodeNotFound)
+}
+
+func TestDeleteControllerProxy(t *testing.T) {
+	c := qt.New(t)
+
+	st := newStore(c)
+	ctx := context.Background()
+	controllerName := "controller-1"
+	proxyType := "http"
+	config := map[string]interface{}{
+		"host": "proxy.example.com",
+		"port": "8080",
+	}
+	err := st.PutControllerProxy(ctx, controllerName, proxyType, config)
+	c.Assert(err, qt.IsNil)
+	gotType, gotConfig, err := st.GetControllerProxy(ctx, controllerName)
+	c.Assert(err, qt.IsNil)
+	c.Check(gotType, qt.Equals, proxyType)
+	c.Check(gotConfig, qt.DeepEquals, config)
+
+	err = st.DeleteControllerProxy(ctx, controllerName)
+	c.Assert(err, qt.IsNil)
+
+	_, _, err = st.GetControllerProxy(ctx, controllerName)
+	c.Assert(errors.ErrorCode(err), qt.Equals, errors.CodeNotFound)
 }
