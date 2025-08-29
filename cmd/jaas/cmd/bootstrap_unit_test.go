@@ -4,12 +4,14 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/gnuflag"
+	jujucloud "github.com/juju/juju/cloud"
 	"github.com/juju/juju/jujuclient/jujuclienttesting"
+	jujuparams "github.com/juju/juju/rpc/params"
 	"go.uber.org/mock/gomock"
 	gc "gopkg.in/check.v1"
 
@@ -20,6 +22,7 @@ import (
 type bootstrapCmdSuite struct {
 	client *mocks.MockJIMMAPI
 	writer *mocks.MockWriter
+	store  *mocks.MockClientStore
 }
 
 var _ = gc.Suite(&bootstrapCmdSuite{})
@@ -28,6 +31,7 @@ func (s *bootstrapCmdSuite) SetupMocks(c *gc.C) *gomock.Controller {
 	ctrl := gomock.NewController(c)
 	s.client = mocks.NewMockJIMMAPI(ctrl)
 	s.writer = mocks.NewMockWriter(ctrl)
+	s.store = mocks.NewMockClientStore(ctrl)
 
 	return ctrl
 }
@@ -39,33 +43,35 @@ func (s *bootstrapCmdSuite) TestArgParsing(c *gc.C) {
 		errMatch   string
 	}{
 		{
-			args: []string{"test-cloud", "controller-name"},
+			args: []string{"test-cloud", "controller-name", "controller-version"},
 			checkFlags: func(c *gc.C, command *bootstrapCommand) {
 				c.Check(command.cloud, gc.Equals, "test-cloud")
 				c.Check(command.region, gc.Equals, "")
 				c.Check(command.controllerName, gc.Equals, "controller-name")
+				c.Check(command.controllerVersion, gc.Equals, "controller-version")
 			},
 		},
 		{
-			args: []string{"test-cloud/region", "controller-name"},
+			args: []string{"test-cloud/region", "controller-name", "controller-version"},
 			checkFlags: func(c *gc.C, command *bootstrapCommand) {
 				c.Check(command.cloud, gc.Equals, "test-cloud")
 				c.Check(command.region, gc.Equals, "region")
 				c.Check(command.controllerName, gc.Equals, "controller-name")
+				c.Check(command.controllerVersion, gc.Equals, "controller-version")
 			},
 		}, {
-			args: []string{"test-cloud/region", "controller-name", "--agent-version=3.6.8", "--timeout=60", "--detach"},
+			args: []string{"test-cloud/region", "controller-name", "controller-version", "--timeout=60", "--detach"},
 			checkFlags: func(c *gc.C, command *bootstrapCommand) {
 				c.Check(command.cloud, gc.Equals, "test-cloud")
 				c.Check(command.region, gc.Equals, "region")
 				c.Check(command.controllerName, gc.Equals, "controller-name")
-				c.Check(command.agentVersion, gc.Equals, "3.6.8")
+				c.Check(command.controllerVersion, gc.Equals, "controller-version")
 				c.Check(command.timeout, gc.Equals, 60)
 				c.Check(command.detach, gc.Equals, true)
 			},
 		}, {
 			args:     []string{"test-cloud/region"},
-			errMatch: "expected at least 2 arguments, got 1",
+			errMatch: "expected at least 3 arguments, got 1",
 		},
 	}
 	for i, test := range tests {
@@ -86,27 +92,43 @@ func (s *bootstrapCmdSuite) TestBootstrapRunDetached(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
+	cloudName := "aws"
+
+	s.store.EXPECT().CredentialForCloud(cloudName).Return(&jujucloud.CloudCredential{
+		DefaultCredential: "default-cred-value-for-test",
+	}, nil)
 	s.client.EXPECT().Bootstrap(gomock.Any()).DoAndReturn(func(bsp *params.BootstrapStartParams) (*params.BootstrapStartResponse, error) {
-		c.Assert(bsp.ControllerName, gc.Equals, "controller-name")
-		c.Assert(bsp.CloudName, gc.Equals, "test-cloud")
-		c.Assert(bsp.RegionName, gc.Equals, "region")
-		c.Assert(bsp.Flags.AgentVersion, gc.Equals, "3.6.8")
-		c.Assert(bsp.Flags.Timeout, gc.Equals, 60)
+		expected := &params.BootstrapStartParams{
+			ControllerName: "controller-name",
+			CloudName:      cloudName,
+			RegionName:     "region",
+			Cloud:          jujuparams.Cloud{},
+			Credential: jujucloud.CloudCredential{
+				DefaultCredential: "default-cred-value-for-test",
+			},
+			Flags: params.BootstrapFlags{
+				Timeout: 60,
+			},
+			ControllerVersion: "controller-version",
+		}
+		c.Assert(bsp.ControllerName, gc.Equals, expected.ControllerName)
+		c.Assert(bsp.CloudName, gc.Equals, expected.CloudName)
+		c.Assert(bsp.RegionName, gc.Equals, expected.RegionName)
+		// AWS is dynamically populated, i.e., 32 regions.
+		// So we expect just ec2 and it should be ok.
+		c.Assert(bsp.Cloud.Type, gc.DeepEquals, "ec2")
+		c.Assert(bsp.Credential, gc.DeepEquals, expected.Credential)
+		c.Assert(bsp.Flags.Timeout, gc.Equals, expected.Flags.Timeout)
+		c.Assert(bsp.ControllerVersion, gc.Equals, expected.ControllerVersion)
+
 		return &params.BootstrapStartResponse{
 			JobID: "test-job-id",
 		}, nil
 	})
 	s.client.EXPECT().Close().Return(nil)
 
-	s.writer.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
-		resp := &params.BootstrapStartResponse{}
-		err := json.Unmarshal(b, resp)
-		c.Check(err, gc.IsNil)
-		c.Check(resp.JobID, gc.Equals, "test-job-id")
-		return len(b), nil
-	})
-
 	command := &bootstrapCommand{
+		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
@@ -115,9 +137,9 @@ func (s *bootstrapCmdSuite) TestBootstrapRunDetached(c *gc.C) {
 	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
-	command.cloud = "test-cloud"
+	command.cloud = cloudName
 	command.region = "region"
-	command.agentVersion = "3.6.8"
+	command.controllerVersion = "controller-version"
 	command.timeout = 60
 	command.detach = true
 
@@ -134,17 +156,13 @@ func (s *bootstrapCmdSuite) TestBootstrapWatchLogs(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
+	s.store.EXPECT().CredentialForCloud("aws").Return(&jujucloud.CloudCredential{
+		DefaultCredential: "default-cred-value-for-test",
+	}, nil)
 	s.client.EXPECT().Bootstrap(gomock.Any()).Return(&params.BootstrapStartResponse{
 		JobID: "test-job-id",
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
-	s.writer.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
-		resp := &params.BootstrapStartResponse{}
-		err := json.Unmarshal(b, resp)
-		c.Check(err, gc.IsNil)
-		c.Check(resp.JobID, gc.Equals, "test-job-id")
-		return len(b), nil
-	})
 
 	s.client.EXPECT().BootstrapStatus(gomock.Any()).Return(params.BootstrapStatusResponse{
 		Status:    params.StatusSuccessful,
@@ -163,6 +181,7 @@ func (s *bootstrapCmdSuite) TestBootstrapWatchLogs(c *gc.C) {
 	})
 
 	command := &bootstrapCommand{
+		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
@@ -170,6 +189,7 @@ func (s *bootstrapCmdSuite) TestBootstrapWatchLogs(c *gc.C) {
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	f.SetOutput(s.writer)
 	command.SetFlags(f)
+	command.cloud = "aws"
 
 	ctx := &cmd.Context{
 		Context: context.Background(),
@@ -178,4 +198,33 @@ func (s *bootstrapCmdSuite) TestBootstrapWatchLogs(c *gc.C) {
 
 	err := command.Run(ctx)
 	c.Assert(err, gc.IsNil)
+}
+
+func (s *bootstrapCmdSuite) TestBootstrapFailsToGetCredential(c *gc.C) {
+	ctrl := s.SetupMocks(c)
+	defer ctrl.Finish()
+
+	s.store.EXPECT().CredentialForCloud("aws").Return(nil, errors.New("credential not found"))
+
+	command := &bootstrapCommand{
+		store: s.store,
+		bootstrapAPIFunc: func() (JIMMAPI, error) {
+			return s.client, nil
+		},
+	}
+	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
+	f.SetOutput(s.writer)
+	command.SetFlags(f)
+	command.controllerName = "controller-name"
+	command.cloud = "aws" // Need a valid cloud to reach credential error.
+	command.region = "region"
+	command.controllerVersion = "controller-version"
+
+	ctx := &cmd.Context{
+		Context: context.Background(),
+		Stdout:  s.writer,
+	}
+
+	err := command.Run(ctx)
+	c.Assert(err, gc.ErrorMatches, `failed to get credential for cloud "aws": credential not found`)
 }

@@ -180,7 +180,6 @@ func (b *bootstrapManager) StartBootstrap(ctx context.Context, user *openfga.Use
 				// User defined command arguments
 				CloudNameAndRegion: params.CloudNameAndRegion,
 				ControllerName:     params.ControllerName,
-				AgentVersion:       params.AgentVersion,
 				BootstrapTimeout:   params.BootstrapTimeout,
 				CloudCred:          params.CloudCred,
 				PersonalCloud:      params.PersonalCloud,
@@ -307,6 +306,7 @@ func (b *bootstrapManager) BootstrapJob(
 			return errors.E(fmt.Errorf("failed to check if controller exists: %w", err))
 		}
 
+		// TODO(ale8k): When downloading, it takes a while and the CLI has no output. Download progress would be a VERY nice to have here.
 		binary, err := b.binaryStore.Get(
 			ctx,
 			jujuclistore.JujuBinarySpec{
@@ -322,7 +322,6 @@ func (b *bootstrapManager) BootstrapJob(
 		if err != nil {
 			return errors.E(fmt.Errorf("failed to get Juju binary: %w", err))
 		}
-
 		zapctx.Debug(logCtx, "Juju binary downloaded, using Juju binary", zap.String("binary-path", binary.FullPath))
 		defer binaryDone(binary)
 
@@ -393,6 +392,8 @@ func (b *bootstrapManager) runBootstrap(
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to get controller details: %w", err))
 	}
+	// TODO(ale8k): At the moment, we can't reach added k8s controllers because the controller is not reachable.
+	// Card: https://warthogs.atlassian.net/browse/JUJU-8436
 
 	hps, err := network.ParseProviderHostPorts(ctrlDetails.APIEndpoints...)
 	if err != nil {
@@ -421,7 +422,6 @@ func (b *bootstrapManager) runBootstrap(
 		AdminIdentityName: account.User,
 		AdminPassword:     account.Password,
 	}
-
 	if err := b.jujuManager.AddController(
 		ctx,
 		user,

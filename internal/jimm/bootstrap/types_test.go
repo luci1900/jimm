@@ -15,7 +15,6 @@ func TestValidateBootstrapParams_AllValid(t *testing.T) {
 
 		CloudNameAndRegion: "cloud/region",
 		ControllerName:     "my-controller",
-		AgentVersion:       "1.2.3",
 		BootstrapTimeout:   60,
 		// CloudCred & PersonalCloud are not validated.
 	}
@@ -28,7 +27,7 @@ func TestValidateBootstrapParams_EmptyFields(t *testing.T) {
 		name   string
 		params BootstrapParams
 		want   []string
-	}{ // do agent and bs timeout
+	}{
 		{
 			name:   "all empty",
 			params: BootstrapParams{},
@@ -66,18 +65,6 @@ func TestValidateBootstrapParams_EmptyFields(t *testing.T) {
 			},
 			want: []string{
 				"controller name cannot be empty",
-			},
-		},
-		{
-			name: "agent version invalid",
-			params: BootstrapParams{
-				CLIVersion:         "1.0.0",
-				CloudNameAndRegion: "cloud/region",
-				ControllerName:     "my-controller",
-				AgentVersion:       "invalid-version",
-			},
-			want: []string{
-				"invalid-version",
 			},
 		},
 		{
