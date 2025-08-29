@@ -29,11 +29,6 @@ const (
 )
 
 const (
-	typeKey   = "type"
-	configKey = "config"
-)
-
-const (
 	jwksKey        = "jwks"
 	jwksExpiryKey  = "jwks-expiry"
 	jwksPrivateKey = "jwks-private"
@@ -181,96 +176,6 @@ func (s *VaultStore) GetControllerCredentials(ctx context.Context, controllerNam
 		password = passwordI.(string)
 	}
 	return username, password, nil
-}
-
-// PutControllerProxy stores the proxy configuration for the specified controller name.
-func (s *VaultStore) PutControllerProxy(ctx context.Context, controllerName string, proxyType string, config map[string]interface{}) (err error) {
-	if len(config) == 0 {
-		return errors.E("config cannot be empty")
-	}
-	if proxyType == "" {
-		return errors.E("proxy type cannot be empty")
-	}
-
-	const op = errors.Op("vault.PutControllerProxy")
-
-	durationObserver := servermon.DurationObserver(servermon.VaultCallDurationHistogram, string(op))
-	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.VaultCallErrorCount, &err, string(op))
-
-	client, err := s.client(ctx)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	data := map[string]interface{}{
-		typeKey:   proxyType,
-		configKey: config,
-	}
-	_, err = client.KVv2(s.KVPath).Put(ctx, s.controllerProxyPath(controllerName), data)
-	if err != nil {
-		return errors.E(op, err)
-	}
-	return nil
-}
-
-// GetControllerProxy retrieves the proxy configuration for the specified controller name.
-func (s *VaultStore) GetControllerProxy(ctx context.Context, controllerName string) (_ string, _ map[string]interface{}, err error) {
-	const op = errors.Op("vault.GetControllerProxy")
-
-	durationObserver := servermon.DurationObserver(servermon.VaultCallDurationHistogram, string(op))
-	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.VaultCallErrorCount, &err, string(op))
-
-	client, err := s.client(ctx)
-	if err != nil {
-		return "", nil, errors.E(op, err)
-	}
-
-	secret, err := client.KVv2(s.KVPath).Get(ctx, s.controllerProxyPath(controllerName))
-	if err != nil {
-		if goerr.Unwrap(err) == api.ErrSecretNotFound {
-			return "", nil, errors.E(op, errors.CodeNotFound, err)
-		}
-		return "", nil, errors.E(op, err)
-	}
-	if secret == nil || secret.Data == nil {
-		return "", nil, errors.E(op, errors.CodeNotFound, "no proxy config exists yet")
-	}
-	var proxyType string
-	var config map[string]interface{}
-	typeI, ok := secret.Data[typeKey]
-	if ok {
-		proxyType, _ = typeI.(string)
-	}
-	configI, ok := secret.Data[configKey]
-	if ok {
-		config, _ = configI.(map[string]interface{})
-	}
-	return proxyType, config, nil
-}
-
-// DeleteControllerProxy removes the proxy configuration for the specified controller name.
-func (s *VaultStore) DeleteControllerProxy(ctx context.Context, controllerName string) (err error) {
-	const op = errors.Op("vault.DeleteControllerProxy")
-
-	durationObserver := servermon.DurationObserver(servermon.VaultCallDurationHistogram, string(op))
-	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.VaultCallErrorCount, &err, string(op))
-
-	client, err := s.client(ctx)
-	if err != nil {
-		return errors.E(op, err)
-	}
-	err = client.KVv2(s.KVPath).Delete(ctx, s.controllerProxyPath(controllerName))
-	if rerr, ok := err.(*api.ResponseError); ok && rerr.StatusCode == http.StatusNotFound {
-		// Ignore the error if attempting to delete something that isn't there.
-		err = nil
-	}
-	if err != nil {
-		return errors.E(op, err)
-	}
-	return nil
 }
 
 // PutControllerCredentials stores the controller credentials in a vault
@@ -611,8 +516,4 @@ func (s *VaultStore) path(tag names.CloudCredentialTag) string {
 
 func (s *VaultStore) controllerCredentialsPath(controllerName string) string {
 	return path.Join("creds", controllerName)
-}
-
-func (s *VaultStore) controllerProxyPath(controllerName string) string {
-	return path.Join("proxy", controllerName)
 }
