@@ -1,0 +1,49 @@
+version: 2
+
+builds:
+  - id: jimmsrv
+    main: ./cmd/jimmsrv
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      # Avoid binary paths being absolute builder paths
+      - -trimpath
+    ldflags:
+      - '-X main.version={{.Version}} -X main.commit={{.Commit}}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: 'jimmsrv_v{{ .Version }}'
+
+  - id: jaas
+    main: ./cmd/jaas
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - '-X main.version={{.Version}} -X main.commit={{.Commit}}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: 'jaas_v{{ .Version }}'
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
+changelog:
+  sort: asc
+  use: github
+
+release:
+  prerelease: auto

@@ -26,3 +26,4 @@ db_schemas
 
 *.test
 __debug_bin*
+dist/
