@@ -1,0 +1,70 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+git:
+  tag_sort: -version:creatordata
+
+builds:
+  - id: jimmsrv
+    main: ./cmd/jimmsrv
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+    # TODO: disabled => juju/utils symlink_windows.go:54:8: undefined: createSymbolicLink
+    - goos: windows
+      goarch: arm64
+    binary: 'jimmsrv_v{{ .Version }}'
+
+  - id: jaas
+    main: ./cmd/jaas
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+    # TODO: disabled => juju/utils symlink_windows.go:54:8: undefined: createSymbolicLink
+    - goos: windows
+      goarch: arm64
+    binary: 'jaas_v{{ .Version }}'
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
+changelog:
+  sort: asc
+  use: github
+
+release:
+  prerelease: auto
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).

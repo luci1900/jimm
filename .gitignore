@@ -26,3 +26,5 @@ db_schemas
 
 *.test
 __debug_bin*
+# Added by goreleaser init:
+dist/
