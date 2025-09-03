@@ -1,14 +1,10 @@
-# Binary release workflow.
-name: Release
+name: Release binaries
 
-# This GitHub action creates a release when a tag that matches the pattern
-# "v*" (e.g. v0.1.0) is created.
 on:
   push:
     tags:
       - 'v*'
 
-# Releases need permissions to read and write the repository contents.
 # GitHub considers creating releases and uploading assets as writing contents.
 permissions:
   contents: write
@@ -23,11 +19,7 @@ jobs:
         with:
           # Allow goreleaser to access older tag information.
           fetch-depth: 0
-
-      # - name: Checkout repository
-      #   uses: actions/checkout@v4
-      # - run: git fetch --tags --force origin # https://github.com/actions/checkout/issues/882 & https://github.com/actions/checkout/issues/290 
-
+  
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
