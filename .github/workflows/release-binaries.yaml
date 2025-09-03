@@ -6,7 +6,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'x*'
 
 # Releases need permissions to read and write the repository contents.
 # GitHub considers creating releases and uploading assets as writing contents.
@@ -18,15 +18,15 @@ jobs:
     runs-on: ubuntu-22.04
     environment: Release Environment
     steps:
-      # - name: Checkout
-      #   uses: actions/checkout@v4
-      #   with:
-      #     # Allow goreleaser to access older tag information.
-      #     fetch-depth: 0
-
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-      - run: git fetch --tags --force origin # https://github.com/actions/checkout/issues/882 & https://github.com/actions/checkout/issues/290 
+        with:
+          # Allow goreleaser to access older tag information.
+          fetch-depth: 0
+
+      # - name: Checkout repository
+      #   uses: actions/checkout@v4
+      # - run: git fetch --tags --force origin # https://github.com/actions/checkout/issues/882 & https://github.com/actions/checkout/issues/290 
 
       - name: Set up Go
         uses: actions/setup-go@v5
