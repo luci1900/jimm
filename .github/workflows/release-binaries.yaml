@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: [self-hosted, jammy]
+    runs-on: ubuntu-22.04
     environment: Release Environment
     steps:
       - uses: actions/checkout@v4
