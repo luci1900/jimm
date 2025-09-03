@@ -5,8 +5,10 @@ builds:
     main: ./cmd/jimmsrv
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
+      # Avoid paths being absolute on the builder
       - -trimpath
     ldflags:
+      # -s disables symbol table, -w disables DWARF generation
       - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
     env:
       - CGO_ENABLED=0
