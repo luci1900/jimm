@@ -4,9 +4,6 @@ before:
   hooks:
     - go mod tidy
 
-git:
-  tag_sort: -version:creatordata
-
 builds:
   - id: jimmsrv
     main: ./cmd/jimmsrv
