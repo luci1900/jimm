@@ -15,14 +15,9 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
-    ignore:
-    # TODO: disabled => juju/utils symlink_windows.go:54:8: undefined: createSymbolicLink
-    - goos: windows
-      goarch: arm64
     binary: 'jimmsrv_v{{ .Version }}'
 
   - id: jaas
@@ -37,14 +32,9 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
-    ignore:
-    # TODO: disabled => juju/utils symlink_windows.go:54:8: undefined: createSymbolicLink
-    - goos: windows
-      goarch: arm64
     binary: 'jaas_v{{ .Version }}'
 
 archives:
