@@ -18,11 +18,18 @@ jobs:
     runs-on: ubuntu-22.04
     environment: Release Environment
     steps:
-      - uses: actions/checkout@v4
-        with:
-          # Allow goreleaser to access older tag information.
-          fetch-depth: 0
-      - uses: actions/setup-go@v5
+      # - name: Checkout
+      #   uses: actions/checkout@v4
+      #   with:
+      #     # Allow goreleaser to access older tag information.
+      #     fetch-depth: 0
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - run: git fetch --tags --force origin # https://github.com/actions/checkout/issues/882 & https://github.com/actions/checkout/issues/290 
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -36,7 +43,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           args: release --clean
-        env:
-          # GitHub sets the GITHUB_TOKEN secret automatically.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        # env:
+        #   # GitHub sets the GITHUB_TOKEN secret automatically.
+        #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        #   GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
