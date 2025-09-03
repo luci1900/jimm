@@ -43,7 +43,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           args: release --clean
-        # env:
-        #   # GitHub sets the GITHUB_TOKEN secret automatically.
-        #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          # GitHub sets the GITHUB_TOKEN secret automatically.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         #   GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
