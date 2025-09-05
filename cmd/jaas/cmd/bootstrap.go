@@ -35,10 +35,36 @@ Use the --detach flag to start the bootstrap job and return immediately,
 printing only the job ID, without waiting for the job to complete.
 
 The final argument, version, denotes the Juju controller to be bootstrapped.
+
+Bootstrapping to a k8s cluster requires that the service set up to handle
+requests to the controller be accessible outside the cluster. Typically this
+means a service type of LoadBalancer is needed, and Juju does create such a
+service if it knows it is supported by the cluster. This is performed by
+interrogating the cluster for a well known managed deployment such as microk8s,
+GKE or EKS.
+
+When bootstrapping to a Kubernetes cluster Juju does not recognise, there's no
+guarantee a load balancer is available, so Juju defaults to a controller
+service type of ClusterIP. In the case of bootstrapping via JIMM, this will 
+not work unless JIMM is deployed within the same cluster. There are three bootstrap
+options available to tell Juju how to set up the controller service. Part of
+the solution may require a load balancer for the cluster to be set up manually
+first, or perhaps an external Kubernetes service via a FQDN will be used
+(this is a cluster specific implementation decision which Juju needs to be
+informed about so it can set things up correctly). The three relevant bootstrap
+options are (see list of bootstrap config items below for a full explanation):
+
+- controller-service-type
+- controller-external-name 
+- controller-external-ips
+
+Juju advertises those addresses to other controllers (including JIMM), so they must be resolveable from
+other controllers for cross-model (cross-controller, actually) relations to work.
 `
 	bootstrapExamples = `
 	juju [jaas] bootstrap <cloud[/region]> <controller name> <controller version>
 	juju [jaas] bootstrap mycloud/region mycontroller 3.6.8
+	juju [jaas] bootstrap mycloud/region mycontroller 3.6.8 --controller-service-type=loadbalancer
 `
 )
 
@@ -54,8 +80,15 @@ type bootstrapCommand struct {
 	region            string
 	controllerName    string
 	controllerVersion string
-	timeout           int
-	detach            bool
+
+	// Flags
+
+	timeout                int
+	publicDNSAddress       string
+	controllerServiceType  string
+	controllerExternalIPs  string
+	controllerExternalName string
+	detach                 bool
 }
 
 // NewBootstrapStartCommand returns a command to start a job
@@ -95,6 +128,15 @@ func (c *bootstrapCommand) SetFlags(f *gnuflag.FlagSet) {
 		"json": cmd.FormatJson,
 	})
 	f.IntVar(&c.timeout, "timeout", 0, "The timeout in seconds for the bootstrap operation.")
+	f.StringVar(&c.publicDNSAddress, "public-dns-address", "", "Public DNS address (with port) of the controller")
+	f.StringVar(
+		&c.controllerServiceType,
+		"controller-service-type",
+		"",
+		"Controls the kubernetes service type for Juju controllers, see https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/#ServiceSpec valid values are one of cluster, loadbalancer, external",
+	)
+	f.StringVar(&c.controllerExternalIPs, "controller-external-ips", "", "Specifies a comma separated list of external IPs for a k8s controller of type external")
+	f.StringVar(&c.controllerExternalName, "controller-external-name", "", "Sets the external name for a k8s controller of type external")
 	f.BoolVar(&c.detach, "detach", false, "If set, the command will start the bootstrap job and return immediately with the job ID, without waiting for the job to complete.")
 	// TODO(ale8k): Support passing cloud & cloudcredential files, for now we're looking up clouds and credentials added to the store.
 	// See cmd/juju/cloud/add.go L311 on a nice way to do this and credential will be somewhere in there too.
@@ -134,7 +176,11 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		Credential:        *bootstrapCredential,
 
 		Flags: apiparams.BootstrapFlags{
-			Timeout: c.timeout,
+			Timeout:                c.timeout,
+			PublicDNSAddress:       c.publicDNSAddress,
+			ControllerServiceType:  c.controllerServiceType,
+			ControllerExternalIPs:  c.controllerExternalIPs,
+			ControllerExternalName: c.controllerExternalName,
 		},
 	}
 
