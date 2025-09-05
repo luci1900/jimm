@@ -1,4 +1,4 @@
-// Copyright 2024 Canonical.
+// Copyright 2025 Canonical.
 
 package jujuapi
 
@@ -68,7 +68,7 @@ func (r *controllerRoot) UserInfo(ctx context.Context, req jujuparams.UserInfoRe
 	for i, ent := range req.Entities {
 		ui, err := r.userInfo(ent.Tag)
 		if err != nil {
-			res.Results[i].Error = mapError(err)
+			res.Results[i].Error = r.mapError(ctx, err)
 			continue
 		}
 		res.Results[i].Result = ui

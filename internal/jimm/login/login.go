@@ -15,6 +15,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/logger"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	jimmnames "github.com/canonical/jimm/v3/pkg/names"
 )
@@ -161,10 +162,16 @@ func (j *loginManager) LoginClientCredentials(ctx context.Context, clientID stri
 
 	err = j.oAuthAuthenticator.VerifyClientCredentials(ctx, clientID, clientSecret)
 	if err != nil {
+		logger.LogFailedLogin(ctx, clientIdWithDomain)
 		return nil, errors.E(op, err)
 	}
-
-	return j.UserLogin(ctx, clientIdWithDomain)
+	user, err := j.UserLogin(ctx, clientIdWithDomain)
+	if err != nil {
+		logger.LogFailedLogin(ctx, clientIdWithDomain)
+		return nil, errors.E(op, err)
+	}
+	logger.LogSuccessfulLogin(ctx, clientIdWithDomain)
+	return user, nil
 }
 
 // LoginWithSessionToken verifies a user's session token before the user is logged in.
@@ -172,11 +179,18 @@ func (j *loginManager) LoginWithSessionToken(ctx context.Context, sessionToken s
 	const op = errors.Op("jimm.LoginWithSessionToken")
 	jwtToken, err := j.oAuthAuthenticator.VerifySessionToken(sessionToken)
 	if err != nil {
+		logger.LogFailedLogin(ctx, "unknown session token")
 		return nil, errors.E(op, err)
 	}
 
 	email := jwtToken.Subject()
-	return j.UserLogin(ctx, email)
+	user, err := j.UserLogin(ctx, email)
+	if err != nil {
+		logger.LogFailedLogin(ctx, email)
+		return nil, errors.E(op, err)
+	}
+	logger.LogSuccessfulLogin(ctx, email)
+	return user, nil
 }
 
 // LoginWithSessionCookie uses the identity ID expected to have come from a session cookie, to log the user in.
@@ -190,7 +204,13 @@ func (j *loginManager) LoginWithSessionCookie(ctx context.Context, identityID st
 	if identityID == "" {
 		return nil, errors.E(op, "missing cookie identity")
 	}
-	return j.UserLogin(ctx, identityID)
+	user, err := j.UserLogin(ctx, identityID)
+	if err != nil {
+		logger.LogFailedLogin(ctx, identityID)
+		return nil, errors.E(op, err)
+	}
+	logger.LogSuccessfulLogin(ctx, identityID)
+	return user, nil
 }
 
 // UserLogin fetches the identity specified by a user's email or a service account ID

@@ -515,7 +515,7 @@ func (r *controllerRoot) MigrateModel(ctx context.Context, args apiparams.Migrat
 	for i, arg := range args.Specs {
 		result, err := r.jimm.JujuManager().InitiateInternalMigration(ctx, r.user, arg.TargetModelNameOrUUID, arg.TargetController)
 		if err != nil {
-			result.Error = mapError(errors.E(op, err))
+			result.Error = r.mapError(ctx, errors.E(op, err))
 		}
 		results[i] = result
 	}

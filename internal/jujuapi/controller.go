@@ -206,12 +206,12 @@ func (r *controllerRoot) ModelStatus(ctx context.Context, args jujuparams.Entiti
 	for i, arg := range args.Entities {
 		mt, err := names.ParseModelTag(arg.Tag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err, errors.CodeBadRequest))
+			results[i].Error = r.mapError(ctx, errors.E(op, err, errors.CodeBadRequest))
 			continue
 		}
 		status, err := r.jimm.JujuManager().ModelStatus(ctx, r.user, mt)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 		results[i] = *status
@@ -262,12 +262,12 @@ func (r *controllerRoot) GetControllerAccess(ctx context.Context, args jujuparam
 	for i, arg := range args.Entities {
 		tag, err := names.ParseUserTag(arg.Tag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err, errors.CodeBadRequest))
+			results[i].Error = r.mapError(ctx, errors.E(op, err, errors.CodeBadRequest))
 			continue
 		}
 		access, err := r.jimm.PermissionManager().GetJimmControllerAccess(ctx, r.user, tag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 		results[i].Result = &jujuparams.UserAccess{
@@ -290,7 +290,7 @@ func (r *controllerRoot) InitiateMigration(ctx context.Context, args jujuparams.
 	for i, spec := range args.Specs {
 		result, err := r.jimm.JujuManager().InitiateMigration(ctx, r.user, spec)
 		if err != nil {
-			result.Error = mapError(errors.E(op, err))
+			result.Error = r.mapError(ctx, errors.E(op, err))
 		}
 		results[i] = result
 	}

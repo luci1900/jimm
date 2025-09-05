@@ -26,6 +26,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/sshkeys"
+	"github.com/canonical/jimm/v3/internal/logger"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/servermon"
 	"github.com/canonical/jimm/v3/internal/utils"
@@ -307,10 +308,17 @@ type modelProxy struct {
 	deviceOAuthResponse *oauth2.DeviceAuthResponse
 }
 
-func (p *modelProxy) sendError(socket *writeLockConn, req *message, err error) {
+func (p *modelProxy) sendError(ctx context.Context, socket *writeLockConn, req *message, err error) {
 	if req == nil {
 		// If there was no message to error on, just return.
 		return
+	}
+	if errors.ErrorCode(err) == errors.CodeUnauthorized {
+		logger.LogUnauthorizedAccess(
+			ctx,
+			p.tokenGen.GetUser().String(),
+			fmt.Sprintf("unauthorized access in model proxy for model %s", p.modelUUID),
+		)
 	}
 	msg := createErrResponse(err, req)
 	if msg != nil {
@@ -415,7 +423,7 @@ func (p *clientProxy) start(ctx context.Context) error {
 		err := p.makeControllerConnection(ctx)
 		if err != nil {
 			zapctx.Error(ctx, "error connecting to controller", zap.Error(err))
-			p.sendError(p.src, msg, err)
+			p.sendError(ctx, p.src, msg, err)
 			return fmt.Errorf("failed to connect to controller: %w", err)
 		}
 		if err := p.auditLogMessage(msg, false); err != nil {
@@ -426,7 +434,7 @@ func (p *clientProxy) start(ctx context.Context) error {
 		if msg.Type == "Admin" {
 			toClient, toController, err := p.handleAdminFacade(ctx, msg)
 			if err != nil {
-				p.sendError(p.src, msg, err)
+				p.sendError(ctx, p.src, msg, err)
 				continue
 			}
 			// If there is a response for the client, send it to the client and continue.
@@ -446,7 +454,7 @@ func (p *clientProxy) start(ctx context.Context) error {
 		if msg.Type == "KeyManager" {
 			toClient, err := p.handleKeyManagerFacade(ctx, msg)
 			if err != nil {
-				p.sendError(p.src, msg, err)
+				p.sendError(ctx, p.src, msg, err)
 				continue
 			}
 			p.src.sendMessage(nil, toClient)
@@ -455,7 +463,7 @@ func (p *clientProxy) start(ctx context.Context) error {
 		p.msgs.addMessage(msg)
 		if err := p.dst.writeJson(msg); err != nil {
 			zapctx.Error(ctx, "clientProxy error writing to dst", zap.Error(err))
-			p.sendError(p.src, msg, err)
+			p.sendError(ctx, p.src, msg, err)
 			p.msgs.removeMessage(msg.RequestID)
 			continue
 		}
@@ -526,7 +534,7 @@ func (p *controllerProxy) start(ctx context.Context) error {
 
 		if err := modifyControllerResponse(msg); err != nil {
 			zapctx.Error(ctx, "Failed to modify message", zap.Error(err))
-			p.handleError(msg, err)
+			p.handleError(ctx, msg, err)
 			// An error when modifying the message is a show stopper.
 			return fmt.Errorf("error modifying controller response: %w", err)
 		}
@@ -567,14 +575,14 @@ func (p *controllerProxy) processControllerErrors(ctx context.Context, msg *mess
 	permissionsRequired, err := checkPermissionsRequired(ctx, msg)
 	if err != nil {
 		zapctx.Error(ctx, "failed to determine if more permissions required", zap.Error(err))
-		p.handleError(msg, err)
+		p.handleError(ctx, msg, err)
 		return false
 	}
 	if permissionsRequired != nil {
 		zapctx.Error(ctx, "Access Required error")
 		if err := p.redoLogin(ctx, permissionsRequired); err != nil {
 			zapctx.Error(ctx, "Failed to redo login", zap.Error(err))
-			p.handleError(msg, err)
+			p.handleError(ctx, msg, err)
 			return false
 		}
 		// Write back to the controller.
@@ -589,8 +597,8 @@ func (p *controllerProxy) processControllerErrors(ctx context.Context, msg *mess
 	return true
 }
 
-func (p *controllerProxy) handleError(msg *message, err error) {
-	p.sendError(p.dst, msg, err)
+func (p *controllerProxy) handleError(ctx context.Context, msg *message, err error) {
+	p.sendError(ctx, p.dst, msg, err)
 	p.msgs.removeMessage(msg.RequestID)
 }
 

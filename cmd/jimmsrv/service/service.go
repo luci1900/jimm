@@ -769,5 +769,10 @@ func ensureControllerAdministrators(ctx context.Context, client *openfga.OFGACli
 	if len(tuples) == 0 {
 		return nil
 	}
-	return client.AddRelation(ctx, tuples...)
+	err := client.AddRelation(ctx, tuples...)
+	if err != nil {
+		return err
+	}
+	logger.LogGrantJimmAdmins(ctx, admins)
+	return nil
 }

@@ -5,6 +5,7 @@ package jujuapi
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"regexp"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm"
 	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
+	"github.com/canonical/jimm/v3/internal/logger"
 	jimmRPC "github.com/canonical/jimm/v3/internal/rpc"
 	"github.com/canonical/jimm/v3/internal/rpcproxy"
 )
@@ -32,12 +34,6 @@ const (
 	maxRequestConcurrency = 10
 	pingTimeout           = 180 * time.Second
 )
-
-// A root is an rpc.Root enhanced so that it can notify on ping requests.
-type root interface {
-	rpc.Root
-	setPingF(func())
-}
 
 // An apiServer is a jimmhttp.WSServer that serves the controller API.
 type apiServer struct {
@@ -101,7 +97,7 @@ func (s *apiServer) Kill() {
 }
 
 // serveRoot serves an RPC root object on a websocket connection.
-func serveRoot(ctx context.Context, root root, logger auditLogger, wsConn *websocket.Conn) {
+func serveRoot(ctx context.Context, root *controllerRoot, logger auditLogger, wsConn *websocket.Conn) {
 	// Note that although NewConn accepts a `RecorderFactory` input, the call to conn.ServeRoot
 	// also accepts a `RecorderFactory` and will override anything set during the call to NewConn.
 	conn := rpc.NewConn(
@@ -112,7 +108,7 @@ func serveRoot(ctx context.Context, root root, logger auditLogger, wsConn *webso
 		return NewRecorder(logger)
 	}
 	conn.ServeRoot(root, rpcRecorderFactory, func(err error) error {
-		return mapError(err)
+		return root.mapError(ctx, err)
 	})
 	defer conn.Close()
 	t := time.AfterFunc(pingTimeout, func() {
@@ -126,13 +122,24 @@ func serveRoot(ctx context.Context, root root, logger auditLogger, wsConn *webso
 }
 
 // mapError maps JIMM errors to errors suitable for use with the juju API.
-func mapError(err error) *jujuparams.Error {
+func (r *controllerRoot) mapError(ctx context.Context, err error) *jujuparams.Error {
 	if err == nil {
 		return nil
 	}
-	// TODO the error mapper should really accept a context from the RPC package.
-	zapctx.Debug(context.TODO(), "rpc error", zaputil.Error(err))
-
+	zapctx.Debug(ctx, "rpc error", zaputil.Error(err))
+	if errors.ErrorCode(err) == errors.CodeUnauthorized {
+		// Here we log the unauthorized access attempt.
+		// We use the error as a best effort description of what went wrong.
+		username := "unknown"
+		if r.user != nil {
+			username = r.user.Name
+		}
+		logger.LogUnauthorizedAccess(
+			ctx,
+			username,
+			fmt.Sprintf("unauthorized access attempt, error: %v", err),
+		)
+	}
 	return &jujuparams.Error{
 		Message: err.Error(),
 		Code:    string(errors.ErrorCode(err)),

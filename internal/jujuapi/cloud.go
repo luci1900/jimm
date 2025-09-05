@@ -73,12 +73,12 @@ func (r *controllerRoot) Cloud(ctx context.Context, ents jujuparams.Entities) (j
 	for i, ent := range ents.Entities {
 		tag, err := names.ParseCloudTag(ent.Tag)
 		if err != nil {
-			cloudResults[i].Error = mapError(errors.E(op, errors.CodeBadRequest, err))
+			cloudResults[i].Error = r.mapError(ctx, errors.E(op, errors.CodeBadRequest, err))
 			continue
 		}
 		cloud, err := r.jimm.JujuManager().GetCloud(ctx, r.user, tag)
 		if err != nil {
-			cloudResults[i].Error = mapError(errors.E(op, err))
+			cloudResults[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 		cloudResults[i].Cloud = new(jujuparams.Cloud)
@@ -114,12 +114,12 @@ func (r *controllerRoot) UserCredentials(ctx context.Context, userclouds jujupar
 	for i, ent := range userclouds.UserClouds {
 		user, err := r.masquerade(ctx, ent.UserTag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 		cld, err := names.ParseCloudTag(ent.CloudTag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err, errors.CodeBadRequest))
+			results[i].Error = r.mapError(ctx, errors.E(op, err, errors.CodeBadRequest))
 			continue
 		}
 		err = r.jimm.JujuManager().ForEachUserCloudCredential(ctx, user.Identity, cld, func(c *dbmodel.CloudCredential) error {
@@ -127,7 +127,7 @@ func (r *controllerRoot) UserCredentials(ctx context.Context, userclouds jujupar
 			return nil
 		})
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 		}
 	}
 
@@ -142,7 +142,7 @@ func (r *controllerRoot) RevokeCredentialsCheckModels(ctx context.Context, args 
 	results := make([]jujuparams.ErrorResult, len(args.Credentials))
 	for i, ent := range args.Credentials {
 		if err := r.revokeCredential(ctx, ent.Tag, ent.Force); err != nil {
-			results[i].Error = mapError(err)
+			results[i].Error = r.mapError(ctx, err)
 		}
 	}
 	return jujuparams.ErrorResults{
@@ -170,7 +170,7 @@ func (r *controllerRoot) Credential(ctx context.Context, args jujuparams.Entitie
 	for i, e := range args.Entities {
 		cred, err := r.credential(ctx, e.Tag)
 		if err != nil {
-			results[i].Error = mapError(err)
+			results[i].Error = r.mapError(ctx, err)
 			continue
 		}
 		results[i].Result = cred
@@ -281,10 +281,10 @@ func userModelAccess(ctx context.Context, user *openfga.User, model names.ModelT
 
 // CredentialContents implements the CredentialContents method of the Cloud (v5) facade.
 func (r *controllerRoot) CredentialContents(ctx context.Context, args jujuparams.CloudCredentialArgs) (jujuparams.CredentialContentResults, error) {
-	return getIdentityCredentials(ctx, r.user, r.jimm, args)
+	return r.getIdentityCredentials(ctx, r.user, r.jimm, args)
 }
 
-func getIdentityCredentials(ctx context.Context, user *openfga.User, j JIMM, args jujuparams.CloudCredentialArgs) (jujuparams.CredentialContentResults, error) {
+func (r *controllerRoot) getIdentityCredentials(ctx context.Context, user *openfga.User, j JIMM, args jujuparams.CloudCredentialArgs) (jujuparams.CredentialContentResults, error) {
 	const op = errors.Op("jujuapi.CredentialContents")
 
 	credentialContents := func(c *dbmodel.CloudCredential) (*jujuparams.ControllerCredentialInfo, error) {
@@ -319,12 +319,12 @@ func getIdentityCredentials(ctx context.Context, user *openfga.User, j JIMM, arg
 		cct := names.NewCloudCredentialTag(fmt.Sprintf("%s/%s/%s", arg.CloudName, user.Name, arg.CredentialName))
 		cred, err := j.JujuManager().GetCloudCredential(ctx, user, cct)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 		results[i].Result, err = credentialContents(cred)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 		}
 	}
 	if len(results) > 0 {
@@ -336,7 +336,7 @@ func getIdentityCredentials(ctx context.Context, user *openfga.User, j JIMM, arg
 		var err error
 		result.Result, err = credentialContents(c)
 		if err != nil {
-			result.Error = mapError(errors.E(op, err))
+			result.Error = r.mapError(ctx, errors.E(op, err))
 		}
 		results = append(results, result)
 		return nil
@@ -358,12 +358,12 @@ func (r *controllerRoot) RemoveClouds(ctx context.Context, args jujuparams.Entit
 	for i, entity := range args.Entities {
 		tag, err := names.ParseCloudTag(entity.Tag)
 		if err != nil {
-			result.Results[i].Error = mapError(errors.E(op, err))
+			result.Results[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 		err = r.jimm.JujuManager().RemoveCloud(ctx, r.user, tag)
 		if err != nil {
-			result.Results[i].Error = mapError(errors.E(op, err))
+			result.Results[i].Error = r.mapError(ctx, errors.E(op, err))
 		}
 	}
 	return result, nil
@@ -377,7 +377,7 @@ func (r *controllerRoot) CheckCredentialsModels(ctx context.Context, args jujupa
 func (r *controllerRoot) ModifyCloudAccess(ctx context.Context, args jujuparams.ModifyCloudAccessRequest) (jujuparams.ErrorResults, error) {
 	results := make([]jujuparams.ErrorResult, len(args.Changes))
 	for i, change := range args.Changes {
-		results[i].Error = mapError(r.modifyCloudAccess(ctx, change))
+		results[i].Error = r.mapError(ctx, r.modifyCloudAccess(ctx, change))
 	}
 	return jujuparams.ErrorResults{
 		Results: results,
@@ -428,7 +428,7 @@ func (r *controllerRoot) updateCredentials(ctx context.Context, args []jujuparam
 		models, err := r.updateCredential(ctx, arg, skipCheck, skipUpdate)
 		results.Results[i] = jujuparams.UpdateCredentialResult{
 			CredentialTag: arg.Tag,
-			Error:         mapError(err),
+			Error:         r.mapError(ctx, err),
 			Models:        models,
 		}
 		results.Results[i].CredentialTag = arg.Tag
@@ -457,7 +457,7 @@ func (r *controllerRoot) UpdateCloud(ctx context.Context, args jujuparams.Update
 	for i := range args.Clouds {
 		err := r.updateCloud()
 		if err != nil {
-			results.Results[i].Error = mapError(err)
+			results.Results[i].Error = r.mapError(ctx, err)
 		}
 	}
 	return results, nil
@@ -477,12 +477,12 @@ func (r *controllerRoot) CloudInfo(ctx context.Context, args jujuparams.Entities
 	for i, ent := range args.Entities {
 		tag, err := names.ParseCloudTag(ent.Tag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err, errors.CodeBadRequest))
+			results[i].Error = r.mapError(ctx, errors.E(op, err, errors.CodeBadRequest))
 			continue
 		}
 		cloud, err := r.jimm.JujuManager().GetCloud(ctx, r.user, tag)
 		if err != nil {
-			results[i].Error = mapError(errors.E(op, err))
+			results[i].Error = r.mapError(ctx, errors.E(op, err))
 			continue
 		}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/auth"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
+	"github.com/canonical/jimm/v3/internal/logger"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/streamproxy"
 )
@@ -82,6 +83,11 @@ func (s streamModelProxier) ServeWS(ctx context.Context, clientConn *websocket.C
 		writeError(err.Error(), errors.CodeUnauthorized)
 		return
 	} else if !ok {
+		logger.LogUnauthorizedAccess(
+			ctx,
+			user.Name,
+			fmt.Sprintf("unauthorized access for stream model proxy for model %s", modelTag.Id()),
+		)
 		writeError(fmt.Sprintf("unauthorized access to endpoint: %s", finalPath), errors.CodeUnauthorized)
 		return
 	}

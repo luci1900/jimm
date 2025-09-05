@@ -17,6 +17,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
+	"github.com/canonical/jimm/v3/internal/logger"
 	"github.com/canonical/jimm/v3/internal/streamproxy"
 )
 
@@ -77,6 +78,11 @@ func (s streamControllerProxier) ServeWS(ctx context.Context, clientConn *websoc
 	}
 
 	if !user.JimmAdmin {
+		logger.LogUnauthorizedAccess(
+			ctx,
+			user.Name,
+			"unauthorized access to stream controller proxy. User is not a JIMM admin",
+		)
 		writeError("unauthorized", errors.CodeUnauthorized)
 		return
 	}
