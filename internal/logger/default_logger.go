@@ -25,6 +25,7 @@ func SetupLogger(ctx context.Context, logLevel string, devMode bool) {
 		fmt.Printf("ERROR: log level %q cannot be parsed, defaulting to info\n", logLevel)
 		pLogLevel = zap.InfoLevel
 	}
+	SystemMonitoringWarning(ctx, pLogLevel)
 	if devMode {
 		devConfig := zap.NewDevelopmentEncoderConfig()
 		devConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder

@@ -45,6 +45,7 @@ func start(ctx context.Context, s *service.Service) error {
 	logLevel := os.Getenv("JIMM_LOG_LEVEL")
 	logDevMode, _ := strconv.ParseBool(os.Getenv("JIMM_LOG_DEV_MODE"))
 	logger.SetupLogger(ctx, logLevel, logDevMode)
+	logger.LogJimmStartup(ctx)
 	zapctx.Info(ctx, "jimm info",
 		zap.String("version", version.VersionInfo.Version),
 		zap.String("commit", version.VersionInfo.GitCommit),
@@ -258,6 +259,8 @@ func start(ctx context.Context, s *service.Service) error {
 	s.OnShutdown(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
+		logger.LogJimmShutdown(ctx)
 
 		zapctx.Warn(ctx, "HTTP server shutdown triggered")
 		err = httpsrv.Shutdown(ctx)

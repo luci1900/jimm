@@ -4,6 +4,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/juju/zaputil/zapctx"
@@ -14,7 +15,6 @@ import (
 type eventLevel string
 
 const (
-	info     eventLevel = "INFO"
 	warning  eventLevel = "WARN"
 	critical eventLevel = "CRITICAL"
 )
@@ -35,8 +35,6 @@ func (s securityEvent) toZapFields() []zapcore.Field {
 
 func logSecurityEvent(ctx context.Context, event securityEvent) {
 	switch event.Severity {
-	case info:
-		zapctx.Info(ctx, event.Event, event.toZapFields()...)
 	case warning:
 		zapctx.Warn(ctx, event.Event, event.toZapFields()...)
 	case critical:
@@ -58,7 +56,7 @@ func LogSuccessfulLogin(ctx context.Context, identityId string) {
 	logSecurityEvent(ctx, securityEvent{
 		Event:       "authn_login_success:" + identityId,
 		Description: "login succeeded",
-		Severity:    info,
+		Severity:    warning,
 	})
 }
 
@@ -79,4 +77,36 @@ func LogGrantJimmAdmins(ctx context.Context, identityIds []string) {
 		Description: "JIMM admin role was granted.",
 		Severity:    warning,
 	})
+}
+
+// LogJimmStartup logs that JIMM has started.
+func LogJimmStartup(ctx context.Context) {
+	logSecurityEvent(ctx, securityEvent{
+		Event:       "sys_startup",
+		Description: "JIMM has started.",
+		Severity:    warning,
+	})
+}
+
+// LogJimmShutdown logs that JIMM is shutting down.
+func LogJimmShutdown(ctx context.Context) {
+	logSecurityEvent(ctx, securityEvent{
+		Event:       "sys_shutdown",
+		Description: "JIMM is shutting down.",
+		Severity:    warning,
+	})
+}
+
+// SystemMonitoringWarning prints a warning to stdout about potential issues with logging security events
+// if the logger level is lower than warn.
+func SystemMonitoringWarning(ctx context.Context, loggerLevel zapcore.Level) {
+	if loggerLevel < zapcore.WarnLevel {
+		logSecurityEvent(ctx, securityEvent{
+			Event: "sys_monitor_disabled",
+			Description: "Security events are using the default logger.\n" +
+				fmt.Sprintf("Logger level '%s' may hide security events below this severity.\n", loggerLevel.String()) +
+				"Set your logger to at least \"WARN\" level to ensure visibility of security events.\n",
+			Severity: critical,
+		})
+	}
 }
