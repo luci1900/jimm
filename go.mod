@@ -27,7 +27,7 @@ require (
 	github.com/antonlindstrom/pgstore v0.0.0-20220421113606-e3a6e3fed12a
 	github.com/canonical/go-service v1.0.0
 	github.com/canonical/ofga v0.10.0
-	github.com/canonical/rebac-admin-ui-handlers v0.1.2
+	github.com/canonical/rebac-admin-ui-handlers v0.2.0
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/dustinkirkland/golang-petname v0.0.0-20240428194347-eebcea082ee0
 	github.com/frankban/quicktest v1.14.6
@@ -339,6 +339,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
+require github.com/ulikunitz/xz v0.5.12
+
 require (
 	cloud.google.com/go/auth v0.16.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -350,7 +352,6 @@ require (
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/zitadel/logging v0.6.1 // indirect
 	github.com/zitadel/oidc/v3 v3.35.0 // indirect
 	github.com/zitadel/schema v1.3.0 // indirect
