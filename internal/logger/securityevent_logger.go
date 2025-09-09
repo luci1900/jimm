@@ -79,6 +79,28 @@ func LogGrantJimmAdmins(ctx context.Context, identityIds []string) {
 	})
 }
 
+// LogUserCreated logs the creation of a user, implicitly an identity
+func LogUserCreated(ctx context.Context, identityId string) {
+	logSecurityEvent(ctx, securityEvent{
+		Event:       fmt.Sprintf("user_created:%s", identityId),
+		Description: fmt.Sprintf("User %s was created.", identityId),
+		Severity:    warning,
+	})
+}
+
+// LogUserUpdated logs updates to a user, implicitly adding or removing an openfga relation
+func LogUserUpdated(ctx context.Context, adminID string, userID string, relation string, target string, isAddition bool) {
+	action := "add"
+	if !isAddition {
+		action = "remove"
+	}
+	logSecurityEvent(ctx, securityEvent{
+		Event:       fmt.Sprintf("user_updated:%s,%s,%s,%s:%s", adminID, userID, action, relation, target), // ?
+		Description: fmt.Sprintf("User %s updated %s to %s relation %s to object %s", adminID, userID, action, relation, target),
+		Severity:    warning,
+	})
+}
+
 // LogJimmStartup logs that JIMM has started.
 func LogJimmStartup(ctx context.Context) {
 	logSecurityEvent(ctx, securityEvent{

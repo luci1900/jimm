@@ -1,4 +1,4 @@
-// Copyright 2024 Canonical.
+// Copyright 2025 Canonical.
 
 package db
 
@@ -7,6 +7,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/logger"
 	"github.com/canonical/jimm/v3/internal/servermon"
 )
 
@@ -36,8 +37,12 @@ func (d *Database) GetIdentity(ctx context.Context, u *dbmodel.Identity) (err er
 	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
 
 	db := d.DB.WithContext(ctx)
-	if err := db.Where("name = ?", u.Name).FirstOrCreate(&u).Error; err != nil {
+	result := db.Where("name = ?", u.Name).FirstOrCreate(&u)
+	if result.Error != nil {
 		return errors.E(op, err)
+	}
+	if result.RowsAffected == 1 {
+		logger.LogUserCreated(ctx, u.Name)
 	}
 	return nil
 }
