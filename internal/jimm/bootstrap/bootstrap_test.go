@@ -265,6 +265,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob(c *qt.C) {
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		binary,
 		nil,
@@ -481,6 +482,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_BinaryStoreGetFails(c *qt.C) {
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		nil,
 		errors.E("test error"),
@@ -532,6 +534,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_ExecutorFails(c *qt.C) {
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		&jujuclistore.Binary{FullPath: binaryPath},
 		nil,
@@ -605,6 +608,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_ReturnsEarlyIfLineErrors(c *qt.
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		&jujuclistore.Binary{FullPath: binaryPath},
 		nil,
@@ -685,6 +689,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_ClientStoreFailsToGetController
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		&jujuclistore.Binary{FullPath: binaryPath},
 		nil,
@@ -803,6 +808,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_ClientStoreFailsToGetAccountDet
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		&jujuclistore.Binary{FullPath: binaryPath},
 		nil,
@@ -921,6 +927,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_JujuManagerFailsToAddController
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		&jujuclistore.Binary{FullPath: binaryPath},
 		nil,
@@ -1059,6 +1066,7 @@ func (s *bootstrapManagerSuite) TestBootstrapJob_CleanupControllerFailure(c *qt.
 			Os:      runtime.GOOS,
 			Arch:    runtime.GOARCH,
 		},
+		gomock.Any(),
 	).Return(
 		&jujuclistore.Binary{FullPath: binaryPath},
 		nil,
