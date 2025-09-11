@@ -4,9 +4,13 @@ package permissions_test
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/juju/zaputil/zapctx"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/canonical/jimm/v3/internal/common/pagination"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -424,4 +428,39 @@ func (s *permissionManagerSuite) TestCheckRelationsWithErrors(c *qt.C) {
 	c.Assert(results[0].Error, qt.IsNil)
 	c.Assert(results[1].Allowed, qt.IsFalse)
 	c.Assert(results[1].Error, qt.IsNotNil)
+}
+
+func (s *permissionManagerSuite) TestRelationshipLogUserUpdated(c *qt.C) {
+	c.Parallel()
+	ctx := context.Background()
+
+	adminId := "admin@canonical.com"
+
+	u := openfga.NewUser(&dbmodel.Identity{Name: adminId}, s.ofgaClient)
+	u.JimmAdmin = true
+
+	user, _, _, model, _, _, _, _ := jimmtest.CreateTestControllerEnvironment(ctx, c, s.db)
+	tuples := []apiparams.RelationshipTuple{
+		{
+			Object:       user.Tag().String(),
+			Relation:     names.ReaderRelation.String(),
+			TargetObject: model.ResourceTag().String(),
+		},
+	}
+
+	core, logs := observer.New(zap.InfoLevel)
+	ctx = zapctx.WithLogger(ctx, zap.New(core))
+
+	err := s.manager.AddRelation(ctx, u, tuples)
+	c.Assert(err, qt.IsNil)
+	c.Assert(logs.Len(), qt.Equals, 1)
+	c.Assert(logs.All()[0].Message, qt.Contains, fmt.Sprintf("user_updated:%s,%s,add,", adminId, user.Name))
+
+	err = s.manager.RemoveRelation(ctx, u, tuples)
+	c.Assert(err, qt.IsNil)
+	c.Assert(logs.Len(), qt.Equals, 2)
+
+	err = s.manager.AddRelation(ctx, u, tuples)
+	c.Assert(err, qt.IsNil)
+	c.Assert(logs.Len(), qt.Equals, 3)
 }

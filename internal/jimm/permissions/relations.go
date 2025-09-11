@@ -12,6 +12,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/common/pagination"
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/logger"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -32,6 +33,7 @@ func (j *permissionManager) AddRelation(ctx context.Context, user *openfga.User,
 	if err != nil {
 		return errors.E(op, errors.CodeOpenFGARequestFailed, err)
 	}
+	j.logUserUpdates(ctx, user, parsedTuples, true)
 	return nil
 }
 
@@ -50,6 +52,7 @@ func (j *permissionManager) RemoveRelation(ctx context.Context, user *openfga.Us
 	if err != nil {
 		return errors.E(op, errors.CodeOpenFGARequestFailed, err)
 	}
+	j.logUserUpdates(ctx, user, parsedTuples, false)
 	return nil
 }
 
@@ -249,4 +252,14 @@ func (j *permissionManager) parseTuple(ctx context.Context, tuple apiparams.Rela
 	}
 
 	return &t, nil
+}
+
+// logUserUpdates logs tuple relation changes if they are for a user.
+// This should be the closest equivalent of logging an RBAC role in our Zanzibar-style openfga graph.
+func (j *permissionManager) logUserUpdates(ctx context.Context, user *openfga.User, tuples []openfga.Tuple, isAddition bool) {
+	for _, tuple := range tuples {
+		if tuple.Object.Kind.String() == openfga.UserType.String() {
+			logger.LogUserUpdated(ctx, user.Name, tuple.Object.ID, tuple.Relation.String(), tuple.Target.ID, isAddition)
+		}
+	}
 }

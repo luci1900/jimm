@@ -8,6 +8,9 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/juju/zaputil/zapctx"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -60,6 +63,31 @@ func (s *dbSuite) TestGetIdentity(c *qt.C) {
 	err = s.Database.GetIdentity(ctx, u4)
 	c.Assert(err, qt.IsNil)
 	c.Check(u4, qt.DeepEquals, u3)
+}
+
+func (s *dbSuite) TestIdentityUserCreatedLogging(c *qt.C) {
+	ctx := context.Background()
+
+	err := s.Database.Migrate(ctx)
+	c.Assert(err, qt.IsNil)
+
+	core, logs := observer.New(zap.InfoLevel)
+	ctx = zapctx.WithLogger(ctx, zap.New(core))
+
+	i, err := dbmodel.NewIdentity("bob")
+	c.Assert(err, qt.IsNil)
+	err = s.Database.GetIdentity(ctx, i)
+	c.Assert(err, qt.IsNil)
+	// Logging creation
+	c.Assert(logs.Len(), qt.Equals, 1)
+	c.Assert(logs.All()[0].Message, qt.Equals, "user_created:bob")
+
+	i, err = dbmodel.NewIdentity("bob")
+	c.Assert(err, qt.IsNil)
+	err = s.Database.GetIdentity(ctx, i)
+	c.Assert(err, qt.IsNil)
+	// No new creation, no extra logging
+	c.Assert(logs.Len(), qt.Equals, 1)
 }
 
 func TestUpdateIdentityUnconfiguredDatabase(t *testing.T) {
