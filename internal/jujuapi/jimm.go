@@ -644,7 +644,7 @@ func (r *controllerRoot) BootstrapStart(ctx context.Context, req apiparams.Boots
 	}
 
 	params := bootstrap.BootstrapParams{
-		CLIVersion: "3.6.8",
+		CLIVersion: req.ControllerVersion,
 
 		CloudNameAndRegion: cloudNameAndRegion,
 		ControllerName:     req.ControllerName,

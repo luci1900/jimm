@@ -73,7 +73,7 @@ func TestStore(t *testing.T) {
 		BaseURL: server.URL,
 	})
 	c.Assert(err, qt.IsNil)
-	binary, err := store.Get(t.Context(), jujuSpec)
+	binary, err := store.Get(t.Context(), jujuSpec, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary.Done()
 
@@ -106,7 +106,7 @@ func TestStoreWithTarMissingJujuBinary(t *testing.T) {
 		BaseURL: server.URL,
 	})
 	c.Assert(err, qt.IsNil)
-	_, err = store.Get(t.Context(), jujuSpec)
+	_, err = store.Get(t.Context(), jujuSpec, nil)
 	c.Assert(err, qt.ErrorMatches, "juju binary not found in archive")
 }
 
@@ -136,7 +136,7 @@ func TestStoreProtectsAgainstDecompressionBomb(t *testing.T) {
 		BaseURL: server.URL,
 	})
 	c.Assert(err, qt.IsNil)
-	binary, err := store.Get(t.Context(), jujuSpec)
+	binary, err := store.Get(t.Context(), jujuSpec, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary.Done()
 
@@ -166,7 +166,7 @@ func TestStoreError(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	_, err = fetch.Get(context.Background(), jujuSpec)
+	_, err = fetch.Get(context.Background(), jujuSpec, nil)
 	c.Assert(err, qt.ErrorMatches, "request failed with status 404")
 }
 
@@ -199,7 +199,7 @@ func TestStoreRetry(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	binary, err := store.Get(context.Background(), jujuSpec)
+	binary, err := store.Get(context.Background(), jujuSpec, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary.Done()
 
@@ -235,11 +235,11 @@ func TestStoreCache(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	binary, err := store.Get(context.Background(), jujuSpec)
+	binary, err := store.Get(context.Background(), jujuSpec, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary.Done()
 
-	binaryAgain, err := store.Get(context.Background(), jujuSpec)
+	binaryAgain, err := store.Get(context.Background(), jujuSpec, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary.Done()
 
@@ -278,7 +278,7 @@ func TestStoreMaxEntriesCleanup(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	binary1, err := store.Get(context.Background(), jujuSpec1)
+	binary1, err := store.Get(context.Background(), jujuSpec1, nil)
 	c.Assert(err, qt.IsNil)
 
 	jujuSpec2 := JujuBinarySpec{
@@ -286,7 +286,7 @@ func TestStoreMaxEntriesCleanup(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	binary2, err := store.Get(context.Background(), jujuSpec2)
+	binary2, err := store.Get(context.Background(), jujuSpec2, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary2.Done()
 	c.Assert(len(store.entries), qt.Equals, 2) // Ensure only two entries are kept
@@ -296,18 +296,18 @@ func TestStoreMaxEntriesCleanup(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	_, err = store.Get(context.Background(), jujuSpec3)
+	_, err = store.Get(context.Background(), jujuSpec3, nil)
 	c.Assert(err, qt.ErrorMatches, `no entries to delete, max entries limit reached: \d+`)
 	c.Assert(len(store.entries), qt.Equals, 2) // Ensure still only two entries are kept
 
 	binary1.Done() // Mark the first binary as done
 
-	binary3, err := store.Get(context.Background(), jujuSpec3)
+	binary3, err := store.Get(context.Background(), jujuSpec3, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary3.Done()
 	c.Assert(len(store.entries), qt.Equals, 2)
 
-	binary3Again, err := store.Get(context.Background(), jujuSpec3)
+	binary3Again, err := store.Get(context.Background(), jujuSpec3, nil)
 	c.Assert(err, qt.IsNil)
 	defer binary3Again.Done()
 
@@ -337,10 +337,10 @@ func TestStoreReferenceCount(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	binary1, err := store.Get(context.Background(), jujuSpec1)
+	binary1, err := store.Get(context.Background(), jujuSpec1, nil)
 	c.Assert(err, qt.IsNil)
 
-	binary1Again, err := store.Get(context.Background(), jujuSpec1)
+	binary1Again, err := store.Get(context.Background(), jujuSpec1, nil)
 	c.Assert(err, qt.IsNil)
 
 	c.Assert(binary1.FullPath, qt.Equals, binary1Again.FullPath) // Ensure the same binary is returned
@@ -350,7 +350,7 @@ func TestStoreReferenceCount(t *testing.T) {
 		Os:      "linux",
 		Arch:    "amd64",
 	}
-	_, err = store.Get(context.Background(), jujuSpec2)
+	_, err = store.Get(context.Background(), jujuSpec2, nil)
 	c.Assert(err, qt.IsNil)
 
 	// Cache is now full, the reference count for binary1 should be 2.
@@ -372,4 +372,22 @@ func TestStoreReferenceCount(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	c.Assert(len(store.entries), qt.Equals, 1) // Ensure two entries are still kept
+}
+
+func TestProgressReaderLogLine(t *testing.T) {
+	c := qt.New(t)
+
+	pr := newProgressReader(nil, 10, 10, 0, nil)
+
+	line := pr.logLine(0)
+	c.Assert(line, qt.Equals, "[..........]   0%")
+
+	line = pr.logLine(2)
+	c.Assert(line, qt.Equals, "[##........]  20%")
+
+	line = pr.logLine(7)
+	c.Assert(line, qt.Equals, "[#######...]  70%")
+
+	line = pr.logLine(10)
+	c.Assert(line, qt.Equals, "[##########] 100%")
 }

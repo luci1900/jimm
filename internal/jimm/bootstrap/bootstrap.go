@@ -70,7 +70,7 @@ type JujuManager interface {
 
 // BinaryStore defines the binary store methods required by the job.
 type BinaryStore interface {
-	Get(ctx context.Context, spec jujuclistore.JujuBinarySpec) (*jujuclistore.Binary, error)
+	Get(ctx context.Context, spec jujuclistore.JujuBinarySpec, logFunction func(string)) (*jujuclistore.Binary, error)
 }
 
 // JujuCommands defines the Juju CLI methods that the bootstrap job requires.
@@ -364,6 +364,9 @@ func (b *bootstrapManager) BootstrapJob(
 				// because the consumer may want to detect it in different ways.
 				Os:   runtime.GOOS,
 				Arch: runtime.GOARCH,
+			},
+			func(line string) {
+				b.writeBootstrapLog(jobCtx, jobId, line)
 			},
 		)
 		if err != nil {

@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"math"
 	"math/rand/v2"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,13 +28,23 @@ import (
 	"go.uber.org/zap"
 )
 
-const timeoutRequestDuration = 5 * time.Minute
+const (
+	timeoutRequestDuration = 5 * time.Minute
 
-// launchPadURL is the base URL for the Juju binary downloads.
-const launchPadURL = "https://launchpad.net/juju"
+	// launchPadURL is the base URL for the Juju binary downloads.
+	launchPadURL = "https://launchpad.net/juju"
 
-// launchPadTemplate is the template for constructing the download URL for Juju binaries.
-const launchPadTemplate = "{{.BaseURL}}/{{.VersionWithMinor}}/{{.VersionWithPatch}}/+download/juju-{{.VersionWithPatch}}-{{.Os}}-{{.Arch}}.tar.xz"
+	// launchPadTemplate is the template for constructing the download URL for Juju binaries.
+	launchPadTemplate = "{{.BaseURL}}/{{.VersionWithMinor}}/{{.VersionWithPatch}}/+download/juju-{{.VersionWithPatch}}-{{.Os}}-{{.Arch}}.tar.xz"
+
+	// defaultProgressBarWidth holds the default width of the progress bar when downloading
+	// juju binaries.
+	defaultProgressBarWidth = 40
+
+	// defaultProgressBarRefreshInterval holds the default refresh interval of the
+	// progress bar when downloading juju binaries
+	defaultProgressBarRefreshInterval = time.Second
+)
 
 var (
 	retryRequestError error = jujuerrors.New("retry request error")
@@ -123,7 +135,7 @@ func (b *Binary) Done() {
 // It retries the download on server errors or rate limiting.
 // The retry logic uses exponential backoff.
 // The context can be used to cancel the operation.
-func (p *jujuCLIStore) Get(ctx context.Context, spec JujuBinarySpec) (*Binary, error) {
+func (p *jujuCLIStore) Get(ctx context.Context, spec JujuBinarySpec, logFunction func(string)) (*Binary, error) {
 	var buf bytes.Buffer
 
 	v, err := version.Parse(spec.Version)
@@ -168,7 +180,7 @@ func (p *jujuCLIStore) Get(ctx context.Context, spec JujuBinarySpec) (*Binary, e
 
 	err = retry.Call(retry.CallArgs{
 		Func: func() error {
-			file, err = p.downloadFile(ctx, url)
+			file, err = p.downloadFile(ctx, url, logFunction)
 			if err != nil {
 				return err
 			}
@@ -233,7 +245,7 @@ func (p *jujuCLIStore) freeEntry() error {
 // If the download fails, it returns an error.
 // The file is created in the directory specified in the configuration.
 // The context can be used to cancel the operation.
-func (p *jujuCLIStore) downloadFile(ctx context.Context, downloadUrl string) (*os.File, error) {
+func (p *jujuCLIStore) downloadFile(ctx context.Context, downloadUrl string, logFunction func(string)) (*os.File, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadUrl, nil)
 	if err != nil {
 		return nil, err
@@ -251,15 +263,22 @@ func (p *jujuCLIStore) downloadFile(ctx context.Context, downloadUrl string) (*o
 		return nil, jujuerrors.Errorf("request failed with status %d", resp.StatusCode)
 	}
 
-	xzReader, err := xz.NewReader(resp.Body)
+	var reader io.Reader
+	reader = resp.Body
+	if logFunction != nil && resp.ContentLength > 0 {
+		reader = newProgressReader(reader, resp.ContentLength, defaultProgressBarWidth, defaultProgressBarRefreshInterval, logFunction)
+	}
+
+	xzReader, err := xz.NewReader(reader)
 	if err != nil {
 		return nil, jujuerrors.Annotatef(err, "failed to create xz reader for %s", downloadUrl)
 	}
 	tarReader := tar.NewReader(xzReader)
+
 	// 200mb - limit download size should malicious actor send large file
 	// and destroy jimm's disk with decompression bomb.
 
-	limitedReader := io.LimitReader(tarReader, maxExtractSize)
+	limitReader := io.LimitReader(tarReader, maxExtractSize)
 
 	var binaryFile *os.File
 	for {
@@ -287,7 +306,7 @@ func (p *jujuCLIStore) downloadFile(ctx context.Context, downloadUrl string) (*o
 			return nil, err
 		}
 
-		if _, err := io.Copy(f, limitedReader); err != nil {
+		if _, err := io.Copy(f, limitReader); err != nil {
 			f.Close()
 			os.Remove(f.Name())
 			return nil, err
@@ -311,4 +330,57 @@ func (p *jujuCLIStore) downloadFile(ctx context.Context, downloadUrl string) (*o
 	}
 
 	return binaryFile, nil
+}
+
+type progressReader struct {
+	io.Reader
+
+	logFunction func(string)
+	logInterval time.Duration
+	totalBytes  int64
+	totalRead   int
+	width       int
+
+	lastLogTime time.Time
+}
+
+// Read implements the io.Reader interface.
+func (pr *progressReader) Read(p []byte) (n int, err error) {
+	n, err = pr.Reader.Read(p)
+	pr.totalRead += n
+	if n > 0 && time.Since(pr.lastLogTime) > pr.logInterval {
+		pr.lastLogTime = time.Now()
+		pr.logFunction(pr.logLine(pr.totalRead))
+	}
+	return n, err
+}
+
+func (pr *progressReader) logLine(progress int) string {
+	if pr.totalBytes <= 0 {
+		return ""
+	}
+	numStar := math.Floor(float64(progress) / float64(pr.totalBytes) * float64(pr.width))
+	percent := math.Floor(float64(progress) / float64(pr.totalBytes) * float64(100))
+	return fmt.Sprintf("[%s%s] %3d%%",
+		strings.Repeat("#", int(numStar)),
+		strings.Repeat(".", pr.width-int(numStar)),
+		int(percent),
+	)
+}
+
+func newProgressReader(r io.Reader, totalBytes int64, width int, logInterval time.Duration, logFunction func(string)) *progressReader {
+	if logInterval <= 0 {
+		logInterval = defaultProgressBarRefreshInterval
+	}
+	if width <= 0 {
+		width = defaultProgressBarWidth
+	}
+	return &progressReader{
+		Reader:      r,
+		totalBytes:  totalBytes,
+		logInterval: logInterval,
+		logFunction: logFunction,
+		lastLogTime: time.Now(),
+		width:       width,
+	}
 }

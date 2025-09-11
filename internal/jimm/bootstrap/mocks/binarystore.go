@@ -42,18 +42,18 @@ func (m *MockBinaryStore) EXPECT() *MockBinaryStoreMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockBinaryStore) Get(ctx context.Context, spec jujuclistore.JujuBinarySpec) (*jujuclistore.Binary, error) {
+func (m *MockBinaryStore) Get(ctx context.Context, spec jujuclistore.JujuBinarySpec, logFunction func(string)) (*jujuclistore.Binary, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, spec)
+	ret := m.ctrl.Call(m, "Get", ctx, spec, logFunction)
 	ret0, _ := ret[0].(*jujuclistore.Binary)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockBinaryStoreMockRecorder) Get(ctx, spec any) *MockBinaryStoreGetCall {
+func (mr *MockBinaryStoreMockRecorder) Get(ctx, spec, logFunction any) *MockBinaryStoreGetCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockBinaryStore)(nil).Get), ctx, spec)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockBinaryStore)(nil).Get), ctx, spec, logFunction)
 	return &MockBinaryStoreGetCall{Call: call}
 }
 
@@ -69,13 +69,13 @@ func (c *MockBinaryStoreGetCall) Return(arg0 *jujuclistore.Binary, arg1 error) *
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockBinaryStoreGetCall) Do(f func(context.Context, jujuclistore.JujuBinarySpec) (*jujuclistore.Binary, error)) *MockBinaryStoreGetCall {
+func (c *MockBinaryStoreGetCall) Do(f func(context.Context, jujuclistore.JujuBinarySpec, func(string)) (*jujuclistore.Binary, error)) *MockBinaryStoreGetCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockBinaryStoreGetCall) DoAndReturn(f func(context.Context, jujuclistore.JujuBinarySpec) (*jujuclistore.Binary, error)) *MockBinaryStoreGetCall {
+func (c *MockBinaryStoreGetCall) DoAndReturn(f func(context.Context, jujuclistore.JujuBinarySpec, func(string)) (*jujuclistore.Binary, error)) *MockBinaryStoreGetCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
