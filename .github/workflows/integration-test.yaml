@@ -3,6 +3,7 @@ name: Integration Test
 on:
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 jobs:
   startjimm:
@@ -14,6 +15,18 @@ jobs:
 
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v1
+
+      - name: Set up Microk8s
+        run: |
+          sudo snap install microk8s --classic
+          sudo usermod -a -G microk8s "$USER"
+          newgrp microk8s
+
+          sudo microk8s enable storage
+          subnet="$(ip route get 1 | head -n 1 | awk '{print $7}' | awk -F. '{print $1 "." $2 "." $3 ".240/24"}')"
+          echo "MetalLB subnet: $subnet"
+          sudo microk8s enable metallb:"$subnet"
+          echo "Microk8s setup complete"
 
       - name: Setup Go
         uses: actions/setup-go@v4
