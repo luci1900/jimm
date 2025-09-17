@@ -812,3 +812,25 @@ func (j *JujuManager) ControllerDetailsForModel(ctx context.Context, modelUUID s
 
 	return toControllerConnectionDetails(model.Controller, username, password), nil
 }
+
+// DestroyController
+func (j *JujuManager) DestroyController(ctx context.Context, controllerName string) error {
+	const op = errors.Op("jimm.RemoveController")
+
+	controller, err := j.getControllerByName(ctx, controllerName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	api, err := j.dialController(ctx, controller)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	defer api.Close()
+
+	err = api.DestroyController(ctx)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	return nil
+}

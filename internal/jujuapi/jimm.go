@@ -38,6 +38,7 @@ func init() {
 		importModelMethod := rpc.Method(r.ImportModel)
 		listControllersMethod := rpc.Method(r.ListControllers)
 		removeControllerMethod := rpc.Method(r.RemoveController)
+		destroyController := rpc.Method(r.DestroyController)
 		revokeAuditLogAccessMethod := rpc.Method(r.RevokeAuditLogAccess)
 		setControllerDeprecatedMethod := rpc.Method(r.SetControllerDeprecated)
 		fullModelStatusMethod := rpc.Method(r.FullModelStatus)
@@ -78,6 +79,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "ImportModel", importModelMethod)
 		r.AddMethod("JIMM", 4, "ListControllers", listControllersMethod)
 		r.AddMethod("JIMM", 4, "RemoveController", removeControllerMethod)
+		r.AddMethod("JIMM", 4, "DestroyController", destroyController)
 		r.AddMethod("JIMM", 4, "RevokeAuditLogAccess", revokeAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "SetControllerDeprecated", setControllerDeprecatedMethod)
 		r.AddMethod("JIMM", 4, "UpdateMigratedModel", updateMigratedModelMethod)
@@ -344,6 +346,17 @@ func auditParamsToFilter(req apiparams.FindAuditEventsRequest) (db.AuditLogFilte
 	}
 	filter.Offset = offset
 	return filter, nil
+}
+
+// DestroyController
+func (r *controllerRoot) DestroyController(ctx context.Context, req apiparams.BootstrapStopRequest) error {
+	const op = errors.Op("jujuapi.DestroyController")
+
+	if !r.user.JimmAdmin {
+		return errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	return nil
 }
 
 // FindAuditEvents finds the audit-log entries that match the given filter.
