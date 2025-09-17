@@ -140,6 +140,7 @@ type API struct {
 	ControllerConfig_                  func(context.Context) (jujuparams.ControllerConfigResult, error)
 	CreateModel_                       func(context.Context, *jujuparams.ModelCreateArgs, *jujuparams.ModelInfo) error
 	DestroyApplicationOffer_           func(context.Context, string, bool) error
+	DestroyController_                 func(context.Context) error
 	DestroyModel_                      func(context.Context, names.ModelTag, *bool, *bool, *time.Duration, *time.Duration) error
 	DumpModel_                         func(context.Context, names.ModelTag, bool) (string, error)
 	DumpModelDB_                       func(context.Context, names.ModelTag) (map[string]interface{}, error)
@@ -268,6 +269,13 @@ func (a *API) DestroyApplicationOffer(ctx context.Context, offerURL string, forc
 		return errors.E(errors.CodeNotImplemented)
 	}
 	return a.DestroyApplicationOffer_(ctx, offerURL, force)
+}
+
+func (a *API) DestroyController(ctx context.Context) error {
+	if a.DestroyController_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return a.DestroyController_(ctx)
 }
 
 func (a *API) DestroyModel(ctx context.Context, tag names.ModelTag, destroyStorage *bool, force *bool, maxWait, timeout *time.Duration) error {

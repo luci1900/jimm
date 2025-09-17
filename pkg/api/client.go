@@ -285,3 +285,17 @@ func (c *Client) Bootstrap(req *params.BootstrapStartParams) (*params.BootstrapS
 func (c *Client) BootstrapStop(req *params.BootstrapStopRequest) error {
 	return c.caller.APICall("JIMM", 4, "", "BootstrapStop", req, nil)
 }
+
+// DestroyControllerStatus
+func (c *Client) DestroyControllerStatus(req *params.DestroyControllerStatusRequest) (params.DestroyControllerStatusResponse, error) {
+	var resp params.DestroyControllerStatusResponse
+	err := c.caller.APICall("JIMM", 4, "", "DestroyControllerStatus", req, &resp)
+	return resp, err
+}
+
+// DestroyController
+func (c *Client) DestroyControllerStart(req *params.DestroyControllerStartRequest) (params.DestroyControllerStartResponse, error) {
+	var resp params.DestroyControllerStartResponse
+	err := c.caller.APICall("JIMM", 4, "", "DestroyControllerStart", req, &resp)
+	return resp, err
+}

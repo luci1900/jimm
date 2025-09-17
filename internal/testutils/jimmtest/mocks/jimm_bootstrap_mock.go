@@ -17,6 +17,7 @@ type BootstapManager struct {
 	GetBootstrapStatusAndLogs_ func(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.BootstrapStatusResponse, error)
 	StartBootstrap_            func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
 	StopBootstrap_             func(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
+	DestroyControllerStart_    func(ctx context.Context, user *openfga.User, controllerName string) (string, error)
 }
 
 func (b *BootstapManager) GetBootstrapStatusAndLogs(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.BootstrapStatusResponse, error) {
@@ -38,4 +39,11 @@ func (b *BootstapManager) StopBootstrap(ctx context.Context, user *openfga.User,
 		return errors.E(errors.CodeNotImplemented)
 	}
 	return b.StopBootstrap_(ctx, user, jobId)
+}
+
+func (b *BootstapManager) DestroyControllerStart(ctx context.Context, user *openfga.User, controllerName string) (string, error) {
+	if b.DestroyControllerStart_ == nil {
+		return "", errors.E(errors.CodeNotImplemented)
+	}
+	return b.DestroyControllerStart_(ctx, user, controllerName)
 }

@@ -646,3 +646,25 @@ type BootstrapStopRequest struct {
 	// JobID is the ID of the bootstrap job to stop.
 	JobID string `json:"job-id"`
 }
+
+// DestroyControllerStatusRequest
+type DestroyControllerStatusRequest struct {
+	// JobID
+	JobID string `json:"job-id"`
+}
+
+// DestroyControllerStatusResponse
+type DestroyControllerStatusResponse struct {
+}
+
+// DestroyControllerStartRequest
+type DestroyControllerStartRequest struct {
+	// ControllerName
+	ControllerName string `json:"controller-name"`
+}
+
+// DestoryControllerResponse
+type DestroyControllerStartResponse struct {
+	// JobID is the ID of the destroy job that was started.
+	JobID string `json:"job-id"`
+}

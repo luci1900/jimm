@@ -22,6 +22,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/jimm/credentials"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jobtracker"
 	"github.com/canonical/jimm/v3/internal/jujuclistore"
@@ -37,8 +38,9 @@ var (
 )
 
 const (
-	bootstrapJobType     = "bootstrap"
-	maxBootstrapDuration = 60 * time.Minute
+	bootstrapJobType         = "bootstrap"
+	destroyControllerJobType = "destroy-controller"
+	maxJobDuration           = 60 * time.Minute
 )
 
 // Store defines the store methods required by the manager.
@@ -91,6 +93,7 @@ type bootstrapManager struct {
 	jujuManager               JujuManager
 	binaryStore               BinaryStore
 	jimmWellknownJWKSEndpoint string
+	credentialStore           credentials.CredentialStore
 }
 
 // NewBootstrapManager creates a new BootstrapManager instance.
@@ -100,6 +103,7 @@ func NewBootstrapManager(
 	jujuManager JujuManager,
 	binaryStore BinaryStore,
 	jimmWellknownJWKSEndpoint string,
+	credentialStore credentials.CredentialStore,
 ) (*bootstrapManager, error) {
 	if store == nil {
 		return nil, errors.E("store cannot be nil")
@@ -122,6 +126,7 @@ func NewBootstrapManager(
 		jujuManager:               jujuManager,
 		binaryStore:               binaryStore,
 		jimmWellknownJWKSEndpoint: jimmWellknownJWKSEndpoint,
+		credentialStore:           credentialStore,
 	}, nil
 }
 
@@ -207,7 +212,7 @@ func (b *bootstrapManager) StartBootstrap(ctx context.Context, user *openfga.Use
 			commandFactory{},
 			user,
 		),
-		maxBootstrapDuration,
+		maxJobDuration,
 	)
 	if err != nil {
 		return "", errors.E(op, fmt.Errorf("failed to start bootstrap job: %w", err))
@@ -545,4 +550,85 @@ func (b *bootstrapManager) writeBootstrapLog(ctx context.Context, jobId uuid.UUI
 	if err := b.store.AddBootstrapLog(ctx, jobId, logLine); err != nil {
 		zapctx.Error(ctx, "failed to write bootstrap log", zap.Error(err), zap.String("jobId", jobId.String()))
 	}
+}
+
+// DestroyControllerStart
+func (b *bootstrapManager) DestroyControllerStart(ctx context.Context, user *openfga.User, controllerName string) (string, error) {
+	const op = errors.Op("jimm.DestroyControllerStart")
+
+	if !user.JimmAdmin {
+		return "", errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	// TODO fetch from db
+	cliVersion := "3.6.3"
+
+	username, password, err := b.credentialStore.GetControllerCredentials(ctx, controllerName)
+	if err != nil {
+		return "", errors.E(op, fmt.Errorf("failed to get controller credentials: %w", err))
+	}
+
+	jobId, err := b.tracker.Run(
+		ctx,
+		destroyControllerJobType,
+		func(jobCtx context.Context) error {
+			jobId, ok := jobtracker.JobIdFromContext(jobCtx)
+			if !ok {
+				return fmt.Errorf("failed to get job ID from context")
+			}
+
+			binary, err := b.binaryStore.Get(
+				jobCtx,
+				jujuclistore.JujuBinarySpec{
+					Version: cliVersion,
+					// This is a best effort. The launchpad URL just so happens to have similar filenames to runtime.GOOS and runtime.GOARCH.
+					// If this ever changes, we should update the binary store to use the correct URL
+					// or we should detect the OS and arch here. We don't want to detect it in the binary store
+					// because the consumer may want to detect it in different ways.
+					Os:   runtime.GOOS,
+					Arch: runtime.GOARCH,
+				},
+				func(line string) {
+					b.writeBootstrapLog(jobCtx, jobId, line)
+				},
+			)
+			if err != nil {
+				return errors.E(fmt.Errorf("failed to get Juju binary: %w", err))
+			}
+			zapctx.Debug(jobCtx, "Juju binary downloaded, using Juju binary", zap.String("binary-path", binary.FullPath))
+			defer func() {
+				binary.Done()
+			}()
+
+			dataDir, err := os.MkdirTemp("", "juju-data-dir")
+			if err != nil {
+				return errors.E(op, fmt.Errorf("failed to create temporary directory for Juju data: %w", err))
+			}
+			cmdFactory := commandFactory{}
+			jujuCmd := cmdFactory.New(binary.FullPath, dataDir)
+			outputCh, err := jujuCmd.DestroyController(jobCtx, jujucommands.DestroyControllerCmdParams{
+				ControllerName: controllerName,
+				Username:       username,
+				Password:       password,
+			})
+
+			if err != nil {
+				return errors.E(fmt.Errorf("failed to run destroy-controller command: %w", err))
+			}
+
+			err = b.consumeCommandOutput(ctx, outputCh, jobId)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		maxJobDuration,
+	)
+
+	if err != nil {
+		return "", errors.E(op, fmt.Errorf("failed to start destroy controller job: %w", err))
+	}
+
+	return jobId.String(), nil
 }

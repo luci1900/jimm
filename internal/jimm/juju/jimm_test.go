@@ -391,6 +391,45 @@ func TestRemoveAndAddController(t *testing.T) {
 	c.Assert(len(ctls), qt.Equals, 1)
 }
 
+const destroyAndRemoveControllerTestEnv = `clouds:
+- name: test-cloud
+  type: test-provider
+  regions:
+  - name: test-cloud-region
+cloud-credentials:
+- owner: alice@canonical.com
+  name: cred-1
+  cloud: test-cloud
+users:
+- username: alice@canonical.com
+  controller-access: superuser
+- username: bob@canonical.com
+  controller-access: login
+- username: eve@canonical.com
+  controller-access: "no-access"
+controllers:
+- name: controller-1
+  uuid: 00000001-0000-0000-0000-000000000001
+  cloud: test-cloud
+  region: test-cloud-region
+models:
+- name: model-1
+  uuid: 00000002-0000-0000-0000-000000000001
+  controller: controller-1
+  cloud: test-cloud
+  region: test-cloud-region
+  cloud-credential: cred-1
+  owner: alice@canonical.com
+  life: alive
+  users:
+  - user: alice@canonical.com
+    access: admin
+  - user: bob@canonical.com
+    access: write
+  - user: charlie@canonical.com
+    access: read
+`
+
 const fullModelStatusTestEnv = `clouds:
 - name: test-cloud
   type: test-provider

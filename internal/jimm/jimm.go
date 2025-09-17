@@ -312,6 +312,8 @@ type BootstrapManager interface {
 	StartBootstrap(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
 	// StopBootstrap stops a bootstrap job.
 	StopBootstrap(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
+
+	DestroyControllerStart(ctx context.Context, user *openfga.User, controllerName string) (string, error)
 }
 
 // Parameters holds the services and static fields passed to the jimm.New() constructor.
@@ -536,6 +538,7 @@ func New(p Parameters) (*JIMM, error) {
 		j.jujuManager,
 		binaryStore,
 		p.BootstrapLoginTokenRefreshURL,
+		j.CredentialStore,
 	)
 	if err != nil {
 		return nil, err

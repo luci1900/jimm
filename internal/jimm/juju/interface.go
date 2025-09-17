@@ -88,6 +88,9 @@ type API interface {
 	// DestroyApplicationOffer destroys an application offer.
 	DestroyApplicationOffer(context.Context, string, bool) error
 
+	// DestroyController
+	DestroyController(context.Context) error
+
 	// DestroyModel destroys a model.
 	DestroyModel(context.Context, names.ModelTag, *bool, *bool, *time.Duration, *time.Duration) error
 

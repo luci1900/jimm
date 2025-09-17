@@ -69,6 +69,7 @@ func init() {
 		bootstrapStatus := rpc.Method(r.BootstrapStatus)
 		bootstrapStart := rpc.Method(r.BootstrapStart)
 		bootstrapStop := rpc.Method(r.BootstrapStop)
+		destroyControllerStart := rpc.Method(r.DestroyControllerStart)
 
 		// JIMM Generic RPC
 		r.AddMethod("JIMM", 4, "AddController", addControllerMethod)
@@ -112,6 +113,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "BootstrapStatus", bootstrapStatus)
 		r.AddMethod("JIMM", 4, "BootstrapStart", bootstrapStart)
 		r.AddMethod("JIMM", 4, "BootstrapStop", bootstrapStop)
+		r.AddMethod("JIMM", 4, "DestroyControllerStart", destroyControllerStart)
 
 		return []int{4}
 	}
@@ -692,4 +694,22 @@ func (r *controllerRoot) BootstrapStop(ctx context.Context, req apiparams.Bootst
 		return errors.E(op, fmt.Errorf("failed to stop bootstrap job: %v", err))
 	}
 	return nil
+}
+
+// DestroyControllerStart
+func (r *controllerRoot) DestroyControllerStart(ctx context.Context, req apiparams.DestroyControllerStartRequest) (apiparams.DestroyControllerStartResponse, error) {
+	const op = errors.Op("jujuapi.DestroyController")
+
+	if !r.user.JimmAdmin {
+		return apiparams.DestroyControllerStartResponse{}, errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	jobId, err := r.jimm.BootstrapManager().DestroyControllerStart(ctx, r.user, req.ControllerName)
+	if err != nil {
+		return apiparams.DestroyControllerStartResponse{}, errors.E(op, err)
+	}
+
+	return apiparams.DestroyControllerStartResponse{
+		JobID: jobId,
+	}, nil
 }
