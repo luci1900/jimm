@@ -300,6 +300,22 @@ func (r *controllerRoot) SetControllerDeprecated(ctx context.Context, req apipar
 	return ctl.ToAPIControllerInfo(), nil
 }
 
+// DestroyController
+func (r *controllerRoot) DestroyController(ctx context.Context, req apiparams.DestroyControllerRequest) error {
+	const op = errors.Op("jujuapi.DestroyController")
+
+	if !r.user.JimmAdmin {
+		return errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
+	// TODO remove from database?
+	err := r.jimm.JujuManager().DestroyController(ctx, req.Name)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	return nil
+}
+
 // maxLimit is the maximum number of audit-log entries that will be
 // returned from the audit log, no matter how many are requested.
 const maxLimit = 1000
@@ -346,17 +362,6 @@ func auditParamsToFilter(req apiparams.FindAuditEventsRequest) (db.AuditLogFilte
 	}
 	filter.Offset = offset
 	return filter, nil
-}
-
-// DestroyController
-func (r *controllerRoot) DestroyController(ctx context.Context, req apiparams.BootstrapStopRequest) error {
-	const op = errors.Op("jujuapi.DestroyController")
-
-	if !r.user.JimmAdmin {
-		return errors.E(op, errors.CodeUnauthorized, "unauthorized")
-	}
-
-	return nil
 }
 
 // FindAuditEvents finds the audit-log entries that match the given filter.

@@ -350,6 +350,27 @@ func (s *jimmSuite) TestSetControllerDeprecated(c *gc.C) {
 	c.Check(jujuparams.IsCodeUnauthorized(err), gc.Equals, true)
 }
 
+func (s *jimmSuite) TestDestroyController(c *gc.C) {
+	conn := s.open(c, nil, "alice")
+	defer conn.Close()
+	client := api.NewClient(conn)
+
+	err := client.DestroyController(&apiparams.DestroyControllerRequest{
+		Name: "controller-1",
+	})
+	c.Check(err, gc.Equals, nil)
+
+	conn2 := s.open(c, nil, "bob")
+	defer conn2.Close()
+	client2 := api.NewClient(conn2)
+
+	err = client2.DestroyController(&apiparams.DestroyControllerRequest{
+		Name: "controller-1",
+	})
+	c.Check(err, gc.ErrorMatches, `unauthorized \(unauthorized access\)`)
+	c.Check(jujuparams.ErrCode(err), gc.Equals, jujuparams.CodeUnauthorized)
+}
+
 func (s *jimmSuite) TestAuditLog(c *gc.C) {
 	conn := s.open(c, nil, "bob")
 	defer conn.Close()

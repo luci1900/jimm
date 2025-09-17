@@ -237,6 +237,11 @@ type SetControllerDeprecatedRequest struct {
 	Deprecated bool `json:"deprecated"`
 }
 
+// DestroyControllerRequest
+type DestroyControllerRequest struct {
+	Name string `json:"name"`
+}
+
 // FullModelStatusRequest is the request that is sent in a FullModelStatus method.
 type FullModelStatusRequest struct {
 	ModelTag string

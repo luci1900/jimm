@@ -29,7 +29,7 @@ func (c Connection) DestroyController(ctx context.Context) error {
 	const op = errors.Op("jujuclient.DestroyController")
 	args := jujuparams.DestroyControllerArgs{}
 	// TODO figure out facade version
-	if err := c.CallHighestFacadeVersion(ctx, "Controller", []int{0}, "", "DestroyController", &args, nil); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "Controller", []int{12}, "", "DestroyController", &args, nil); err != nil {
 		return errors.E(op, jujuerrors.Cause(err))
 	}
 	return nil

@@ -87,6 +87,11 @@ func (c *Client) RemoveController(req *params.RemoveControllerRequest) (params.C
 	return info, err
 }
 
+// DestroyController
+func (c *Client) DestroyController(req *params.DestroyControllerRequest) error {
+	return c.caller.APICall("JIMM", 4, "", "DestroyController", req, nil)
+}
+
 // RevokeAuditLogAccess revokes the given access to the audit log from the
 // given user.
 func (c *Client) RevokeAuditLogAccess(req *params.AuditLogAccessRequest) error {

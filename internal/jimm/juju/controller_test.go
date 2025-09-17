@@ -510,6 +510,10 @@ func TestDestroyController(t *testing.T) {
 
 	err := j.DestroyController(ctx, env.Controllers[0].Name)
 	c.Assert(err, qt.Equals, nil)
+
+	// Repetition shouldn't fail
+	err = j.DestroyController(ctx, env.Controllers[0].Name)
+	c.Assert(err, qt.Equals, nil)
 }
 
 const testImportModelEnv = `
