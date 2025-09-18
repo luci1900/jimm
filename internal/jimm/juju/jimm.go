@@ -167,6 +167,10 @@ func (j *JujuManager) RemoveController(ctx context.Context, user *openfga.User, 
 func (j *JujuManager) DestroyController(ctx context.Context, user *openfga.User, controllerName string) error {
 	const op = errors.Op("jimm.DestroyController")
 
+	if !user.JimmAdmin {
+		return errors.E(op, errors.CodeUnauthorized, "unauthorized")
+	}
+
 	controller, err := j.getControllerByName(ctx, controllerName)
 	if err != nil {
 		return errors.E(op, err)
@@ -177,16 +181,6 @@ func (j *JujuManager) DestroyController(ctx context.Context, user *openfga.User,
 		return errors.E(op, err)
 	}
 	defer api.Close()
-
-	err = api.DestroyController(ctx)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	err = j.RemoveController(ctx, user, controllerName, false)
-	if err != nil {
-		return errors.E(op, err)
-	}
 
 	return nil
 }

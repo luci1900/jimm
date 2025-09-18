@@ -308,11 +308,16 @@ func (r *controllerRoot) DestroyController(ctx context.Context, req apiparams.De
 		return errors.E(op, errors.CodeUnauthorized, "unauthorized")
 	}
 
-	// TODO remove from database?
-	err := r.jimm.JujuManager().DestroyController(ctx, req.Name)
+	err := r.jimm.JujuManager().DestroyController(ctx, r.user, req.Name)
 	if err != nil {
 		return errors.E(op, err)
 	}
+
+	err = r.jimm.JujuManager().RemoveController(ctx, r.user, req.Name, false)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
 	return nil
 }
 
