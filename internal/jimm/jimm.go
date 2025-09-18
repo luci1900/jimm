@@ -227,7 +227,7 @@ type JujuManager interface {
 	RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
 	ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error)
-	DestroyController(ctx context.Context, controllerName string) error
+	DestroyController(ctx context.Context, user *openfga.User, controllerName string) error
 
 	// Model related methods
 
