@@ -155,7 +155,7 @@ func (c *bootstrapCmd) Run(ctx context.Context, p BootstrapCmdParams) (<-chan Ou
 
 	for line := range outputCh {
 		if line.Err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to update public clouds: %w", err)
+			return nil, nil, nil, fmt.Errorf("failed to update public clouds: %w", line.Err)
 		}
 	}
 

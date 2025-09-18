@@ -116,7 +116,7 @@ services:
         condition: service_healthy
 
   keycloak:
-    image: docker.io/bitnami/keycloak:23
+    image: docker.io/bitnamilegacy/keycloak:23
     container_name: keycloak
     hostname: keycloak.localhost
     environment:
