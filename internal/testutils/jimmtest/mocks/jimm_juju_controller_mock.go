@@ -25,7 +25,7 @@ type ControllerService struct {
 	RemoveController_                  func(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated_           func(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
 	ControllerConfig_                  func(ctx context.Context, controllerName string) (jujucontroller.Config, error)
-	DestroyController_                 func(ctx context.Context, controllerName string) error
+	DestroyController_                 func(ctx context.Context, user *openfga.User, controllerName string) error
 }
 
 func (j *ControllerService) AddController(ctx context.Context, u *openfga.User, ctl *dbmodel.Controller, creds juju.ControllerCreds) error {
@@ -91,9 +91,9 @@ func (j *ControllerService) ControllerConfig(ctx context.Context, controllerName
 	return j.ControllerConfig_(ctx, controllerName)
 }
 
-func (j *ControllerService) DestroyController(ctx context.Context, controllerName string) error {
+func (j *ControllerService) DestroyController(ctx context.Context, user *openfga.User, controllerName string) error {
 	if j.DestroyController_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return j.DestroyController_(ctx, controllerName)
+	return j.DestroyController_(ctx, user, controllerName)
 }

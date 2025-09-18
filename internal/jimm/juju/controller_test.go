@@ -470,52 +470,6 @@ func TestControllerConfig(t *testing.T) {
 	c.Assert(err, qt.ErrorMatches, "controller not found")
 }
 
-const testDestroyControllerEnv = `clouds:
-- name: test
-  type: test
-  regions:
-  - name: test-region
-cloud-credentials:
-- name: test-cred
-  cloud: test
-  owner: alice@canonical.com
-  type: empty
-controllers:
-- name: test1
-  uuid: 00000001-0000-0000-0000-000000000001
-  cloud: test
-  region: test-region-1
-  agent-version: 3.2.1
-`
-
-func TestDestroyController(t *testing.T) {
-	c := qt.New(t)
-
-	ctx := context.Background()
-
-	api := &jimmtest.API{
-		DestroyController_: func(_ context.Context) error {
-			return nil
-		},
-	}
-
-	j := newTestJujuManager(c, &parameters{
-		Dialer: &jimmtest.Dialer{
-			API: api,
-		},
-	})
-
-	env := jimmtest.ParseEnvironment(c, testDestroyControllerEnv)
-	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
-
-	err := j.DestroyController(ctx, env.Controllers[0].Name)
-	c.Assert(err, qt.Equals, nil)
-
-	// Repetition shouldn't fail
-	err = j.DestroyController(ctx, env.Controllers[0].Name)
-	c.Assert(err, qt.Equals, nil)
-}
-
 const testImportModelEnv = `
 users:
 - username: alice@canonical.com

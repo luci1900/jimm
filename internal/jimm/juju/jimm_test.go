@@ -391,6 +391,65 @@ func TestRemoveAndAddController(t *testing.T) {
 	c.Assert(len(ctls), qt.Equals, 1)
 }
 
+const destroyControllerTestEnv = `clouds:
+- name: test-cloud
+  type: test-provider
+  regions:
+  - name: test-cloud-region
+cloud-credentials:
+- owner: alice@canonical.com
+  name: cred-1
+  cloud: test-cloud
+users:
+- username: alice@canonical.com
+  controller-access: superuser
+- username: bob@canonical.com
+  controller-access: login
+- username: eve@canonical.com
+  controller-access: "no-access"
+controllers:
+- name: controller-1
+  uuid: 00000001-0000-0000-0000-000000000001
+  cloud: test-cloud
+  region: test-cloud-region
+models:
+- name: model-1
+  uuid: 00000002-0000-0000-0000-000000000001
+  controller: controller-1
+  cloud: test-cloud
+  region: test-cloud-region
+  cloud-credential: cred-1
+  owner: alice@canonical.com
+  life: alive
+  users:
+  - user: alice@canonical.com
+    access: admin
+  - user: bob@canonical.com
+    access: write
+  - user: charlie@canonical.com
+    access: read
+`
+
+func TestDestroyController(t *testing.T) {
+	c := qt.New(t)
+	ctx := context.Background()
+
+	j := newTestJujuManager(c, nil)
+
+	env := jimmtest.ParseEnvironment(c, destroyControllerTestEnv)
+	env.PopulateDB(c, j.Database)
+
+	dbUser := env.User("alice@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&dbUser, nil)
+	user.JimmAdmin = true
+
+	err := j.DestroyController(ctx, user, "controller-1")
+	c.Assert(err, qt.Equals, nil)
+	ctls, err := j.ListControllers(ctx, user)
+	c.Assert(err, qt.Equals, nil)
+	c.Assert(len(ctls), qt.Equals, 0)
+}
+
 const fullModelStatusTestEnv = `clouds:
 - name: test-cloud
   type: test-provider
