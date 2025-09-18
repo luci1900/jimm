@@ -69,13 +69,12 @@ func (c *destroyControllerCommand) Init(args []string) error {
 
 // Run implements cmd.Command.Run interface
 func (c *destroyControllerCommand) Run(ctx *cmd.Context) error {
-	// TODO
-	_, err := c.store.ControllerByName(c.controllerName)
+	currentName, err := c.store.CurrentController()
 	if err != nil {
 		return err
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, c.controllerName, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentName, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
