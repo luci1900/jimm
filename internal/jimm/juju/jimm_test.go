@@ -391,7 +391,7 @@ func TestRemoveAndAddController(t *testing.T) {
 	c.Assert(len(ctls), qt.Equals, 1)
 }
 
-const destroyControllerTestEnv = `clouds:
+const destroyAndRemoveControllerTestEnv = `clouds:
 - name: test-cloud
   type: test-provider
   regions:
@@ -430,13 +430,13 @@ models:
     access: read
 `
 
-func TestDestroyController(t *testing.T) {
+func TestDestroyAndRemoveController(t *testing.T) {
 	c := qt.New(t)
 	ctx := context.Background()
 
 	j := newTestJujuManager(c, nil)
 
-	env := jimmtest.ParseEnvironment(c, destroyControllerTestEnv)
+	env := jimmtest.ParseEnvironment(c, destroyAndRemoveControllerTestEnv)
 	env.PopulateDB(c, j.Database)
 
 	dbUser := env.User("alice@canonical.com").DBObject(c, j.Database)
@@ -444,6 +444,9 @@ func TestDestroyController(t *testing.T) {
 	user.JimmAdmin = true
 
 	err := j.DestroyController(ctx, user, "controller-1")
+	c.Assert(err, qt.Equals, nil)
+
+	err = j.RemoveController(ctx, user, "controller-1", true)
 	c.Assert(err, qt.Equals, nil)
 	ctls, err := j.ListControllers(ctx, user)
 	c.Assert(err, qt.Equals, nil)
