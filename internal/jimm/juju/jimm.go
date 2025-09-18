@@ -163,6 +163,29 @@ func (j *JujuManager) RemoveController(ctx context.Context, user *openfga.User, 
 	return nil
 }
 
+// DestroyController
+func (j *JujuManager) DestroyController(ctx context.Context, controllerName string) error {
+	const op = errors.Op("jimm.DestroyController")
+
+	controller, err := j.getControllerByName(ctx, controllerName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	api, err := j.dialController(ctx, controller)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	defer api.Close()
+
+	err = api.DestroyController(ctx)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
 // FullModelStatus returns the full status of the juju model.
 func (j *JujuManager) FullModelStatus(ctx context.Context, user *openfga.User, modelTag names.ModelTag, patterns []string) (*jujuparams.FullStatus, error) {
 	const op = errors.Op("jimm.RemoveController")
