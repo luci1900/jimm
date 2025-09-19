@@ -171,10 +171,6 @@ type API interface {
 	// RevokeModelAccess revokes model access from a user.
 	RevokeModelAccess(context.Context, names.ModelTag, names.UserTag, jujuparams.UserAccessPermission) error
 
-	// SupportsCheckCredentialModels returns true if the
-	// CheckCredentialModels method can be used.
-	SupportsCheckCredentialModels() bool
-
 	// SupportsModelSummaryWatcher returns true if the connection supports
 	// a ModelSummaryWatcher.
 	SupportsModelSummaryWatcher() bool

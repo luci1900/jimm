@@ -14,13 +14,6 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 )
 
-// SupportsCheckCredentialModels reports whether the controller supports
-// the Cloud.CheckCredentialsModels, Cloud.RevokeCredentialsCheckModels,
-// and Cloud.UpdateCredentialsCheckModels methods.
-func (c Connection) SupportsCheckCredentialModels() bool {
-	return c.hasFacadeVersion("Cloud", 3) || c.hasFacadeVersion("Cloud", 7)
-}
-
 // CheckCredentialModels checks that the given credential would be
 // accepted as a valid credential by all models currently using that
 // credential. This method uses the CheckCredentialsModel procedure on
@@ -35,7 +28,7 @@ func (c Connection) CheckCredentialModels(ctx context.Context, cred jujuparams.T
 	out := jujuparams.UpdateCredentialResults{
 		Results: make([]jujuparams.UpdateCredentialResult, 1),
 	}
-	if err := c.CallHighestFacadeVersion(ctx, "Cloud", []int{7, 3}, "", "CheckCredentialsModels", &in, &out); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "Cloud", []int{7}, "", "CheckCredentialsModels", &in, &out); err != nil {
 		return nil, errors.E(op, jujuerrors.Cause(err))
 	}
 	if out.Results[0].Error != nil {
@@ -77,7 +70,7 @@ func (c Connection) UpdateCredential(ctx context.Context, cred jujuparams.Tagged
 	// jujuparams.UpdateCredentialsResults, but the former will still
 	// unmarshal correctly into the latter so there is no need to use
 	// a different response type.
-	if err := c.CallHighestFacadeVersion(ctx, "Cloud", []int{7, 3, 1}, "", "UpdateCredentialsCheckModels", &update, &out); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "Cloud", []int{7}, "", "UpdateCredentialsCheckModels", &update, &out); err != nil {
 		return nil, errors.E(op, jujuerrors.Cause(err))
 	}
 	if out.Results[0].Error != nil {
@@ -103,26 +96,16 @@ func (c Connection) RevokeCredential(ctx context.Context, cred names.CloudCreden
 	out := jujuparams.ErrorResults{
 		Results: make([]jujuparams.ErrorResult, 1),
 	}
-	if c.SupportsCheckCredentialModels() {
-		in := jujuparams.RevokeCredentialArgs{
-			Credentials: []jujuparams.RevokeCredentialArg{{
-				Tag:   cred.String(),
-				Force: true,
-			}},
-		}
-		if err := c.CallHighestFacadeVersion(ctx, "Cloud", []int{7, 3}, "", "RevokeCredentialsCheckModels", &in, &out); err != nil {
-			return errors.E(op, jujuerrors.Cause(err))
-		}
-	} else {
-		in := jujuparams.Entities{
-			Entities: []jujuparams.Entity{{
-				Tag: cred.String(),
-			}},
-		}
-		if err := c.Call(ctx, "Cloud", 1, "", "RevokeCredentials", &in, &out); err != nil {
-			return errors.E(op, jujuerrors.Cause(err))
-		}
+	in := jujuparams.RevokeCredentialArgs{
+		Credentials: []jujuparams.RevokeCredentialArg{{
+			Tag:   cred.String(),
+			Force: true,
+		}},
 	}
+	if err := c.CallHighestFacadeVersion(ctx, "Cloud", []int{7}, "", "RevokeCredentialsCheckModels", &in, &out); err != nil {
+		return errors.E(op, jujuerrors.Cause(err))
+	}
+
 	if out.Results[0].Error != nil {
 		return errors.E(op, out.Results[0].Error)
 	}

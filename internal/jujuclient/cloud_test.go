@@ -20,10 +20,6 @@ type cloudSuite struct {
 
 var _ = gc.Suite(&cloudSuite{})
 
-func (s *cloudSuite) TestSupportsCheckCredentialsModels(c *gc.C) {
-	c.Assert(s.API.SupportsCheckCredentialModels(), gc.Equals, true)
-}
-
 func (s *cloudSuite) TestCheckCredentialModels(c *gc.C) {
 	cred := jujuparams.TaggedCredential{
 		Tag: names.NewCloudCredentialTag(jimmtest.TestCloudName + "/admin/pw1").String(),
