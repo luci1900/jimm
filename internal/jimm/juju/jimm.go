@@ -182,6 +182,11 @@ func (j *JujuManager) DestroyController(ctx context.Context, user *openfga.User,
 	}
 	defer api.Close()
 
+	err = api.DestroyController(ctx)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
 	return nil
 }
 
