@@ -71,7 +71,7 @@ func (c Connection) ListApplicationOffers(ctx context.Context, filters []jujupar
 	}
 
 	var resp jujuparams.QueryApplicationOffersResultsV5
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "ListApplicationOffers", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "ListApplicationOffers", &args, &resp)
 	if err != nil {
 		return nil, errors.E(op, jujuerrors.Cause(err))
 	}
@@ -88,7 +88,7 @@ func (c Connection) FindApplicationOffers(ctx context.Context, filters []jujupar
 	}
 
 	var resp jujuparams.QueryApplicationOffersResultsV5
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "FindApplicationOffers", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "FindApplicationOffers", &args, &resp)
 	if err != nil {
 		return nil, errors.E(op, jujuerrors.Cause(err))
 	}
@@ -109,7 +109,7 @@ func (c Connection) GetApplicationOffer(ctx context.Context, info *jujuparams.Ap
 	resp := jujuparams.ApplicationOffersResults{
 		Results: make([]jujuparams.ApplicationOfferResult, 1),
 	}
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "ApplicationOffers", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "ApplicationOffers", &args, &resp)
 	if err != nil {
 		return errors.E(op, jujuerrors.Cause(err))
 	}
@@ -137,7 +137,7 @@ func (c Connection) GrantApplicationOfferAccess(ctx context.Context, offerURL st
 	resp := jujuparams.ErrorResults{
 		Results: make([]jujuparams.ErrorResult, 1),
 	}
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "ModifyOfferAccess", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "ModifyOfferAccess", &args, &resp)
 	if err != nil {
 		return errors.E(op, jujuerrors.Cause(err))
 	}
@@ -164,7 +164,7 @@ func (c Connection) RevokeApplicationOfferAccess(ctx context.Context, offerURL s
 	resp := jujuparams.ErrorResults{
 		Results: make([]jujuparams.ErrorResult, 1),
 	}
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "ModifyOfferAccess", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "ModifyOfferAccess", &args, &resp)
 	if err != nil {
 		return errors.E(op, jujuerrors.Cause(err))
 	}
@@ -187,7 +187,7 @@ func (c Connection) DestroyApplicationOffer(ctx context.Context, offer string, f
 	resp := jujuparams.ErrorResults{
 		Results: make([]jujuparams.ErrorResult, 1),
 	}
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "DestroyOffers", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "DestroyOffers", &args, &resp)
 	if err != nil {
 		return errors.E(op, jujuerrors.Cause(err))
 	}
@@ -216,7 +216,7 @@ func (c Connection) GetApplicationOfferConsumeDetails(ctx context.Context, user 
 	resp := jujuparams.ConsumeOfferDetailsResults{
 		Results: make([]jujuparams.ConsumeOfferDetailsResult, 1),
 	}
-	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5, 4}, "", "GetConsumeDetails", &args, &resp)
+	err := c.CallHighestFacadeVersion(ctx, "ApplicationOffers", []int{5}, "", "GetConsumeDetails", &args, &resp)
 	if err != nil {
 		return errors.E(op, jujuerrors.Cause(err))
 	}

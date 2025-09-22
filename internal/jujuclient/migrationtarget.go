@@ -34,7 +34,7 @@ func (c Connection) AdoptResources(modelUUID string, controllerVersion version.N
 		ModelTag:                names.NewModelTag(modelUUID).String(),
 		SourceControllerVersion: controllerVersion,
 	}
-	if err := c.CallHighestFacadeVersion(c.Context(), "MigrationTarget", []int{1, 2, 3, 4}, "", "AdoptResources", &args, nil); err != nil {
+	if err := c.CallHighestFacadeVersion(c.Context(), "MigrationTarget", []int{6}, "", "AdoptResources", &args, nil); err != nil {
 		return err
 	}
 	return nil
