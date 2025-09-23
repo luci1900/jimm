@@ -124,7 +124,7 @@ func (s *bootstrapManagerSuite) Init(c *qt.C) {
 	c.Assert(err, qt.IsNil)
 }
 
-func (s *bootstrapManagerSuite) TestGetBootstrapStatusAndLogs(c *qt.C) {
+func (s *bootstrapManagerSuite) TestGetJobInfo(c *qt.C) {
 	ctx := c.Context()
 	read := make(chan struct{})
 	defer close(read)
@@ -185,7 +185,7 @@ func (s *bootstrapManagerSuite) TestGetBootstrapStatusAndLogs(c *qt.C) {
 	c.Assert(response.Logs, qt.HasLen, 0)
 }
 
-func (s *bootstrapManagerSuite) TestGetBootstrapStatusAndLogs_JobFailed(c *qt.C) {
+func (s *bootstrapManagerSuite) TestGetJobInfo_JobFailed(c *qt.C) {
 	ctx := c.Context()
 	ctrl, mocks, _ := setupTest(c)
 	defer ctrl.Finish()
@@ -214,7 +214,7 @@ func (s *bootstrapManagerSuite) TestGetBootstrapStatusAndLogs_JobFailed(c *qt.C)
 	c.Assert(response.Error, qt.Equals, "I died really fast")
 }
 
-func (s *bootstrapManagerSuite) TestGetBootstrapStatusAndLogs_JobNotFound(c *qt.C) {
+func (s *bootstrapManagerSuite) TestGetJobInfo_JobNotFound(c *qt.C) {
 	ctx := c.Context()
 	jobId := uuid.New()
 
