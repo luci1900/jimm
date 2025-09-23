@@ -76,7 +76,7 @@ func (c *bootstrapStopCommand) Run(ctxt *cmd.Context) error {
 		return fmt.Errorf("failed to create JIMM client: %v", err)
 	}
 
-	err = client.BootstrapStop(&params.BootstrapStopRequest{
+	err = client.StopJob(&params.StopJobRequest{
 		JobID: c.jobId,
 	})
 	if err != nil {

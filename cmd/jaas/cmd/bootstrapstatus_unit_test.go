@@ -32,7 +32,7 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
-	s.client.EXPECT().BootstrapStatus(gomock.Any()).Return(params.BootstrapStatusResponse{
+	s.client.EXPECT().GetJobInfo(gomock.Any()).Return(params.GetJobInfoResponse{
 		Status: params.StatusSuccessful,
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
@@ -58,7 +58,7 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_Failed(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
-	s.client.EXPECT().BootstrapStatus(gomock.Any()).Return(params.BootstrapStatusResponse{
+	s.client.EXPECT().GetJobInfo(gomock.Any()).Return(params.GetJobInfoResponse{
 		Status: params.StatusFailed,
 		Error:  "Bootstrap job failed",
 	}, nil)
@@ -85,7 +85,7 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_Running(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
-	s.client.EXPECT().BootstrapStatus(gomock.Any()).Return(params.BootstrapStatusResponse{
+	s.client.EXPECT().GetJobInfo(gomock.Any()).Return(params.GetJobInfoResponse{
 		Status:    params.StatusRunning,
 		Logs:      []string{"log1", "log2"},
 		Watermark: 2,
@@ -95,11 +95,11 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_Running(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("log2\n"))
 
 	s.client.EXPECT().
-		BootstrapStatus(&params.BootstrapStatusRequest{
+		GetJobInfo(&params.GetJobInfoRequest{
 			JobID:     "test-job-id",
 			Watermark: 2,
 		}).
-		Return(params.BootstrapStatusResponse{
+		Return(params.GetJobInfoResponse{
 			Status:    params.StatusRunning,
 			Logs:      []string{"log3"},
 			Watermark: 3,
@@ -107,11 +107,11 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_Running(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("log3\n"))
 
 	s.client.EXPECT().
-		BootstrapStatus(&params.BootstrapStatusRequest{
+		GetJobInfo(&params.GetJobInfoRequest{
 			JobID:     "test-job-id",
 			Watermark: 3,
 		}).
-		Return(params.BootstrapStatusResponse{
+		Return(params.GetJobInfoResponse{
 			Status: params.StatusSuccessful,
 		}, nil)
 	s.writer.EXPECT().Write([]byte("Bootstrap job completed successfully.\n"))
@@ -136,7 +136,7 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_NoFollow(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
-	s.client.EXPECT().BootstrapStatus(gomock.Any()).Return(params.BootstrapStatusResponse{
+	s.client.EXPECT().GetJobInfo(gomock.Any()).Return(params.GetJobInfoResponse{
 		Status:    params.StatusRunning,
 		Logs:      []string{"log1", "log2"},
 		Watermark: 2,
@@ -167,7 +167,7 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_AfterCompletion(c *gc.C) {
 	ctrl := s.SetupMocks(c)
 	defer ctrl.Finish()
 
-	s.client.EXPECT().BootstrapStatus(gomock.Any()).Return(params.BootstrapStatusResponse{
+	s.client.EXPECT().GetJobInfo(gomock.Any()).Return(params.GetJobInfoResponse{
 		Status:    params.StatusSuccessful,
 		Logs:      []string{"log1", "log2"},
 		Watermark: 2,

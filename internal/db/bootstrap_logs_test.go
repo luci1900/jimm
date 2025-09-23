@@ -22,17 +22,17 @@ func (s *dbSuite) TestBootstrapLogs_AddBootstrapLog(c *qt.C) {
 
 	// Test where job id doesn't exist
 	jobThatDoesntExistId := uuid.New()
-	err = s.Database.AddBootstrapLog(ctx, jobThatDoesntExistId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud")
+	err = s.Database.AddJobLog(ctx, jobThatDoesntExistId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud")
 	c.Assert(err, qt.ErrorMatches, ".*violates foreign key constraint.*")
 
 	// Test success
-	err = s.Database.AddBootstrapLog(ctx, jobId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud")
+	err = s.Database.AddJobLog(ctx, jobId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud")
 	c.Assert(err, qt.IsNil)
 	// Test adding second line
-	err = s.Database.AddBootstrapLog(ctx, jobId, "Fetching Juju agent binaries")
+	err = s.Database.AddJobLog(ctx, jobId, "Fetching Juju agent binaries")
 	c.Assert(err, qt.IsNil)
 	// Check all lines exist
-	var logs []dbmodel.BootstrapLog
+	var logs []dbmodel.JobLog
 	err = s.Database.DB.Where("job_id = ?", jobId).Order("line_number asc").Find(&logs).Error
 	c.Assert(err, qt.IsNil)
 
@@ -45,10 +45,10 @@ func (s *dbSuite) TestBootstrapLogs_AddBootstrapLog(c *qt.C) {
 	// Test adding another where job id is different
 	jobId2, err := s.Database.AddJob(ctx, "test-job")
 	c.Assert(err, qt.IsNil)
-	err = s.Database.AddBootstrapLog(ctx, jobId2, "Creating Juju controller \"diglett2\" on the-most-amazing-cloud")
+	err = s.Database.AddJobLog(ctx, jobId2, "Creating Juju controller \"diglett2\" on the-most-amazing-cloud")
 	c.Assert(err, qt.IsNil)
 
-	var logs2 []dbmodel.BootstrapLog
+	var logs2 []dbmodel.JobLog
 	err = s.Database.DB.Where("job_id = ?", jobId2).Order("line_number asc").Find(&logs2).Error
 	c.Assert(err, qt.IsNil)
 
@@ -65,7 +65,7 @@ func (s *dbSuite) TestBootstrapLogs_QueryBootstrapLogs(c *qt.C) {
 
 	// Query where the job doesn't exist
 	jobIdThatDoesntExist := uuid.New()
-	_, _, err = s.Database.QueryBootstrapLog(ctx, jobIdThatDoesntExist, 0)
+	_, _, err = s.Database.QueryJobLog(ctx, jobIdThatDoesntExist, 0)
 	c.Assert(err, qt.ErrorMatches, "job not found")
 
 	// Add job to reference
@@ -73,7 +73,7 @@ func (s *dbSuite) TestBootstrapLogs_QueryBootstrapLogs(c *qt.C) {
 	c.Assert(err, qt.IsNil)
 
 	// Query with no logs
-	loggies, nextOffsetVal, err := s.Database.QueryBootstrapLog(ctx, jobId, 0)
+	loggies, nextOffsetVal, err := s.Database.QueryJobLog(ctx, jobId, 0)
 	c.Assert(err, qt.IsNil)
 	c.Assert(loggies, qt.HasLen, 0)
 	c.Assert(nextOffsetVal, qt.Equals, 0)
@@ -82,30 +82,30 @@ func (s *dbSuite) TestBootstrapLogs_QueryBootstrapLogs(c *qt.C) {
 	offsetTracker := 0
 	collectedLogs := make([]string, 0)
 
-	newLogs, nextOffsetValue, err := s.Database.QueryBootstrapLog(ctx, jobId, offsetTracker)
+	newLogs, nextOffsetValue, err := s.Database.QueryJobLog(ctx, jobId, offsetTracker)
 	c.Assert(err, qt.IsNil)
 	offsetTracker = nextOffsetValue
 	collectedLogs = append(collectedLogs, newLogs...)
 
-	c.Assert(s.Database.AddBootstrapLog(ctx, jobId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud"), qt.IsNil)
-	c.Assert(s.Database.AddBootstrapLog(ctx, jobId, "Fetching Juju agent binaries"), qt.IsNil)
+	c.Assert(s.Database.AddJobLog(ctx, jobId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud"), qt.IsNil)
+	c.Assert(s.Database.AddJobLog(ctx, jobId, "Fetching Juju agent binaries"), qt.IsNil)
 
-	newLogs, nextOffsetValue, err = s.Database.QueryBootstrapLog(ctx, jobId, offsetTracker)
+	newLogs, nextOffsetValue, err = s.Database.QueryJobLog(ctx, jobId, offsetTracker)
 	c.Assert(err, qt.IsNil)
 	offsetTracker = nextOffsetValue
 	collectedLogs = append(collectedLogs, newLogs...)
 
-	c.Assert(s.Database.AddBootstrapLog(ctx, jobId, "Binaries contain gems"), qt.IsNil)
-	c.Assert(s.Database.AddBootstrapLog(ctx, jobId, "Gems appear to be very expensive"), qt.IsNil)
+	c.Assert(s.Database.AddJobLog(ctx, jobId, "Binaries contain gems"), qt.IsNil)
+	c.Assert(s.Database.AddJobLog(ctx, jobId, "Gems appear to be very expensive"), qt.IsNil)
 
-	newLogs, nextOffsetValue, err = s.Database.QueryBootstrapLog(ctx, jobId, offsetTracker)
+	newLogs, nextOffsetValue, err = s.Database.QueryJobLog(ctx, jobId, offsetTracker)
 	c.Assert(err, qt.IsNil)
 	offsetTracker = nextOffsetValue
 	collectedLogs = append(collectedLogs, newLogs...)
 
 	c.Assert(collectedLogs, qt.HasLen, 4)
 
-	newLogs, nextOffsetValue, err = s.Database.QueryBootstrapLog(ctx, jobId, offsetTracker)
+	newLogs, nextOffsetValue, err = s.Database.QueryJobLog(ctx, jobId, offsetTracker)
 	c.Assert(err, qt.IsNil)
 	// This means no new logs have come in, but they may later, and the client should query again for logs
 	// after some time.
@@ -153,6 +153,6 @@ func (s *dbSuite) TestBootstrapLogs_lockBootstrapLogs(c *qt.C) {
 
 	<-lockAcquired
 
-	err = s.Database.AddBootstrapLog(ctx, jobId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud")
-	c.Assert(err, qt.ErrorMatches, "failed to lock bootstrap_logs table")
+	err = s.Database.AddJobLog(ctx, jobId, "Creating Juju controller \"diglett\" on the-most-amazing-cloud")
+	c.Assert(err, qt.ErrorMatches, "failed to lock job_logs table")
 }

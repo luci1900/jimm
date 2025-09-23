@@ -38,7 +38,7 @@ func (j *bootstrapLogsSuite) TestBootstrapLog(c *qt.C) {
 	db := j.Database
 
 	// Test a bad log entry
-	badEntry := &dbmodel.BootstrapLog{}
+	badEntry := &dbmodel.JobLog{}
 	c.Assert(db.First(badEntry).Error, qt.IsNotNil)
 
 	// Test with invalid FK
@@ -60,7 +60,7 @@ func (j *bootstrapLogsSuite) TestBootstrapLog(c *qt.C) {
 	c.Assert(db.Create(entry).Error, qt.IsNil)
 
 	// Quickly grab the log in a fresh entry
-	log := &dbmodel.BootstrapLog{}
+	log := &dbmodel.JobLog{}
 	c.Assert(db.First(log, "job_id = ? AND line_number = ?", job.JobID, 0).Error, qt.IsNil)
 	c.Assert(log.JobID, qt.Equals, job.JobID)
 	c.Assert(log.LineNumber, qt.Equals, 0)

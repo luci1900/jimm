@@ -202,7 +202,7 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		stringConfigValues[k] = strVal
 	}
 
-	req := apiparams.BootstrapStartParams{
+	req := apiparams.BootstrapParams{
 		CloudName:         c.cloud,
 		RegionName:        c.region,
 		ControllerName:    c.controllerName,
@@ -221,7 +221,7 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 	}
 	defer client.Close()
 
-	resp, err := client.Bootstrap(&req)
+	resp, err := client.StartBootstrapJob(&req)
 	if err != nil {
 		return err
 	}

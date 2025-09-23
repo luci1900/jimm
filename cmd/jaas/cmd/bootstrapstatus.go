@@ -115,7 +115,7 @@ func (p logPoller) watchBootstrapLogs() error {
 	watermark := 0
 
 	for {
-		response, err := p.client.BootstrapStatus(&params.BootstrapStatusRequest{
+		response, err := p.client.GetJobInfo(&params.GetJobInfoRequest{
 			JobID:     p.jobId,
 			Watermark: watermark,
 		})
