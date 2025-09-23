@@ -31,7 +31,7 @@ Displays logs for a job.
 // sleepBetweenGetLogs is the duration to wait between successive calls to get logs for a bootstrap job.
 const sleepBetweenGetLogs = 1 * time.Second
 
-// NewbootstrapStatusCommand returns a command to display logs for a bootstrap job.
+// NewJobStatusCommand returns a command to display logs for a bootstrap job.
 func NewJobStatusCommand() cmd.Command {
 	cmd := &jobStatusCommand{
 		store: jujuclient.NewFileClientStore(),
