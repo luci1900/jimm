@@ -74,3 +74,4 @@ parts:
       ln -sf jaas bin/juju-update-service-account-credential
       ln -sf jaas bin/juju-job-status
       ln -sf jaas bin/juju-job-stop
+      ln -sf jaas bin/juju-bootstrap
