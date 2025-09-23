@@ -229,8 +229,8 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 	if c.detach {
 		fmt.Printf(`
 Bootstrap job started.
-You can track the progress via bootstrap-status with the job ID:
-	juju [jaas] bootstrap-status %s
+You can track the progress via job-status with the job ID:
+	juju [jaas] job-status %s
 
 	`,
 			resp.JobID,
@@ -239,8 +239,8 @@ You can track the progress via bootstrap-status with the job ID:
 		fmt.Printf(`
 Starting bootstrap job.
 
-Should you cancel this process, you can track the progress via bootstrap-status with the job ID:
-	juju [jaas] bootstrap-status %s
+Should you cancel this process, you can track the progress via job-status with the job ID:
+	juju [jaas] job-status %s
 
 	`,
 			resp.JobID,
