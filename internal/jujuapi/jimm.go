@@ -68,7 +68,7 @@ func init() {
 		listMigrationTargetsMethod := rpc.Method(r.ListMigrationTargets)
 		getJobInfo := rpc.Method(r.GetJobInfo)
 		stopJob := rpc.Method(r.StopJob)
-		bootstrapStart := rpc.Method(r.StartBootstrapJob)
+		startBootstrapJob := rpc.Method(r.StartBootstrapJob)
 
 		// JIMM Generic RPC
 		r.AddMethod("JIMM", 4, "AddController", addControllerMethod)
@@ -111,7 +111,7 @@ func init() {
 		// JIMM Bootstrap
 		r.AddMethod("JIMM", 4, "GetJobInfo", getJobInfo)
 		r.AddMethod("JIMM", 4, "StopJob", stopJob)
-		r.AddMethod("JIMM", 4, "BootstrapStart", bootstrapStart)
+		r.AddMethod("JIMM", 4, "StartBootstrapJob", startBootstrapJob)
 
 		return []int{4}
 	}
@@ -641,7 +641,7 @@ func (r *controllerRoot) StopJob(ctx context.Context, req apiparams.StopJobReque
 
 // StartBootstrapJob starts a bootstrap job.
 func (r *controllerRoot) StartBootstrapJob(ctx context.Context, req apiparams.BootstrapStartParams) (apiparams.StartJobResponse, error) {
-	const op = errors.Op("jujuapi.BootstrapStart")
+	const op = errors.Op("jujuapi.StartBootstrapJob")
 
 	if !r.user.JimmAdmin {
 		return apiparams.StartJobResponse{}, errors.E(op, errors.CodeUnauthorized, "unauthorized")
