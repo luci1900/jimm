@@ -640,7 +640,7 @@ func (r *controllerRoot) StopJob(ctx context.Context, req apiparams.StopJobReque
 }
 
 // StartBootstrapJob starts a bootstrap job.
-func (r *controllerRoot) StartBootstrapJob(ctx context.Context, req apiparams.BootstrapParams) (apiparams.StartJobResponse, error) {
+func (r *controllerRoot) StartBootstrapJob(ctx context.Context, req apiparams.BootstrapStartParams) (apiparams.StartJobResponse, error) {
 	const op = errors.Op("jujuapi.BootstrapStart")
 
 	if !r.user.JimmAdmin {

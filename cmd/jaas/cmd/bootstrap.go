@@ -202,7 +202,7 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		stringConfigValues[k] = strVal
 	}
 
-	req := apiparams.BootstrapParams{
+	req := apiparams.BootstrapStartParams{
 		CloudName:         c.cloud,
 		RegionName:        c.region,
 		ControllerName:    c.controllerName,

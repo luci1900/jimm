@@ -625,9 +625,9 @@ type BootstrapFlags struct {
 	ControllerExternalName string `json:"controller-external-name,omitempty"`
 }
 
-// BootstrapParams holds parameters for starting
+// BootstrapStartParams holds parameters for starting
 // a controller bootstrap job.
-type BootstrapParams struct {
+type BootstrapStartParams struct {
 	// CloudName specifies the target cloud for the controller.
 	CloudName string `json:"cloud-name"`
 	// RegionName specifies the target region for the controller.

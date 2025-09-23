@@ -182,7 +182,7 @@ func (s *jimmUnitTestSuite) TestBootstrapStart_RejectsBuiltinClouds(c *gc.C) {
 	jimm := &jimmtest.JIMM{}
 	root := newTestControllerRoot(jimm, "alice@canonical.com", true)
 
-	params := params.BootstrapParams{
+	params := params.BootstrapStartParams{
 		CloudName: "localhost",
 	}
 
@@ -208,7 +208,7 @@ func (s *jimmUnitTestSuite) TestBootstrapStart(c *gc.C) {
 	}
 	root := newTestControllerRoot(jimm, "alice@canonical.com", true)
 
-	params := params.BootstrapParams{
+	params := params.BootstrapStartParams{
 		ControllerName:    "controller",
 		CloudName:         "cloud",
 		RegionName:        "region",
