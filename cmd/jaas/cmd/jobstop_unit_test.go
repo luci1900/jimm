@@ -36,8 +36,8 @@ func (s *bootstrapStopSuite) TestBootstrapStop(c *gc.C) {
 	s.client.EXPECT().StopJob(gomock.Any()).Return(nil)
 	s.writer.EXPECT().Write(fmt.Appendf(nil, "Bootstrap job %s has been stopped.\n", jobId))
 
-	command := &bootstrapStopCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStopCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId: jobId,
@@ -56,8 +56,8 @@ func (s *bootstrapStopSuite) TestBootstrapStopError(c *gc.C) {
 	jobId := "test-job-id"
 	s.client.EXPECT().StopJob(gomock.Any()).Return(errors.New("an error"))
 
-	command := &bootstrapStopCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStopCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId: jobId,

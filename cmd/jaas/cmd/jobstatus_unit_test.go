@@ -38,8 +38,8 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus(c *gc.C) {
 	s.client.EXPECT().Close().Return(nil)
 	s.writer.EXPECT().Write([]byte("Bootstrap job completed successfully.\n"))
 
-	command := &bootstrapStatusCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStatusCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId:               "test-job-id",
@@ -65,8 +65,8 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_Failed(c *gc.C) {
 	s.client.EXPECT().Close().Return(nil)
 	s.writer.EXPECT().Write([]byte("Bootstrap job failed: Bootstrap job failed\n"))
 
-	command := &bootstrapStatusCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStatusCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId:               "test-job-id",
@@ -116,8 +116,8 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_Running(c *gc.C) {
 		}, nil)
 	s.writer.EXPECT().Write([]byte("Bootstrap job completed successfully.\n"))
 
-	command := &bootstrapStatusCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStatusCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId:               "test-job-id",
@@ -145,8 +145,8 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_NoFollow(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("log1\n"))
 	s.writer.EXPECT().Write([]byte("log2\n"))
 
-	command := &bootstrapStatusCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStatusCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId:               "test-job-id",
@@ -177,8 +177,8 @@ func (s *bootstrapStatusSuite) TestBootstrapStatus_AfterCompletion(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("log2\n"))
 	s.writer.EXPECT().Write([]byte("Bootstrap job completed successfully.\n"))
 
-	command := &bootstrapStatusCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
+	command := &jobStatusCommand{
+		jobAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 		jobId:               "test-job-id",
