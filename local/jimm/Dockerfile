@@ -2,8 +2,8 @@
 # Installing air to avoid breakages when we update our Go version before a new air image is available.
 FROM golang:1.24 AS dev
 
-RUN go install github.com/go-delve/delve/cmd/dlv@latest
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2
+RUN go install github.com/air-verse/air@v1.62.0
 
 ENTRYPOINT [ "air" ]
 
