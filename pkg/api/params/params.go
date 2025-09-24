@@ -568,7 +568,7 @@ type ListMigrationTargetsRequest struct {
 	ModelTag string `json:"model-tag"`
 }
 
-// JobStatus represents the status of a bootstrap job.
+// JobStatus represents the status of a job.
 type JobStatus string
 
 const (
@@ -578,36 +578,36 @@ const (
 	StatusFailed     JobStatus = "failed"
 )
 
-// GetJobInfoRequest holds the request to get the status of a bootstrap job.
+// GetJobInfoRequest holds the request to get the status of a job.
 type GetJobInfoRequest struct {
-	// JobID is the ID of the bootstrap job to get the status for.
+	// JobID is the ID of the job to get the status for.
 	JobID string `json:"job-id"`
 	// Watermark is the line number to start reading logs from.
 	Watermark int `json:"watermark"`
 }
 
-// GetJobInfoResponse holds the response for a bootstrap job status.
+// GetJobInfoResponse holds the response for a job status.
 type GetJobInfoResponse struct {
-	// Status is the status of the bootstrap job.
+	// Status is the status of the job.
 	Status JobStatus `json:"status"`
-	// Logs are the logs for the bootstrap job.
+	// Logs are the logs for the job.
 	Logs []string `json:"logs"`
 	// Watermark is the line number to use for the next request.
 	Watermark int `json:"watermark"`
-	// Error is the error message if the bootstrap job failed.
+	// Error is the error message if the job failed.
 	Error string `json:"error,omitempty"`
 }
 
-// StopJobRequest holds the request to stop a bootstrap job.
+// StopJobRequest holds the request to stop a job.
 type StopJobRequest struct {
-	// JobID is the ID of the bootstrap job to stop.
+	// JobID is the ID of the job to stop.
 	JobID string `json:"job-id"`
 }
 
 // StartJobResponse holds the response for starting
-// a controller bootstrap job.
+// a controller job.
 type StartJobResponse struct {
-	// JobID is the ID of the bootstrap job that was started.
+	// JobID is the ID of the job that was started.
 	JobID string `json:"job-id"`
 }
 

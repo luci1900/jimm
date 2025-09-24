@@ -267,14 +267,14 @@ func (c *Client) ListMigrationTargets(req *params.ListMigrationTargetsRequest) (
 	return response.Controllers, err
 }
 
-// GetJobInfo retrieves the status and logs of a bootstrap job.
+// GetJobInfo retrieves the status and logs of a job.
 func (c *Client) GetJobInfo(req *params.GetJobInfoRequest) (params.GetJobInfoResponse, error) {
 	var response params.GetJobInfoResponse
 	err := c.caller.APICall("JIMM", 4, "", "GetJobInfo", req, &response)
 	return response, err
 }
 
-// StopJob stops a bootstrap operation on the JIMM server.
+// StopJob stops a job on the JIMM server.
 func (c *Client) StopJob(req *params.StopJobRequest) error {
 	return c.caller.APICall("JIMM", 4, "", "StopJob", req, nil)
 }

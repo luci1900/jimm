@@ -25,7 +25,7 @@ Stop a job.
 `
 )
 
-// NewJobStopCommand returns a command to stop a bootstrap job.
+// NewJobStopCommand returns a command to stop a job.
 func NewJobStopCommand() cmd.Command {
 	cmd := &jobStopCommand{
 		store: jujuclient.NewFileClientStore(),
@@ -35,7 +35,7 @@ func NewJobStopCommand() cmd.Command {
 	return modelcmd.WrapBase(cmd)
 }
 
-// jobStopCommand to stop a bootstrap job.
+// jobStopCommand to stop a job.
 type jobStopCommand struct {
 	modelcmd.ControllerCommandBase
 

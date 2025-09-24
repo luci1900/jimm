@@ -10,7 +10,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 )
 
-func (s *dbSuite) TestBootstrapLogs_AddBootstrapLog(c *qt.C) {
+func (s *dbSuite) TestJobLogs_AddJobLog(c *qt.C) {
 	ctx := c.Context()
 
 	err := s.Database.Migrate(ctx)
@@ -57,7 +57,7 @@ func (s *dbSuite) TestBootstrapLogs_AddBootstrapLog(c *qt.C) {
 	c.Assert(logs2[0].LogLine, qt.Equals, "Creating Juju controller \"diglett2\" on the-most-amazing-cloud")
 }
 
-func (s *dbSuite) TestBootstrapLogs_QueryBootstrapLogs(c *qt.C) {
+func (s *dbSuite) TestJobLogs_QueryJobLogs(c *qt.C) {
 	ctx := c.Context()
 
 	err := s.Database.Migrate(ctx)
@@ -115,7 +115,7 @@ func (s *dbSuite) TestBootstrapLogs_QueryBootstrapLogs(c *qt.C) {
 
 // This test is a behaviour check, that is, we want our lock does indeed reject
 // on an ACCESS EXCLUSIVE mode when inserting new logs.
-func (s *dbSuite) TestBootstrapLogs_lockBootstrapLogs(c *qt.C) {
+func (s *dbSuite) TestJobLogs_lockJobLogs(c *qt.C) {
 	ctx := c.Context()
 
 	err := s.Database.Migrate(ctx)
@@ -131,14 +131,14 @@ func (s *dbSuite) TestBootstrapLogs_lockBootstrapLogs(c *qt.C) {
 	lockAcquired := make(chan bool)
 
 	// Adjust the query to use NOWAIT, such that it can error immediately
-	// within our AddBootstrapLog call. The routine below will successfully
+	// within our AddJobLog call. The routine below will successfully
 	// acquire a lock because none is present yet. When we attempt to acquire
-	// it again in our AddBootstrapLogs call, it is going to immediately error
+	// it again in our AddJobLogs call, it is going to immediately error
 	// and not queue.
-	c.Patch(db.BootstrapLogLockQuery, *db.BootstrapLogLockQuery+" NOWAIT")
+	c.Patch(db.JobLogLockQuery, *db.JobLogLockQuery+" NOWAIT")
 	go func() {
 		err := s.Database.Transaction(func(d *db.Database) error {
-			err := d.DB.Exec(*db.BootstrapLogLockQuery).Error
+			err := d.DB.Exec(*db.JobLogLockQuery).Error
 			if err != nil {
 				return err
 			}

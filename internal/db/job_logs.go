@@ -19,7 +19,7 @@ var (
 
 // AddJobLog adds a job log entry to the store.
 func (d *Database) AddJobLog(ctx context.Context, jobId uuid.UUID, logLine string) (err error) {
-	const op = errors.Op("db.AddBootstrapLog")
+	const op = errors.Op("db.AddJobLog")
 
 	if err := d.ready(); err != nil {
 		return errors.E(op, err)
@@ -31,7 +31,7 @@ func (d *Database) AddJobLog(ctx context.Context, jobId uuid.UUID, logLine strin
 			return errors.E(op, "failed to lock job_logs table", err)
 		}
 
-		// Get the current line number for this bootstrap job.
+		// Get the current line number for this job.
 		var currentLineNumber int
 		err = d.DB.WithContext(ctx).
 			Model(&dbmodel.JobLog{}).
@@ -44,9 +44,9 @@ func (d *Database) AddJobLog(ctx context.Context, jobId uuid.UUID, logLine strin
 
 		nextLineNumber := currentLineNumber + 1
 
-		log, err := dbmodel.NewBootstrapLog(jobId, nextLineNumber, logLine)
+		log, err := dbmodel.NewJobLog(jobId, nextLineNumber, logLine)
 		if err != nil {
-			return errors.E(op, "failed to construct bootstrap log", err)
+			return errors.E(op, "failed to construct job log", err)
 		}
 
 		if err := d.DB.WithContext(ctx).Create(log).Error; err != nil {
@@ -56,7 +56,7 @@ func (d *Database) AddJobLog(ctx context.Context, jobId uuid.UUID, logLine strin
 	})
 }
 
-// QueryJobLog queries for bootstrap logs based on the jobId and offset.
+// QueryJobLog queries for job logs based on the jobId and offset.
 //
 // It returns the next offset value to use, and this offset value may be the same
 // as the one initially presented / previously returned. This means no new logs have

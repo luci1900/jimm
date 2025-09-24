@@ -262,7 +262,7 @@ Should you cancel this process, you can track the progress via job-status with t
 		follow:              true,
 	}
 
-	return poller.watchBootstrapLogs()
+	return poller.watchJobLogs()
 }
 
 func (c *bootstrapCommand) newClient() (JIMMAPI, error) {

@@ -28,10 +28,10 @@ Displays logs for a job.
 `
 )
 
-// sleepBetweenGetLogs is the duration to wait between successive calls to get logs for a bootstrap job.
+// sleepBetweenGetLogs is the duration to wait between successive calls to get logs for a job.
 const sleepBetweenGetLogs = 1 * time.Second
 
-// NewJobStatusCommand returns a command to display logs for a bootstrap job.
+// NewJobStatusCommand returns a command to display logs for a job.
 func NewJobStatusCommand() cmd.Command {
 	cmd := &jobStatusCommand{
 		store: jujuclient.NewFileClientStore(),
@@ -41,7 +41,7 @@ func NewJobStatusCommand() cmd.Command {
 	return modelcmd.WrapBase(cmd)
 }
 
-// jobStatusCommand displays logs for a bootstrap job.
+// jobStatusCommand displays logs for a job.
 type jobStatusCommand struct {
 	modelcmd.ControllerCommandBase
 
@@ -68,7 +68,7 @@ func (c *jobStatusCommand) Info() *cmd.Info {
 // SetFlags implements cmd.SetFlags interface.
 func (c *jobStatusCommand) SetFlags(f *gnuflag.FlagSet) {
 	c.CommandBase.SetFlags(f)
-	f.BoolVar(&c.follow, "f", false, "follow the logs of the bootstrap job")
+	f.BoolVar(&c.follow, "f", false, "follow the logs of the job")
 }
 
 // Init implements the cmd.Command interface.
@@ -100,7 +100,7 @@ func (c *jobStatusCommand) Run(ctxt *cmd.Context) error {
 		out:                 ctxt.Stdout,
 		follow:              c.follow,
 	}
-	return poller.watchBootstrapLogs()
+	return poller.watchJobLogs()
 }
 
 type logPoller struct {
@@ -111,7 +111,7 @@ type logPoller struct {
 	follow              bool
 }
 
-func (p logPoller) watchBootstrapLogs() error {
+func (p logPoller) watchJobLogs() error {
 	watermark := 0
 
 	for {

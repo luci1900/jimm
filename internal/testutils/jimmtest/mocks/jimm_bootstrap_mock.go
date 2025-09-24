@@ -14,9 +14,9 @@ import (
 )
 
 type BootstapManager struct {
-	GetJobInfo_     func(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error)
-	StopJob_        func(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
-	StartBootstrap_ func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
+	GetJobInfo_        func(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error)
+	StopJob_           func(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
+	StartBootstrapJob_ func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
 }
 
 func (b *BootstapManager) GetJobInfo(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
@@ -33,9 +33,9 @@ func (b *BootstapManager) StopJob(ctx context.Context, user *openfga.User, jobId
 	return b.StopJob_(ctx, user, jobId)
 }
 
-func (b *BootstapManager) StartBootstrap(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error) {
-	if b.StartBootstrap_ == nil {
+func (b *BootstapManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error) {
+	if b.StartBootstrapJob_ == nil {
 		return "", errors.E(errors.CodeNotImplemented)
 	}
-	return b.StartBootstrap_(ctx, user, params)
+	return b.StartBootstrapJob_(ctx, user, params)
 }

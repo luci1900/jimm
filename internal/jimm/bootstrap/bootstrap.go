@@ -169,8 +169,8 @@ func (b *bootstrapManager) StopJob(ctx context.Context, user *openfga.User, jobI
 }
 
 // StartBootstrap starts a bootstrap job with the provided parameters.
-func (b *bootstrapManager) StartBootstrap(ctx context.Context, user *openfga.User, params BootstrapParams) (string, error) {
-	const op = errors.Op("jimm.StartBootstrap")
+func (b *bootstrapManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params BootstrapParams) (string, error) {
+	const op = errors.Op("jimm.StartBootstrapJob")
 
 	if err := params.validate(); err != nil {
 		return "", errors.E(op, fmt.Errorf("invalid bootstrap parameters: %v", err))

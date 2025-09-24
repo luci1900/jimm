@@ -197,7 +197,7 @@ func (s *jimmUnitTestSuite) TestBootstrapStart(c *gc.C) {
 	jimm := &jimmtest.JIMM{
 		BootstapManager_: func() jimm.BootstrapManager {
 			return &mocks.BootstapManager{
-				StartBootstrap_: func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error) {
+				StartBootstrapJob_: func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error) {
 					if startBootstrapErr != nil {
 						return "", startBootstrapErr
 					}

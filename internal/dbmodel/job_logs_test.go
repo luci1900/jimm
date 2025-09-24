@@ -13,28 +13,28 @@ import (
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 )
 
-type bootstrapLogsSuite struct {
+type jobLogsSuite struct {
 	Database *gorm.DB
 }
 
-func (j *bootstrapLogsSuite) Init(c *qt.C) {
+func (j *jobLogsSuite) Init(c *qt.C) {
 	j.Database = gormDB(c)
 }
 
-func (j *bootstrapLogsSuite) TestJobTracker_NewBootstrapLog(c *qt.C) {
+func (j *jobLogsSuite) TestJobTracker_NewJobLog(c *qt.C) {
 	id := uuid.New()
 
-	_, err := dbmodel.NewBootstrapLog(uuid.UUID{}, -1, "test log line")
+	_, err := dbmodel.NewJobLog(uuid.UUID{}, -1, "test log line")
 	c.Assert(err, qt.ErrorMatches, ".*job id cannot be nil.*")
 
-	_, err = dbmodel.NewBootstrapLog(id, -1, "test log line")
+	_, err = dbmodel.NewJobLog(id, -1, "test log line")
 	c.Assert(err, qt.ErrorMatches, ".*line number must be non-negative.*")
 
-	_, err = dbmodel.NewBootstrapLog(id, 0, "")
+	_, err = dbmodel.NewJobLog(id, 0, "")
 	c.Assert(err, qt.ErrorMatches, ".*log line cannot be empty.*")
 }
 
-func (j *bootstrapLogsSuite) TestBootstrapLog(c *qt.C) {
+func (j *jobLogsSuite) TestJobLog(c *qt.C) {
 	db := j.Database
 
 	// Test a bad log entry
@@ -43,7 +43,7 @@ func (j *bootstrapLogsSuite) TestBootstrapLog(c *qt.C) {
 
 	// Test with invalid FK
 	badJobId := uuid.New()
-	entry, err := dbmodel.NewBootstrapLog(badJobId, 0, "hi")
+	entry, err := dbmodel.NewJobLog(badJobId, 0, "hi")
 	c.Assert(err, qt.IsNil)
 	c.Assert(db.Create(entry).Error, qt.ErrorMatches, ".*violates foreign key constraint.*")
 
@@ -55,7 +55,7 @@ func (j *bootstrapLogsSuite) TestBootstrapLog(c *qt.C) {
 	c.Assert(db.Create(job).Error, qt.IsNil)
 
 	// Create a log entry for the job
-	entry, err = dbmodel.NewBootstrapLog(job.JobID, 0, "Creating Juju controller \"aws-controller\" on aws/us-east-1")
+	entry, err = dbmodel.NewJobLog(job.JobID, 0, "Creating Juju controller \"aws-controller\" on aws/us-east-1")
 	c.Assert(err, qt.IsNil)
 	c.Assert(db.Create(entry).Error, qt.IsNil)
 
@@ -67,6 +67,6 @@ func (j *bootstrapLogsSuite) TestBootstrapLog(c *qt.C) {
 	c.Assert(log.LogLine, qt.Equals, "Creating Juju controller \"aws-controller\" on aws/us-east-1")
 }
 
-func TestBootstrapLogsSuite(t *testing.T) {
-	qtsuite.Run(qt.New(t), &bootstrapLogsSuite{})
+func TestJobLogsSuite(t *testing.T) {
+	qtsuite.Run(qt.New(t), &jobLogsSuite{})
 }

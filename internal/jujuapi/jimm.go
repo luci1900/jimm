@@ -681,7 +681,7 @@ func (r *controllerRoot) StartBootstrapJob(ctx context.Context, req apiparams.Bo
 		UserConfig: req.Config,
 	}
 
-	jobID, err := r.jimm.BootstrapManager().StartBootstrap(ctx, r.user, params)
+	jobID, err := r.jimm.BootstrapManager().StartBootstrapJob(ctx, r.user, params)
 	if err != nil {
 		return apiparams.StartJobResponse{}, errors.E(op, fmt.Errorf("failed to start bootstrap job: %v", err))
 	}
