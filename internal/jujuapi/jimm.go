@@ -21,7 +21,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
-	"github.com/canonical/jimm/v3/internal/jimm/bootstrap"
+	"github.com/canonical/jimm/v3/internal/jimm/jobs"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jujuapi/rpc"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
@@ -616,7 +616,7 @@ func (r *controllerRoot) GetJobInfo(ctx context.Context, req apiparams.GetJobInf
 		return apiparams.GetJobInfoResponse{}, errors.E(op, errors.CodeBadRequest, "invalid job ID", err)
 	}
 
-	return r.jimm.BootstrapManager().GetJobInfo(ctx, r.user, jobId, req.Watermark)
+	return r.jimm.JobManager().GetJobInfo(ctx, r.user, jobId, req.Watermark)
 }
 
 // StopJob stops a bootstrap job.
@@ -632,7 +632,7 @@ func (r *controllerRoot) StopJob(ctx context.Context, req apiparams.StopJobReque
 		return errors.E(op, errors.CodeBadRequest, "invalid job ID", err)
 	}
 
-	err = r.jimm.BootstrapManager().StopJob(ctx, r.user, jobID)
+	err = r.jimm.JobManager().StopJob(ctx, r.user, jobID)
 	if err != nil {
 		return errors.E(op, fmt.Errorf("failed to stop bootstrap job: %v", err))
 	}
@@ -664,7 +664,7 @@ func (r *controllerRoot) StartBootstrapJob(ctx context.Context, req apiparams.Bo
 		cloudNameAndRegion = fmt.Sprintf("%s/%s", req.CloudName, req.RegionName)
 	}
 
-	params := bootstrap.BootstrapParams{
+	params := jobs.BootstrapParams{
 		CLIVersion: req.ControllerVersion,
 
 		CloudNameAndRegion: cloudNameAndRegion,
@@ -681,7 +681,7 @@ func (r *controllerRoot) StartBootstrapJob(ctx context.Context, req apiparams.Bo
 		UserConfig: req.Config,
 	}
 
-	jobID, err := r.jimm.BootstrapManager().StartBootstrapJob(ctx, r.user, params)
+	jobID, err := r.jimm.JobManager().StartBootstrapJob(ctx, r.user, params)
 	if err != nil {
 		return apiparams.StartJobResponse{}, errors.E(op, fmt.Errorf("failed to start bootstrap job: %v", err))
 	}

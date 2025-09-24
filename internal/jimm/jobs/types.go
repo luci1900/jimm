@@ -1,6 +1,6 @@
 // Copyright 2025 Canonical.
 
-package bootstrap
+package jobs
 
 import (
 	"fmt"

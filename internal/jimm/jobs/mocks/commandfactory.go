@@ -12,7 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	bootstrap "github.com/canonical/jimm/v3/internal/jimm/bootstrap"
+	"github.com/canonical/jimm/v3/internal/jimm/jobs"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,10 +41,10 @@ func (m *MockCommandFactory) EXPECT() *MockCommandFactoryMockRecorder {
 }
 
 // New mocks base method.
-func (m *MockCommandFactory) New(binaryPath, jujuDataDir string) bootstrap.JujuCommands {
+func (m *MockCommandFactory) New(binaryPath, jujuDataDir string) jobs.JujuCommands {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "New", binaryPath, jujuDataDir)
-	ret0, _ := ret[0].(bootstrap.JujuCommands)
+	ret0, _ := ret[0].(jobs.JujuCommands)
 	return ret0
 }
 
@@ -61,19 +61,19 @@ type MockCommandFactoryNewCall struct {
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockCommandFactoryNewCall) Return(arg0 bootstrap.JujuCommands) *MockCommandFactoryNewCall {
+func (c *MockCommandFactoryNewCall) Return(arg0 jobs.JujuCommands) *MockCommandFactoryNewCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockCommandFactoryNewCall) Do(f func(string, string) bootstrap.JujuCommands) *MockCommandFactoryNewCall {
+func (c *MockCommandFactoryNewCall) Do(f func(string, string) jobs.JujuCommands) *MockCommandFactoryNewCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCommandFactoryNewCall) DoAndReturn(f func(string, string) bootstrap.JujuCommands) *MockCommandFactoryNewCall {
+func (c *MockCommandFactoryNewCall) DoAndReturn(f func(string, string) jobs.JujuCommands) *MockCommandFactoryNewCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

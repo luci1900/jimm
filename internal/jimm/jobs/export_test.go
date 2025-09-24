@@ -1,8 +1,8 @@
 // Copyright 2025 Canonical.
 
-package bootstrap
+package jobs
 
-type BootstrapManager = bootstrapManager
+type JobManager = jobManager
 
 var (
 	BinaryDone = &binaryDone

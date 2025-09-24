@@ -19,7 +19,7 @@ type JIMM interface {
 	AuditLogManager() jimm.AuditLogManager
 	JujuManager() jimm.JujuManager
 	ConfigManager() jimm.ConfigManager
-	BootstrapManager() jimm.BootstrapManager
+	JobManager() jimm.JobManager
 
 	ResourceTag() names.ControllerTag
 	PubSubHub() *pubsub.Hub

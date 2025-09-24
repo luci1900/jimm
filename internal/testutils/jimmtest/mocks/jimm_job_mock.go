@@ -8,32 +8,32 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/canonical/jimm/v3/internal/errors"
-	"github.com/canonical/jimm/v3/internal/jimm/bootstrap"
+	"github.com/canonical/jimm/v3/internal/jimm/jobs"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
 
-type BootstapManager struct {
+type JobManager struct {
 	GetJobInfo_        func(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error)
 	StopJob_           func(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
-	StartBootstrapJob_ func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
+	StartBootstrapJob_ func(ctx context.Context, user *openfga.User, params jobs.BootstrapParams) (string, error)
 }
 
-func (b *BootstapManager) GetJobInfo(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
+func (b *JobManager) GetJobInfo(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
 	if b.GetJobInfo_ == nil {
 		return params.GetJobInfoResponse{}, errors.E(errors.CodeNotImplemented)
 	}
 	return b.GetJobInfo_(ctx, user, jobId, offset)
 }
 
-func (b *BootstapManager) StopJob(ctx context.Context, user *openfga.User, jobId uuid.UUID) error {
+func (b *JobManager) StopJob(ctx context.Context, user *openfga.User, jobId uuid.UUID) error {
 	if b.StopJob_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
 	return b.StopJob_(ctx, user, jobId)
 }
 
-func (b *BootstapManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error) {
+func (b *JobManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params jobs.BootstrapParams) (string, error) {
 	if b.StartBootstrapJob_ == nil {
 		return "", errors.E(errors.CodeNotImplemented)
 	}

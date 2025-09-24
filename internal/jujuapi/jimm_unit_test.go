@@ -12,7 +12,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm"
-	"github.com/canonical/jimm/v3/internal/jimm/bootstrap"
+	"github.com/canonical/jimm/v3/internal/jimm/jobs"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest/mocks"
@@ -135,8 +135,8 @@ func (s *jimmUnitTestSuite) TestBootstrapStatus(c *gc.C) {
 	ctx := context.Background()
 	uuidGenerated := uuid.New()
 	jimm := &jimmtest.JIMM{
-		BootstapManager_: func() jimm.BootstrapManager {
-			return &mocks.BootstapManager{
+		JobManager_: func() jimm.JobManager {
+			return &mocks.JobManager{
 				GetJobInfo_: func(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
 					if jobId != uuidGenerated {
 						return params.GetJobInfoResponse{}, errors.E(errors.CodeNotFound, "job not found")
@@ -195,9 +195,9 @@ func (s *jimmUnitTestSuite) TestBootstrapStart(c *gc.C) {
 	var startBootstrapErr error
 
 	jimm := &jimmtest.JIMM{
-		BootstapManager_: func() jimm.BootstrapManager {
-			return &mocks.BootstapManager{
-				StartBootstrapJob_: func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error) {
+		JobManager_: func() jimm.JobManager {
+			return &mocks.JobManager{
+				StartBootstrapJob_: func(ctx context.Context, user *openfga.User, params jobs.BootstrapParams) (string, error) {
 					if startBootstrapErr != nil {
 						return "", startBootstrapErr
 					}
@@ -240,8 +240,8 @@ func (s *jimmUnitTestSuite) TestBootstrapStop(c *gc.C) {
 	uuidGenerated := uuid.New()
 
 	jimm := &jimmtest.JIMM{
-		BootstapManager_: func() jimm.BootstrapManager {
-			return &mocks.BootstapManager{
+		JobManager_: func() jimm.JobManager {
+			return &mocks.JobManager{
 				StopJob_: func(ctx context.Context, user *openfga.User, jobId uuid.UUID) error {
 					if jobId != uuidGenerated {
 						return errors.E(errors.CodeNotFound, "job not found")

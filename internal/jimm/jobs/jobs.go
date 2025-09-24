@@ -2,7 +2,7 @@
 
 // bootstrap package provides functionality to manage the bootstrap process
 // for controllers in JIMM.
-package bootstrap
+package jobs
 
 import (
 	"context"
@@ -85,7 +85,7 @@ type CommandFactory interface {
 	New(binaryPath, jujuDataDir string) JujuCommands
 }
 
-type bootstrapManager struct {
+type jobManager struct {
 	store                     Store
 	tracker                   JobTracker
 	jujuManager               JujuManager
@@ -93,14 +93,14 @@ type bootstrapManager struct {
 	jimmWellknownJWKSEndpoint string
 }
 
-// NewBootstrapManager creates a new BootstrapManager instance.
-func NewBootstrapManager(
+// NewJobManager creates a new JobManager instance.
+func NewJobManager(
 	store Store,
 	jobtracker JobTracker,
 	jujuManager JujuManager,
 	binaryStore BinaryStore,
 	jimmWellknownJWKSEndpoint string,
-) (*bootstrapManager, error) {
+) (*jobManager, error) {
 	if store == nil {
 		return nil, errors.E("store cannot be nil")
 	}
@@ -116,7 +116,7 @@ func NewBootstrapManager(
 	if jimmWellknownJWKSEndpoint == "" {
 		return nil, errors.E("jimm well-known JWKs endpoint cannot be empty")
 	}
-	return &bootstrapManager{
+	return &jobManager{
 		store:                     store,
 		tracker:                   jobtracker,
 		jujuManager:               jujuManager,
@@ -128,7 +128,7 @@ func NewBootstrapManager(
 // GetJobInfo retrieves the status and logs of a bootstrap job.
 // It requires the user to be an admin and returns the status, error message, logs,
 // and a watermark for pagination.
-func (b *bootstrapManager) GetJobInfo(ctx context.Context, _ *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
+func (b *jobManager) GetJobInfo(ctx context.Context, _ *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
 	const op = errors.Op("jimm.GetJobInfo")
 
 	job, err := b.tracker.GetJob(ctx, jobId)
@@ -149,7 +149,7 @@ func (b *bootstrapManager) GetJobInfo(ctx context.Context, _ *openfga.User, jobI
 }
 
 // StopJob stops a bootstrap job by its ID.
-func (b *bootstrapManager) StopJob(ctx context.Context, user *openfga.User, jobId uuid.UUID) error {
+func (b *jobManager) StopJob(ctx context.Context, user *openfga.User, jobId uuid.UUID) error {
 	const op = errors.Op("jimm.StopJob")
 
 	if user == nil {
@@ -169,7 +169,7 @@ func (b *bootstrapManager) StopJob(ctx context.Context, user *openfga.User, jobI
 }
 
 // StartBootstrap starts a bootstrap job with the provided parameters.
-func (b *bootstrapManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params BootstrapParams) (string, error) {
+func (b *jobManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params BootstrapParams) (string, error) {
 	const op = errors.Op("jimm.StartBootstrapJob")
 
 	if err := params.validate(); err != nil {
@@ -287,7 +287,7 @@ type JobParams struct {
 
 // BootstrapJob returns a [jobtracker.JobFunc] [for use in the [jobtracker.Tracker]] responsible for
 // bootstrapping a controller and adding it to JIMM.
-func (b *bootstrapManager) BootstrapJob(
+func (b *jobManager) BootstrapJob(
 	p JobParams,
 	cmdFactory CommandFactory,
 	user *openfga.User,
@@ -384,7 +384,7 @@ func (b *bootstrapManager) BootstrapJob(
 // when the job is stopped or cancelled. The jobCtx is NOT expected to be used for
 // any store operations, or other operations that should continue even if the job
 // is cancelled.
-func (b *bootstrapManager) runBootstrap(
+func (b *jobManager) runBootstrap(
 	jobCtx context.Context,
 	p JobParams,
 	jobId uuid.UUID,
@@ -495,7 +495,7 @@ func (b *bootstrapManager) runBootstrap(
 	return nil
 }
 
-func (b *bootstrapManager) tryCleanupController(ctx context.Context, jujuCmd JujuCommands, jobID uuid.UUID, controllerName string) error {
+func (b *jobManager) tryCleanupController(ctx context.Context, jujuCmd JujuCommands, jobID uuid.UUID, controllerName string) error {
 	outputCh, err := jujuCmd.DestroyController(
 		ctx,
 		jujucommands.DestroyControllerCmdParams{
@@ -514,7 +514,7 @@ func (b *bootstrapManager) tryCleanupController(ctx context.Context, jujuCmd Juj
 	return nil
 }
 
-func (b *bootstrapManager) consumeCommandOutput(ctx context.Context, outputCh <-chan jujucommands.OutputLine, jobId uuid.UUID) error {
+func (b *jobManager) consumeCommandOutput(ctx context.Context, outputCh <-chan jujucommands.OutputLine, jobId uuid.UUID) error {
 	for output := range outputCh {
 		if output.Err != nil {
 			b.writeJobLog(ctx, jobId, output.Err.Error())
@@ -527,7 +527,7 @@ func (b *bootstrapManager) consumeCommandOutput(ctx context.Context, outputCh <-
 
 // writeJobLog writes logs to the store to eventually be displayed to users.
 // Errors are masked but logged to avoid failing the bootstrap process.
-func (b *bootstrapManager) writeJobLog(ctx context.Context, jobId uuid.UUID, logLine string) {
+func (b *jobManager) writeJobLog(ctx context.Context, jobId uuid.UUID, logLine string) {
 	if err := b.store.AddJobLog(ctx, jobId, logLine); err != nil {
 		zapctx.Error(ctx, "failed to write bootstrap log", zap.Error(err), zap.String("jobId", jobId.String()))
 	}
