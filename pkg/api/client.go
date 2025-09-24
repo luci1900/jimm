@@ -280,7 +280,7 @@ func (c *Client) StopJob(req *params.StopJobRequest) error {
 }
 
 // StartBootstrapJob starts a bootstrap operation on the JIMM server.
-func (c *Client) StartBootstrapJob(req *params.BootstrapStartParams) (*params.StartJobResponse, error) {
+func (c *Client) StartBootstrapJob(req *params.BootstrapParams) (*params.StartJobResponse, error) {
 	var response params.StartJobResponse
 	err := c.caller.APICall("JIMM", 4, "", "StartBootstrapJob", req, &response)
 	return &response, err

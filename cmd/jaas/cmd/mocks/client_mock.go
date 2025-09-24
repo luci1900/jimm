@@ -196,7 +196,7 @@ func (c *MockJIMMAPIPrepareModelMigrationCall) DoAndReturn(f func(*params.Prepar
 }
 
 // StartBootstrapJob mocks base method.
-func (m *MockJIMMAPI) StartBootstrapJob(req *params.BootstrapStartParams) (*params.StartJobResponse, error) {
+func (m *MockJIMMAPI) StartBootstrapJob(req *params.BootstrapParams) (*params.StartJobResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartBootstrapJob", req)
 	ret0, _ := ret[0].(*params.StartJobResponse)
@@ -223,13 +223,13 @@ func (c *MockJIMMAPIStartBootstrapJobCall) Return(arg0 *params.StartJobResponse,
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIStartBootstrapJobCall) Do(f func(*params.BootstrapStartParams) (*params.StartJobResponse, error)) *MockJIMMAPIStartBootstrapJobCall {
+func (c *MockJIMMAPIStartBootstrapJobCall) Do(f func(*params.BootstrapParams) (*params.StartJobResponse, error)) *MockJIMMAPIStartBootstrapJobCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIStartBootstrapJobCall) DoAndReturn(f func(*params.BootstrapStartParams) (*params.StartJobResponse, error)) *MockJIMMAPIStartBootstrapJobCall {
+func (c *MockJIMMAPIStartBootstrapJobCall) DoAndReturn(f func(*params.BootstrapParams) (*params.StartJobResponse, error)) *MockJIMMAPIStartBootstrapJobCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

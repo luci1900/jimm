@@ -99,8 +99,8 @@ func (s *bootstrapCmdSuite) TestBootstrapRunDetached(c *gc.C) {
 			"cred-1": jujucloud.NewCredential(jujucloud.UserPassAuthType, map[string]string{}),
 		},
 	}, nil)
-	s.client.EXPECT().StartBootstrapJob(gomock.Any()).DoAndReturn(func(bsp *params.BootstrapStartParams) (*params.StartJobResponse, error) {
-		expected := &params.BootstrapStartParams{
+	s.client.EXPECT().StartBootstrapJob(gomock.Any()).DoAndReturn(func(bsp *params.BootstrapParams) (*params.StartJobResponse, error) {
+		expected := &params.BootstrapParams{
 			ControllerName: "controller-name",
 			CloudName:      cloudName,
 			RegionName:     "region",
