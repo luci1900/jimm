@@ -538,6 +538,7 @@ func New(p Parameters) (*JIMM, error) {
 		j.jujuManager,
 		binaryStore,
 		p.BootstrapLoginTokenRefreshURL,
+		j.CredentialStore,
 	)
 	if err != nil {
 		return nil, err

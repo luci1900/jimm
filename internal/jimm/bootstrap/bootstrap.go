@@ -124,6 +124,9 @@ func NewBootstrapManager(
 	if jimmWellknownJWKSEndpoint == "" {
 		return nil, errors.E("jimm well-known JWKs endpoint cannot be empty")
 	}
+	if credentialStore == nil {
+		return nil, errors.E("credential store cannot be nil")
+	}
 	return &bootstrapManager{
 		store:                     store,
 		tracker:                   jobtracker,
