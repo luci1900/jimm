@@ -10,6 +10,7 @@ import (
 	"github.com/juju/names/v5"
 	gc "gopkg.in/check.v1"
 
+	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm"
 	"github.com/canonical/jimm/v3/internal/jimm/bootstrap"
@@ -277,4 +278,49 @@ func (s *jimmUnitTestSuite) TestBootstrapStop(c *gc.C) {
 	})
 	c.Assert(err, gc.NotNil)
 	c.Assert(err.Error(), gc.Matches, "invalid job ID")
+}
+
+func (s *jimmUnitTestSuite) TestStartDestroyControllerJob(c *gc.C) {
+	ctx := context.Background()
+
+	ctrlInfo := &dbmodel.Controller{
+		Name:          "moribund",
+		CloudName:     jimmtest.TestCloudName,
+		CloudRegion:   jimmtest.TestCloudRegionName,
+		UUID:          "not-a-uuid",
+		AgentVersion:  "not-a-version",
+		PublicAddress: "not-an-address",
+		CACertificate: "not-even-close",
+		Models:        []dbmodel.Model{},
+	}
+
+	jimm := &jimmtest.JIMM{
+		BootstapManager_: func() jimm.BootstrapManager {
+			return &mocks.BootstapManager{
+				StartDestroyControllerJob_: func(ctx context.Context, user *openfga.User, params bootstrap.DestroyControllerParams) (string, error) {
+					return uuid.New().String(), nil
+				},
+			}
+		},
+		JujuManager_: func() jimm.JujuManager {
+			return &mocks.JujuManager{
+				ControllerService: mocks.ControllerService{
+					ControllerInfo_: func(ctx context.Context, name string) (*dbmodel.Controller, error) {
+						return ctrlInfo, nil
+					},
+				},
+			}
+		},
+	}
+	root := newTestControllerRoot(jimm, "alice@canonical.com", true)
+	req := params.DestroyControllerRequest{}
+
+	// OK to destroy controller without models
+	_, err := root.StartDestroyControllerJob(ctx, req)
+	c.Assert(err, gc.IsNil)
+
+	// Refuse to destroy controller with models
+	ctrlInfo.Models = append(ctrlInfo.Models, dbmodel.Model{})
+	_, err = root.StartDestroyControllerJob(ctx, req)
+	c.Assert(err, gc.ErrorMatches, "cannot destroy controller with models")
 }

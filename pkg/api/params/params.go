@@ -632,3 +632,10 @@ type BootstrapParams struct {
 	// ControllerVersion is the version of the controller to be bootstrapped.
 	ControllerVersion string `json:"controller-version"`
 }
+
+// DestroyControllerRequest holds the name of
+// the controller to be destroyed.
+type DestroyControllerRequest struct {
+	// ControllerName of the controller to destroy
+	ControllerName string `json:"controller-name"`
+}
