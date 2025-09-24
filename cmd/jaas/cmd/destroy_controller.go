@@ -32,8 +32,6 @@ type destroyControllerCommand struct {
 
 	store jujuclient.ClientStore
 
-	cloud          string
-	region         string
 	controllerName string
 
 	// Flags
