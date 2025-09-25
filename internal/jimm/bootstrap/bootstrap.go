@@ -575,7 +575,7 @@ func (b *bootstrapManager) StartDestroyControllerJob(ctx context.Context, user *
 			)
 
 			b.writeJobLog(jobCtx, jobId,
-				fmt.Sprintf("Downloading the Juju CLI, version %s for bootstrap. This may take a few minutes", params.CLIVersion))
+				fmt.Sprintf("Downloading the Juju CLI, version %s for destroy-controller. This may take a few minutes", params.CLIVersion))
 
 			binary, err := b.binaryStore.Get(
 				jobCtx,
