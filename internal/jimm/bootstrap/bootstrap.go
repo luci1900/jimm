@@ -603,13 +603,19 @@ func (b *bootstrapManager) StartDestroyControllerJob(ctx context.Context, user *
 			cmdFactory := commandFactory{}
 			jujuCmd := cmdFactory.New(binary.FullPath, jujuDataDir)
 
-			username, pass, err := b.credentialStore.GetControllerCredentials(ctx, params.ControllerName)
+			username, pass, err := b.credentialStore.GetControllerCredentials(jobCtx, params.ControllerName)
 			if err != nil {
 				return errors.E(fmt.Errorf("failed to get controller credentials: %w", err))
 			}
 
+			// Update the context from this point to prevent it from being cancelled when the parent is cancelled.
+			// This ensures that we still capture output from the destroy-controller command
+			// and log it if that command is cancelled while keeping things like
+			// log info that was set on the context.
+			jobCtx = context.WithoutCancel(jobCtx)
+
 			outputCh, err := jujuCmd.DestroyController(
-				ctx,
+				jobCtx,
 				jujucommands.DestroyControllerCmdParams{
 					ControllerName: params.ControllerName,
 					Username:       username,
@@ -619,13 +625,6 @@ func (b *bootstrapManager) StartDestroyControllerJob(ctx context.Context, user *
 			if err != nil {
 				return errors.E(fmt.Errorf("failed to run destroy-controller command: %w", err))
 			}
-
-			// Update the context from this point to prevent it from being cancelled when the parent is cancelled.
-			// This ensures that we still capture output from the destroy-controller command
-			// and log it if that command is cancelled while keeping things like
-			// log info that was set on the context.
-			jobCtx = context.WithoutCancel(jobCtx)
-
 			err = b.consumeCommandOutput(jobCtx, outputCh, jobId)
 			if err != nil {
 				return err
