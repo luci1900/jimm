@@ -62,7 +62,7 @@ func TestStore(t *testing.T) {
 
 	archive := makeTarXz(t, "juju", []byte("im a juju binary"))
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.Assert(r.URL.Path, qt.Equals, "/3.6/3.6.2/+download/juju-3.6.2-linux-amd64.tar.xz")
+		c.Assert(r.URL.Path, qt.Equals, "/v3.6.2/juju-3.6.2-linux-amd64.tar.xz")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write(archive)
 		c.Assert(err, qt.IsNil)
@@ -95,7 +95,7 @@ func TestStoreWithTarMissingJujuBinary(t *testing.T) {
 
 	archive := makeTarXz(t, "diary.txt", []byte("my diary"))
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.Assert(r.URL.Path, qt.Equals, "/3.6/3.6.2/+download/juju-3.6.2-linux-amd64.tar.xz")
+		c.Assert(r.URL.Path, qt.Equals, "/v3.6.2/juju-3.6.2-linux-amd64.tar.xz")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write(archive)
 		c.Assert(err, qt.IsNil)
@@ -125,7 +125,7 @@ func TestStoreProtectsAgainstDecompressionBomb(t *testing.T) {
 	archive := makeTarXz(t, "juju", tenBytesContent)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.Assert(r.URL.Path, qt.Equals, "/3.6/3.6.2/+download/juju-3.6.2-linux-amd64.tar.xz")
+		c.Assert(r.URL.Path, qt.Equals, "/v3.6.2/juju-3.6.2-linux-amd64.tar.xz")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write(archive)
 		c.Assert(err, qt.IsNil)

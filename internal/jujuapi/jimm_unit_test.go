@@ -215,7 +215,7 @@ func (s *jimmUnitTestSuite) TestBootstrapStart(c *gc.C) {
 		Config:            map[string]string{},
 		Cloud:             jujuparams.Cloud{},
 		Credential:        jujuparams.CloudCredential{},
-		ControllerVersion: "3.6.8",
+		ControllerVersion: "3.6.9",
 	}
 
 	response, err := root.StartBootstrapJob(ctx, params)
