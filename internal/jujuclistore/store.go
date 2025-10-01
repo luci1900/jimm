@@ -31,11 +31,11 @@ import (
 const (
 	timeoutRequestDuration = 5 * time.Minute
 
-	// launchPadURL is the base URL for the Juju binary downloads.
-	launchPadURL = "https://launchpad.net/juju"
+	// githubReleaseURL is the base URL for the Juju binary downloads.
+	githubReleaseURL = "https://github.com/juju/juju/releases/download/"
 
-	// launchPadTemplate is the template for constructing the download URL for Juju binaries.
-	launchPadTemplate = "{{.BaseURL}}/{{.VersionWithMinor}}/{{.VersionWithPatch}}/+download/juju-{{.VersionWithPatch}}-{{.Os}}-{{.Arch}}.tar.xz"
+	// binaryURLTemplate is the template for constructing the download URL for Juju binaries.
+	binaryURLTemplate = "{{.BaseURL}}/v{{.VersionWithPatch}}/juju-{{.VersionWithPatch}}-{{.Os}}-{{.Arch}}.tar.xz"
 
 	// defaultProgressBarWidth holds the default width of the progress bar when downloading
 	// juju binaries.
@@ -88,9 +88,9 @@ type jujuCLIStore struct {
 func NewJujuCLIStore(cfg Config) (*jujuCLIStore, error) {
 	if cfg.BaseURL == "" {
 		// Default to the launchpad URL if no base URL is provided.
-		cfg.BaseURL = launchPadURL
+		cfg.BaseURL = githubReleaseURL
 	}
-	tmpl, err := template.New("URL").Parse(launchPadTemplate)
+	tmpl, err := template.New("URL").Parse(binaryURLTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,6 @@ func (p *jujuCLIStore) Get(ctx context.Context, spec JujuBinarySpec, logFunction
 	}
 	err = p.template.Execute(&buf, map[string]string{
 		"BaseURL":          p.config.BaseURL,
-		"VersionWithMinor": fmt.Sprintf("%d.%d", v.Major, v.Minor),
 		"VersionWithPatch": fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch),
 		"Os":               spec.Os,
 		"Arch":             spec.Arch,
