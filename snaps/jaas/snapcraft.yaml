@@ -75,3 +75,4 @@ parts:
       ln -sf jaas bin/juju-job-status
       ln -sf jaas bin/juju-job-stop
       ln -sf jaas bin/juju-bootstrap
+      ln -sf jaas bin/juju-destroy-controller

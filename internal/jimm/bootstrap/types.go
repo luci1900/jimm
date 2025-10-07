@@ -51,3 +51,15 @@ func (p BootstrapParams) validate() error {
 	}
 	return nil
 }
+
+// DestroyControllerParams
+type DestroyControllerParams struct {
+	ControllerName string
+	ControllerUUID string
+	AgentVersion   string
+	CloudName      string
+	CloudRegion    string
+	APIEndpoints   []string
+	PublicAddress  string
+	CACertificate  string
+}

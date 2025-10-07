@@ -8,12 +8,15 @@ import (
 	"fmt"
 
 	"github.com/juju/juju/juju/osenv"
+	"github.com/juju/juju/jujuclient"
 	_ "github.com/juju/juju/provider/lxd"
 )
 
 // DestroyControllerCmdParams holds the parameters to tear-down a controller.
 type DestroyControllerCmdParams struct {
-	ControllerName string
+	ControllerName    string
+	ControllerDetails jujuclient.ControllerDetails
+	AccountDetails    jujuclient.AccountDetails
 }
 
 // Validate validates the BootstrapCmdParams.
@@ -54,6 +57,21 @@ func (c *destroyControllerCmd) Run(ctx context.Context, p DestroyControllerCmdPa
 
 	dataDir := c.runner.JujuDataDir()
 	osenv.SetJujuXDGDataHome(dataDir)
+	store := jujuclient.NewFileClientStore()
+
+	if p.ControllerDetails.ControllerUUID != "" {
+		err := store.AddController(p.ControllerName, p.ControllerDetails)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if p.AccountDetails.User != "" {
+		err := store.UpdateAccount(p.ControllerName, p.AccountDetails)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	args := p.BuildCmdArgs()
 
