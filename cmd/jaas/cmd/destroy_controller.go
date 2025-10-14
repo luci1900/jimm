@@ -31,9 +31,14 @@ printing only the job ID, without waiting for the job to complete.
 
 The argument denotes the name of the Juju controller to be destroyed.
 
-Note that destroying controllers on k8s clouds will only work on
-Juju 3.6.10 or newer. As a workaround, you can first unregister
-the controller and then destroy it separately.
+Note that JIMM will internally do the following:
+- download the juju CLI matching the controller version
+- destroy the controller
+- unregister the controller from JIMM
+
+Destroying controllers on k8s clouds will only work on uju 3.6.10 or newer.
+As a workaround, you can first unregister the controller and then destroy 
+it separately.
 `
 	destroyControllerExamples = `
 	juju [jaas] destroy-controller <controller name>

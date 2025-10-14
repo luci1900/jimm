@@ -64,6 +64,11 @@ GKE or EKS.
 
 See the Juju bootstrap documentation for more details and how to configure
 bootstrap for a Kubernetes cluster Juju does not recognise.
+
+Note that JIMM will internally do the following:
+- download the juju CLI matching the desired controller version
+- bootstrap a new controller
+- register the controller with JIMM
 `
 	bootstrapExamples = `
 	juju [jaas] bootstrap <cloud[/region]> <controller name> <controller version>
