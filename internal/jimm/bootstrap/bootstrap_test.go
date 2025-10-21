@@ -126,6 +126,30 @@ func (s *bootstrapManagerSuite) Init(c *qt.C) {
 	c.Assert(err, qt.IsNil)
 }
 
+func (s *bootstrapManagerSuite) TestStartBootstrapJob_LoginTokenRefreshURLNotConfigured(c *qt.C) {
+	ctx := c.Context()
+	ctrl, mocks, user := setupTest(c)
+	defer ctrl.Finish()
+	manager, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, "", mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+	_, err = manager.StartBootstrapJob(ctx, user, bootstrap.BootstrapParams{})
+	c.Assert(err, qt.ErrorMatches, "bootstrap login token refresh URL is not configured.*")
+}
+
+func (s *bootstrapManagerSuite) TestStartBootstrapJob_LoginTokenRefreshURLEmpty(c *qt.C) {
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+	_, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, "", mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+}
+
+func (s *bootstrapManagerSuite) TestStartBootstrapJob_LoginTokenRefreshURLMalformed(c *qt.C) {
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+	_, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, ":/url/", mocks.credentialStore)
+	c.Assert(err, qt.ErrorMatches, ".*failed to parse bootstrap login token refresh URL.*")
+}
+
 func (s *bootstrapManagerSuite) TestGetJobInfo(c *qt.C) {
 	ctx := c.Context()
 	read := make(chan struct{})

@@ -448,10 +448,6 @@ func NewService(ctx context.Context, p Params) (*Service, error) {
 		return nil, errors.E(op, err, "failed to parse final redirect url for the dashboard")
 	}
 
-	// Scheme is not optional, so we aren't using ParseURLWithOptionalScheme here.
-	if _, err := url.Parse(p.BootstrapLoginTokenRefreshURL); err != nil {
-		return nil, errors.E(op, err, "failed to parse login token refresh URL")
-	}
 	jimmParameters.BootstrapLoginTokenRefreshURL = p.BootstrapLoginTokenRefreshURL
 
 	s.jimm, err = jimm.New(jimmParameters)

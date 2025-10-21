@@ -7,6 +7,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 	"time"
@@ -122,8 +123,12 @@ func NewBootstrapManager(
 	if binaryStore == nil {
 		return nil, errors.E("binary store cannot be nil")
 	}
-	if jimmWellknownJWKSEndpoint == "" {
-		return nil, errors.E("jimm well-known JWKs endpoint cannot be empty")
+	// validate the JWKs endpoint URL if provided.
+	if jimmWellknownJWKSEndpoint != "" {
+		// Scheme is not optional, so we aren't using ParseURLWithOptionalScheme here.
+		if _, err := url.Parse(jimmWellknownJWKSEndpoint); err != nil {
+			return nil, errors.E(err, "failed to parse bootstrap login token refresh URL")
+		}
 	}
 	if credentialStore == nil {
 		return nil, errors.E("credential store cannot be nil")
@@ -184,6 +189,10 @@ func (b *bootstrapManager) StopJob(ctx context.Context, user *openfga.User, jobI
 // StartBootstrap starts a bootstrap job with the provided parameters.
 func (b *bootstrapManager) StartBootstrapJob(ctx context.Context, user *openfga.User, params BootstrapParams) (string, error) {
 	const op = errors.Op("jimm.StartBootstrapJob")
+
+	if b.jimmWellknownJWKSEndpoint == "" {
+		return "", errors.E(op, "bootstrap login token refresh URL is not configured. Cannot proceed with bootstrap. Please configure it and try again.")
+	}
 
 	if err := params.validate(); err != nil {
 		return "", errors.E(op, fmt.Errorf("invalid bootstrap parameters: %v", err))
