@@ -11,6 +11,7 @@ import (
 var (
 	ResolveTag                     = resolveTag
 	DetermineAccessLevelAfterGrant = determineAccessLevelAfterGrant
+	BatchSizeOpenfga               = BATCH_SIZE_OPENFGA
 )
 
 // PermissionManager is a type alias to export PermissionManager for use in tests.

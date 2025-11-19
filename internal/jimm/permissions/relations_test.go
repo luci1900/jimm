@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 
+	petname "github.com/dustinkirkland/golang-petname"
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/common/pagination"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
+	"github.com/canonical/jimm/v3/internal/jimm/permissions"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
@@ -463,4 +465,72 @@ func (s *permissionManagerSuite) TestRelationshipLogUserUpdated(c *qt.C) {
 	err = s.manager.AddRelation(ctx, u, tuples)
 	c.Assert(err, qt.IsNil)
 	c.Assert(logs.Len(), qt.Equals, 3)
+}
+
+func (s *permissionManagerSuite) TestAddRelationBatch(c *qt.C) {
+	c.Parallel()
+
+	u := openfga.NewUser(&dbmodel.Identity{Name: "admin@canonical.com"}, s.ofgaClient)
+	u.JimmAdmin = true
+
+	_, _, _, model, _, _, _, _ := jimmtest.CreateTestControllerEnvironment(c.Context(), c, s.db)
+	tuples := []apiparams.RelationshipTuple{}
+
+	expectedLength := permissions.BatchSizeOpenfga*2 + 1
+	for range expectedLength {
+		u, err := dbmodel.NewIdentity(petname.Generate(3, "-"+"canonical.com"))
+		c.Assert(err, qt.IsNil)
+
+		c.Assert(s.db.DB.Create(u).Error, qt.IsNil)
+		tuples = append(tuples, apiparams.RelationshipTuple{
+			Object:       u.Tag().String(),
+			Relation:     names.ReaderRelation.String(),
+			TargetObject: model.ResourceTag().String(),
+		})
+	}
+
+	err := s.manager.AddRelation(c.Context(), u, tuples)
+	c.Assert(err, qt.IsNil)
+
+	tuplesListed, _, err := s.manager.ListRelationshipTuples(c.Context(), s.adminUser, apiparams.RelationshipTuple{
+		Relation:     names.ReaderRelation.String(),
+		TargetObject: model.ResourceTag().String(),
+	}, 100, "")
+	c.Assert(err, qt.IsNil)
+	c.Assert(tuplesListed, qt.HasLen, 100)
+}
+
+func (s *permissionManagerSuite) TestRemoveRelationBatch(c *qt.C) {
+	c.Parallel()
+
+	u := openfga.NewUser(&dbmodel.Identity{Name: "admin@canonical.com"}, s.ofgaClient)
+	u.JimmAdmin = true
+
+	_, _, _, model, _, _, _, _ := jimmtest.CreateTestControllerEnvironment(c.Context(), c, s.db)
+	tuples := []apiparams.RelationshipTuple{}
+
+	for range permissions.BatchSizeOpenfga*2 + 1 {
+		u, err := dbmodel.NewIdentity(petname.Generate(3, "-"+"canonical.com"))
+		c.Assert(err, qt.IsNil)
+
+		c.Assert(s.db.DB.Create(u).Error, qt.IsNil)
+		tuples = append(tuples, apiparams.RelationshipTuple{
+			Object:       u.Tag().String(),
+			Relation:     names.ReaderRelation.String(),
+			TargetObject: model.ResourceTag().String(),
+		})
+	}
+
+	err := s.manager.AddRelation(c.Context(), u, tuples)
+	c.Assert(err, qt.IsNil)
+
+	err = s.manager.RemoveRelation(c.Context(), u, tuples)
+	c.Assert(err, qt.IsNil)
+
+	tuplesListed, _, err := s.manager.ListRelationshipTuples(c.Context(), s.adminUser, apiparams.RelationshipTuple{
+		Relation:     names.ReaderRelation.String(),
+		TargetObject: model.ResourceTag().String(),
+	}, 100, "")
+	c.Assert(err, qt.IsNil)
+	c.Assert(tuplesListed, qt.HasLen, 0)
 }

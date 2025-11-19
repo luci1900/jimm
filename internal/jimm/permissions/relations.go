@@ -18,6 +18,13 @@ import (
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
+// BATCH_SIZE_OPENFGA defines the maximum number of tuples to process in a single batch operation.
+// This is the default for maxTuplesPerWrite
+// See: https://openfga.dev/docs/getting-started/setup-openfga/configuration
+// TODO: this value should be received from the OpenFGA charm's relation, so we make sure that we batch
+// requests according to the deployed OpenFGA instance configuration.
+const BATCH_SIZE_OPENFGA = 100
+
 // AddRelation checks user permission and add given relations tuples.
 // At the moment user is required be admin.
 func (j *permissionManager) AddRelation(ctx context.Context, user *openfga.User, tuples []apiparams.RelationshipTuple) error {
@@ -29,11 +36,19 @@ func (j *permissionManager) AddRelation(ctx context.Context, user *openfga.User,
 	if err != nil {
 		return errors.E(err)
 	}
-	err = j.authSvc.AddRelation(ctx, parsedTuples...)
-	if err != nil {
-		return errors.E(op, errors.CodeOpenFGARequestFailed, err)
+	for i := 0; i < len(parsedTuples); i += BATCH_SIZE_OPENFGA {
+		end := i + BATCH_SIZE_OPENFGA
+		if end > len(parsedTuples) {
+			end = len(parsedTuples)
+		}
+		batch := parsedTuples[i:end]
+
+		err = j.authSvc.AddRelation(ctx, batch...)
+		if err != nil {
+			return errors.E(op, errors.CodeOpenFGARequestFailed, err)
+		}
+		j.logUserUpdates(ctx, user, batch, true)
 	}
-	j.logUserUpdates(ctx, user, parsedTuples, true)
 	return nil
 }
 
@@ -48,11 +63,19 @@ func (j *permissionManager) RemoveRelation(ctx context.Context, user *openfga.Us
 	if err != nil {
 		return errors.E(op, err)
 	}
-	err = j.authSvc.RemoveRelation(ctx, parsedTuples...)
-	if err != nil {
-		return errors.E(op, errors.CodeOpenFGARequestFailed, err)
+	for i := 0; i < len(parsedTuples); i += BATCH_SIZE_OPENFGA {
+		end := i + BATCH_SIZE_OPENFGA
+		if end > len(parsedTuples) {
+			end = len(parsedTuples)
+		}
+		batch := parsedTuples[i:end]
+
+		err = j.authSvc.RemoveRelation(ctx, batch...)
+		if err != nil {
+			return errors.E(op, errors.CodeOpenFGARequestFailed, err)
+		}
+		j.logUserUpdates(ctx, user, batch, true)
 	}
-	j.logUserUpdates(ctx, user, parsedTuples, false)
 	return nil
 }
 
