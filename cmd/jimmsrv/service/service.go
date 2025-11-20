@@ -53,7 +53,7 @@ import (
 const (
 	localDischargePath                        = "/macaroons"
 	INTERVAL_BETWEEN_MODEL_MIGRATIONS_CLEANUP = 10 * time.Minute
-	INTERVAL_BETWEEN_MODEL_UPGRADES           = 1 * time.Second
+	INTERVAL_BETWEEN_MODEL_UPGRADES           = 10 * time.Second
 )
 
 // OpenFGAParams holds parameters needed to connect to the OpenFGA server.
@@ -317,18 +317,18 @@ func (s *Service) CleanupPartialModelMigrations(ctx context.Context, trigger <-c
 	}
 }
 
-// ProgressModelUpgrades triggers every `trigger` time and calls the jimm methods to progress model upgrades.
-func (s *Service) ProgressModelUpgrades(ctx context.Context, trigger <-chan time.Time) error {
+// TickModelUpgrades triggers every `trigger` time and calls the jimm methods to progress model upgrades.
+func (s *Service) TickModelUpgrades(ctx context.Context, trigger <-chan time.Time) error {
 	for {
 		select {
 		case <-trigger:
-			err := s.jimm.JujuManager().ProgressModelUpgrades(ctx)
+			err := s.jimm.JujuManager().TickModelUpgrades(ctx)
 			if err != nil {
-				zapctx.Error(ctx, "model upgrade progression", zap.Error(err))
+				zapctx.Error(ctx, "tick model upgrade", zap.Error(err))
 				continue
 			}
 		case <-ctx.Done():
-			zapctx.Info(ctx, "exiting model upgrade progression polling")
+			zapctx.Info(ctx, "exiting model upgrade tick loop")
 			return nil
 		}
 	}
@@ -619,7 +619,7 @@ func (s *Service) StartServices(ctx context.Context, svc *service.Service) {
 
 		// ProgressModelUpgrades cleanup - progresses model upgrades
 		svc.Go(func() error {
-			return s.ProgressModelUpgrades(ctx, time.NewTicker(INTERVAL_BETWEEN_MODEL_UPGRADES).C)
+			return s.TickModelUpgrades(ctx, time.NewTicker(INTERVAL_BETWEEN_MODEL_UPGRADES).C)
 		})
 	}
 

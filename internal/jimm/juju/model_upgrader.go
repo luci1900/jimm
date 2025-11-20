@@ -13,11 +13,11 @@ import (
 	"github.com/canonical/jimm/v3/internal/servermon"
 )
 
-// ProgressModelUpgrades loops over models due for upgrade, checks their status
+// TickModelUpgrades loops over models due for upgrade, checks their status
 // and runs the logic for the next step in the upgrade process.
 // This effectively implements progressing the state machine for each model's upgrade.
-func (j *JujuManager) ProgressModelUpgrades(ctx context.Context) error {
-	const op = "jimm.juju.ProgressModelUpgrades"
+func (j *JujuManager) TickModelUpgrades(ctx context.Context) error {
+	const op = "jimm.juju.TickModelUpgrades"
 	zapctx.Info(ctx, string(op))
 	durationObserver := servermon.DurationObserver(servermon.JimmMethodsDurationHistogram, string(op))
 	defer durationObserver()

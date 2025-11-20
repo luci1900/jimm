@@ -270,7 +270,7 @@ type JujuManager interface {
 	AbortMigration(ctx context.Context, user *openfga.User, modelUUID string) error
 	CleanupPartialModelMigrations(ctx context.Context) error
 	ListMigrationTargets(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
-	ProgressModelUpgrades(ctx context.Context) error
+	TickModelUpgrades(ctx context.Context) error
 
 	// Other methods
 	AddCloudToController(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
