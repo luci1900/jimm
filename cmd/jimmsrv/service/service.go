@@ -53,6 +53,7 @@ import (
 const (
 	localDischargePath                        = "/macaroons"
 	INTERVAL_BETWEEN_MODEL_MIGRATIONS_CLEANUP = 10 * time.Minute
+	INTERVAL_BETWEEN_MODEL_UPGRADES           = 1 * time.Second
 )
 
 // OpenFGAParams holds parameters needed to connect to the OpenFGA server.
@@ -311,6 +312,23 @@ func (s *Service) CleanupPartialModelMigrations(ctx context.Context, trigger <-c
 			}
 		case <-ctx.Done():
 			zapctx.Info(ctx, "exiting partial model migration cleanup polling")
+			return nil
+		}
+	}
+}
+
+// ProgressModelUpgrades triggers every `trigger` time and calls the jimm methods to progress model upgrades.
+func (s *Service) ProgressModelUpgrades(ctx context.Context, trigger <-chan time.Time) error {
+	for {
+		select {
+		case <-trigger:
+			err := s.jimm.JujuManager().ProgressModelUpgrades(ctx)
+			if err != nil {
+				zapctx.Error(ctx, "model upgrade progression", zap.Error(err))
+				continue
+			}
+		case <-ctx.Done():
+			zapctx.Info(ctx, "exiting model upgrade progression polling")
 			return nil
 		}
 	}
@@ -597,6 +615,11 @@ func (s *Service) StartServices(ctx context.Context, svc *service.Service) {
 		// CleanupPartialModelMigration cleanup - cleans up all partial model migrations.
 		svc.Go(func() error {
 			return s.CleanupPartialModelMigrations(ctx, time.NewTicker(INTERVAL_BETWEEN_MODEL_MIGRATIONS_CLEANUP).C)
+		})
+
+		// ProgressModelUpgrades cleanup - progresses model upgrades
+		svc.Go(func() error {
+			return s.ProgressModelUpgrades(ctx, time.NewTicker(INTERVAL_BETWEEN_MODEL_UPGRADES).C)
 		})
 	}
 

@@ -60,6 +60,7 @@ type JujuManager struct {
 	GrantOfferAccessOnController_      func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
 	RevokeOfferAccessOnController_     func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
 	PrepareModelMigration_             func(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, userMapping map[string]string) (string, error)
+	ProgressModelUpgrades_             func(ctx context.Context) error
 	// These mocks can be removed soon once the jujuManager interface is updated.
 	UpdateMetrics_ func(ctx context.Context)
 	PollModels_    func(ctx context.Context) error
@@ -282,4 +283,11 @@ func (j *JujuManager) CleanupPartialModelMigrations(ctx context.Context) error {
 		return nil
 	}
 	return j.CleanupPartialModelMigrations_(ctx)
+}
+
+func (j *JujuManager) ProgressModelUpgrades(ctx context.Context) error {
+	if j.ProgressModelUpgrades_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return j.ProgressModelUpgrades_(ctx)
 }
