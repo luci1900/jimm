@@ -4,11 +4,13 @@ package juju
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
 	"github.com/canonical/jimm/v3/internal/db"
+	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/servermon"
 )
@@ -22,25 +24,42 @@ func (j *JujuManager) TickModelUpgrades(ctx context.Context) error {
 	durationObserver := servermon.DurationObserver(servermon.JimmMethodsDurationHistogram, string(op))
 	defer durationObserver()
 
+	// Obtain likely model upgrade IDs in a separate read transaction
 	upgrades, err := j.Database.GetAllModelUpgrades(ctx)
 	if err != nil {
 		return errors.E(op, err)
 	}
 
-	// loop over all models upgrades registered
 	for _, upgrade := range upgrades {
 		err := j.Database.Transaction(func(database *db.Database) error {
 			if err := database.GetModelUpgradeForUpdate(ctx, &upgrade); err != nil {
-				return errors.E(op, err)
+				// Ignore missing entries, they may have been concurrently deleted
+				if errors.ErrorCode(err) != errors.CodeNotFound {
+					return errors.E(op, err)
+				}
 			}
 
-			// switch over status
-			// call appropriate state transition method
-			// update status, commit
+			var statusErr error
+			switch upgrade.Status {
+			case dbmodel.ModelUpgradeStatusPending:
+				statusErr = j.handlePending(ctx, database, &upgrade)
+			case dbmodel.ModelUpgradeStatusBootstrapping:
+				//
+			case dbmodel.ModelUpgradeStatusMigrating:
+				//
+			case dbmodel.ModelUpgradeStatusCompleted:
+				//
+			case dbmodel.ModelUpgradeStatusFailed:
+				//
+			default:
+				return errors.E(op, fmt.Errorf("unhandled model upgrade status"))
+			}
 
-			// any calls made during state transition shouldn't block the transaction
-			// that is holding the lock
+			if statusErr != nil {
+				return errors.E(op, statusErr)
+			}
 
+			// Allow commit if no error
 			return nil
 		})
 		if err != nil {
@@ -49,5 +68,11 @@ func (j *JujuManager) TickModelUpgrades(ctx context.Context) error {
 		}
 	}
 
+	return nil
+}
+
+func (j *JujuManager) handlePending(ctx context.Context, database *db.Database, upgrade *dbmodel.ModelUpgrade) error {
+	// make call to Juju controller
+	// update model upgrade status
 	return nil
 }
