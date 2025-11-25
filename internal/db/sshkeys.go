@@ -12,14 +12,14 @@ import (
 
 // AddSSHKey adds a new SSH key.
 func (d *Database) AddSSHKey(ctx context.Context, sshKey *dbmodel.SSHKey) (err error) {
-	const op = errors.Op("db.AddSSHKey")
+	const op = "db.AddSSHKey"
 	if err := d.ready(); err != nil {
-		return errors.E(op, err)
+		return errors.E(err)
 	}
 
-	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, string(op))
+	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
 	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
+	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 
 	if err := d.DB.WithContext(ctx).Create(sshKey).Error; err != nil {
 		dbErr := dbError(err)
@@ -27,22 +27,22 @@ func (d *Database) AddSSHKey(ctx context.Context, sshKey *dbmodel.SSHKey) (err e
 			// we don't return an error if a user tries to add the same key twice.
 			return nil
 		}
-		return errors.E(op, dbErr)
+		return errors.E(dbErr)
 	}
 	return nil
 }
 
 // RemoveSSHKeyByFingerprint removes a user's ssh key identified by its fingerprint.
 func (d *Database) RemoveSSHKeyByFingerprint(ctx context.Context, identityName string, model SSHKeyModelFilter, fingerprint string) (err error) {
-	const op = errors.Op("db.RemoveSSHKeyByFingerprint")
+	const op = "db.RemoveSSHKeyByFingerprint"
 
 	if err := d.ready(); err != nil {
-		return errors.E(op, err)
+		return errors.E(err)
 	}
 
-	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, string(op))
+	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
 	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
+	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 
 	query := d.DB.Where("identity_name = ?", identityName).
 		Where("model_uuid = ?", model.ModelUUID).
@@ -50,11 +50,11 @@ func (d *Database) RemoveSSHKeyByFingerprint(ctx context.Context, identityName s
 		Delete(&dbmodel.SSHKey{})
 
 	if err := query.Error; err != nil {
-		return errors.E(op, dbError(err))
+		return errors.E(dbError(err))
 	}
 
 	if query.RowsAffected == 0 {
-		return errors.E(op, errors.CodeNotFound, "key not found")
+		return errors.E(errors.CodeNotFound, "key not found")
 	}
 
 	return nil
@@ -62,25 +62,25 @@ func (d *Database) RemoveSSHKeyByFingerprint(ctx context.Context, identityName s
 
 // RemoveSSHKeyByComment removes a user's ssh key identified by its comment.
 func (d *Database) RemoveSSHKeyByComment(ctx context.Context, identityName string, model SSHKeyModelFilter, comment string) (err error) {
-	const op = errors.Op("db.RemoveSSHKeyByComment")
+	const op = "db.RemoveSSHKeyByComment"
 
 	if err := d.ready(); err != nil {
-		return errors.E(op, err)
+		return errors.E(err)
 	}
 
-	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, string(op))
+	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
 	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
+	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 
 	query := d.DB.Where("key_comment = ?", comment).
 		Where("model_uuid = ?", model.ModelUUID).
 		Delete(&dbmodel.SSHKey{})
 	if err := query.Error; err != nil {
-		return errors.E(op, dbError(err))
+		return errors.E(dbError(err))
 	}
 
 	if query.RowsAffected == 0 {
-		return errors.E(op, errors.CodeNotFound, "key not found")
+		return errors.E(errors.CodeNotFound, "key not found")
 	}
 
 	return nil
@@ -88,22 +88,22 @@ func (d *Database) RemoveSSHKeyByComment(ctx context.Context, identityName strin
 
 // ListSSHKeysForUser lists all user's SSH keys per model.
 func (d *Database) ListSSHKeysForUser(ctx context.Context, identityName string, model SSHKeyModelFilter) (keys []dbmodel.SSHKey, err error) {
-	const op = errors.Op("db.ListSSHKeysForUser")
+	const op = "db.ListSSHKeysForUser"
 
 	if err := d.ready(); err != nil {
-		return nil, errors.E(op, err)
+		return nil, errors.E(err)
 	}
 
-	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, string(op))
+	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
 	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
+	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 	query := d.DB.Where("identity_name = ?", identityName)
 	if !model.All {
 		query = query.Where("model_uuid = ?", model.ModelUUID)
 	}
 	if err := query.
 		Find(&keys).Error; err != nil {
-		return nil, errors.E(op, dbError(err))
+		return nil, errors.E(dbError(err))
 	}
 
 	return keys, nil

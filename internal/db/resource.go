@@ -72,14 +72,14 @@ type Resource struct {
 // ListResources returns a list of models, clouds, controllers, and application offers, with its respective parents.
 // It has been implemented with a raw query because this is a specific implementation for the ReBAC Admin UI.
 func (d *Database) ListResources(ctx context.Context, limit, offset int, namePrefixFilter, typeFilter string) (_ []Resource, err error) {
-	const op = errors.Op("db.ListResources")
+	const op = "db.ListResources"
 	if err := d.ready(); err != nil {
-		return nil, errors.E(op, err)
+		return nil, errors.E(err)
 	}
 
-	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, string(op))
+	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
 	defer durationObserver()
-	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, string(op))
+	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 
 	db := d.DB.WithContext(ctx)
 	query, err := buildQuery(db, offset, limit, namePrefixFilter, typeFilter)
@@ -89,7 +89,7 @@ func (d *Database) ListResources(ctx context.Context, limit, offset int, namePre
 
 	var resources []Resource
 	if err := query.Find(&resources).Error; err != nil {
-		return nil, errors.E(op, dbError(err))
+		return nil, errors.E(dbError(err))
 	}
 	return resources, nil
 }
