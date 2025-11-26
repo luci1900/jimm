@@ -21,7 +21,6 @@ import (
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/httpbakery"
 	jujuhttp "github.com/juju/http/v2"
 	"github.com/juju/juju/api/base"
-	"github.com/juju/juju/rpc/params"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 	"github.com/juju/zaputil/zapctx"
@@ -40,8 +39,8 @@ import (
 )
 
 const (
-	// JIMM claims to be a 3.6.9 client.
-	jujuClientVersion = "3.6.9"
+	// JIMM claims to be a 3.6.12 client.
+	jujuClientVersion = "3.6.12"
 
 	adminUser = "admin"
 )
@@ -85,7 +84,7 @@ func (d *Dialer) createAdminLoginRequest(ctx context.Context, ctl *dbmodel.Contr
 	permissions := make(map[string]string)
 	permissions[ctl.ResourceTag().String()] = "superuser"
 	if modelTag.Id() != "" {
-		permissions[modelTag.String()] = string(params.ModelAdminAccess)
+		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
 	}
 	for k, v := range additionalPermissions {
 		permissions[k] = v
@@ -314,9 +313,20 @@ func (c *Connection) HTTPClient() (*httprequest.Client, error) {
 	return nil, errors.E(errors.CodeNotImplemented)
 }
 
+// BakeryClientWrapper wraps an httpbakery.Client to implement
+// the MacaroonDischarger interface.
+type BakeryClientWrapper struct {
+	*httpbakery.Client
+}
+
+// CookieJar returns an http.CookieJar used to store macaroon cookies.
+func (b BakeryClientWrapper) CookieJar() http.CookieJar {
+	return b.Jar
+}
+
 // BakeryClient returns the bakery client for this connection.
 func (c *Connection) BakeryClient() base.MacaroonDischarger {
-	return httpbakery.NewClient()
+	return BakeryClientWrapper{httpbakery.NewClient()}
 }
 
 // APICall makes a call to the API server with the given object type,

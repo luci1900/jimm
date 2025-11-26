@@ -23,7 +23,6 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jujuapi/rpc"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
-	"github.com/canonical/jimm/v3/pkg/api/params"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 	"github.com/canonical/jimm/v3/version"
 )
@@ -166,11 +165,8 @@ type LegacyControllerResponse struct {
 
 // AddCloudToController adds the specified cloud to a specific controller.
 func (r *controllerRoot) AddCloudToController(ctx context.Context, req apiparams.AddCloudToControllerRequest) error {
+	force := req.Force != nil && *req.Force
 
-	force := false
-	if req.Force != nil && *req.Force {
-		force = true
-	}
 	cloud := cloudFromParams(req.Name, req.Cloud)
 	if err := r.jimm.JujuManager().AddCloudToController(ctx, r.user, req.ControllerName, names.NewCloudTag(req.Name), cloud, force); err != nil {
 		return errors.E(err)
@@ -241,7 +237,7 @@ func (r *controllerRoot) ListControllers(ctx context.Context) (apiparams.ListCon
 		if err != nil {
 			return apiparams.ListControllersResponse{}, errors.E(err)
 		}
-		jimmCtl := params.ControllerInfo{
+		jimmCtl := apiparams.ControllerInfo{
 			Name: "jaas",
 			UUID: r.params.ControllerUUID,
 			// TODO(mhilton)enable setting the public address.

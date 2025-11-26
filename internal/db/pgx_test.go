@@ -1,4 +1,4 @@
-// Copyright 2024 Canonical.
+// Copyright 2025 Canonical.
 
 package db_test
 
@@ -84,5 +84,5 @@ func (s *postgresSuite) Init(c *qt.C) {
 	}
 	gdb, err := gorm.Open(postgres.New(pCfg), &cfg)
 	c.Assert(err, qt.IsNil)
-	s.dbSuite.Database = &db.Database{DB: gdb}
+	s.Database = &db.Database{DB: gdb}
 }
