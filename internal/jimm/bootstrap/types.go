@@ -5,6 +5,7 @@ package bootstrap
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	jujucloud "github.com/juju/juju/cloud"
 
@@ -23,6 +24,14 @@ type BootstrapParams struct {
 	PersonalCloud jujucloud.Cloud
 
 	UserConfig map[string]string
+}
+
+// WaitConfig holds the configuration for waiting for job completion.
+type WaitConfig struct {
+	// MaxJobDuration is the maximum duration to wait for a job to complete.
+	MaxJobDuration time.Duration
+	// PollingInterval is the interval at which to poll for job status.
+	PollingInterval time.Duration
 }
 
 // Validate checks if the BootstrapParams are valid.

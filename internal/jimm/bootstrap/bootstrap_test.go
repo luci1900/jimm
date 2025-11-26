@@ -254,6 +254,107 @@ func (s *bootstrapManagerSuite) TestGetJobInfo_JobNotFound(c *qt.C) {
 	c.Assert(err, qt.ErrorMatches, "failed to get job info")
 }
 
+func (s *bootstrapManagerSuite) TestWaitForJobCompletion_NilJobID(c *qt.C) {
+	ctx := c.Context()
+
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+
+	manager, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, loginTokenRefreshURLParam, mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+
+	err = manager.WaitForJobCompletion(ctx, uuid.Nil, bootstrap.WaitConfig{})
+	c.Assert(err, qt.ErrorMatches, ".*job ID cannot be nil")
+}
+
+func (s *bootstrapManagerSuite) TestWaitForJobCompletion_Success(c *qt.C) {
+	ctx := c.Context()
+
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+
+	manager, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, loginTokenRefreshURLParam, mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+
+	jobId, err := s.jobTracker.Run(ctx,
+		"test-job",
+		func(ctx context.Context) error {
+			return nil
+		},
+		1*time.Minute,
+	)
+	c.Assert(err, qt.IsNil)
+
+	err = manager.WaitForJobCompletion(ctx, jobId, bootstrap.WaitConfig{})
+	c.Assert(err, qt.IsNil)
+}
+
+func (s *bootstrapManagerSuite) TestWaitForJobCompletion_JobFails(c *qt.C) {
+	ctx := c.Context()
+
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+
+	manager, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, loginTokenRefreshURLParam, mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+
+	jobId, err := s.jobTracker.Run(ctx,
+		"test-job",
+		func(ctx context.Context) error {
+			return errors.E("job execution failed")
+		},
+		1*time.Minute,
+	)
+	c.Assert(err, qt.IsNil)
+
+	err = manager.WaitForJobCompletion(ctx, jobId, bootstrap.WaitConfig{})
+	c.Assert(err, qt.ErrorMatches, ".*bootstrap job failed: job execution failed")
+}
+
+func (s *bootstrapManagerSuite) TestWaitForJobCompletion_JobNotFound(c *qt.C) {
+	ctx := c.Context()
+
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+
+	manager, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, loginTokenRefreshURLParam, mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+
+	jobId := uuid.New()
+
+	err = manager.WaitForJobCompletion(ctx, jobId, bootstrap.WaitConfig{})
+	c.Assert(err, qt.ErrorMatches, ".*failed to get job info.*")
+}
+
+func (s *bootstrapManagerSuite) TestWaitForJobCompletion_Timeout(c *qt.C) {
+	ctx := c.Context()
+
+	ctrl, mocks, _ := setupTest(c)
+	defer ctrl.Finish()
+
+	manager, err := bootstrap.NewBootstrapManager(s.db, s.jobTracker, mocks.jujuManager, mocks.binaryStore, loginTokenRefreshURLParam, mocks.credentialStore)
+	c.Assert(err, qt.IsNil)
+
+	// Create a job that will keep running (never completes)
+	jobId, err := s.jobTracker.Run(ctx,
+		"test-job",
+		func(ctx context.Context) error {
+			// Block until context is cancelled
+			<-ctx.Done()
+			return ctx.Err()
+		},
+		1*time.Minute,
+	)
+	c.Assert(err, qt.IsNil)
+
+	// Wait with a very short timeout and fast polling
+	err = manager.WaitForJobCompletion(ctx, jobId, bootstrap.WaitConfig{
+		MaxJobDuration:  100 * time.Millisecond,
+		PollingInterval: 10 * time.Millisecond,
+	})
+	c.Assert(err, qt.ErrorMatches, ".*job completion wait timed out")
+}
+
 func (s *bootstrapManagerSuite) TestBootstrapJob(c *qt.C) {
 	testCtx := c.Context()
 

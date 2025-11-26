@@ -41,6 +41,7 @@ const (
 	bootstrapJobType         = "bootstrap"
 	destroyControllerJobType = "destroy-controller"
 	maxJobDuration           = 60 * time.Minute
+	defaultPollingInterval   = 5 * time.Second
 )
 
 // Store defines the store methods required by the manager.
@@ -182,6 +183,53 @@ func (b *bootstrapManager) StopJob(ctx context.Context, user *openfga.User, jobI
 	}
 
 	return nil
+}
+
+// WaitForJobCompletion waits for a bootstrap job to complete by polling its status.
+// It returns an error if the job ID is nil, or if the job fails.
+// It returns nil on successful completion.
+func (b *bootstrapManager) WaitForJobCompletion(ctx context.Context, jobId uuid.UUID, config WaitConfig) error {
+	if jobId == uuid.Nil {
+		return errors.E("job ID cannot be nil")
+	}
+
+	pollingInterval := config.PollingInterval
+	if pollingInterval == 0 {
+		pollingInterval = defaultPollingInterval
+	}
+	maxDuration := config.MaxJobDuration
+	if maxDuration == 0 {
+		maxDuration = maxJobDuration
+	}
+
+	ticker := time.NewTicker(pollingInterval)
+	defer ticker.Stop()
+
+	timeout := time.After(maxDuration)
+
+	for {
+		select {
+		case <-timeout:
+			return errors.E("job completion wait timed out")
+		case <-ticker.C:
+			job, err := b.tracker.GetJob(ctx, jobId)
+			if err != nil {
+				return errors.E(fmt.Errorf("failed to get job info: %w", err))
+			}
+			switch params.JobStatus(job.Status) {
+			case params.StatusSuccessful:
+				return nil
+			case params.StatusFailed:
+				return errors.E(fmt.Sprintf("bootstrap job failed: %s", job.Error))
+			case params.StatusRunning, params.StatusPending:
+				continue
+			default:
+				return errors.E(fmt.Sprintf("unexpected job status: %s", job.Status))
+			}
+		case <-ctx.Done():
+			return errors.E(ctx.Err())
+		}
+	}
 }
 
 // StartBootstrap starts a bootstrap job with the provided parameters.

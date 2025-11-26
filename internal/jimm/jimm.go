@@ -308,6 +308,8 @@ type BootstrapManager interface {
 	GetJobInfo(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error)
 	// StopJob stops a job.
 	StopJob(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
+	// WaitForJobCompletion waits for a job to complete.
+	WaitForJobCompletion(ctx context.Context, jobId uuid.UUID, config bootstrap.WaitConfig) error
 	// StartBootstrapJob starts a bootstrap job and returns the job ID.
 	StartBootstrapJob(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
 	// StartDestroyControllerJob starts a destroy-controller job and returns the job ID.

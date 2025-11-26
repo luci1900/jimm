@@ -18,6 +18,7 @@ type BootstapManager struct {
 	StopJob_                   func(ctx context.Context, user *openfga.User, jobId uuid.UUID) error
 	StartBootstrapJob_         func(ctx context.Context, user *openfga.User, params bootstrap.BootstrapParams) (string, error)
 	StartDestroyControllerJob_ func(ctx context.Context, user *openfga.User, params bootstrap.DestroyControllerParams) (string, error)
+	WaitForJobCompletion_      func(ctx context.Context, jobId uuid.UUID, config bootstrap.WaitConfig) error
 }
 
 func (b *BootstapManager) GetJobInfo(ctx context.Context, user *openfga.User, jobId uuid.UUID, offset int) (params.GetJobInfoResponse, error) {
@@ -46,4 +47,11 @@ func (b *BootstapManager) StartDestroyControllerJob(ctx context.Context, user *o
 		return "", errors.E(errors.CodeNotImplemented)
 	}
 	return b.StartDestroyControllerJob_(ctx, user, params)
+}
+
+func (b *BootstapManager) WaitForJobCompletion(ctx context.Context, jobId uuid.UUID, config bootstrap.WaitConfig) error {
+	if b.WaitForJobCompletion_ == nil {
+		return errors.E(errors.CodeNotImplemented)
+	}
+	return b.WaitForJobCompletion_(ctx, jobId, config)
 }
