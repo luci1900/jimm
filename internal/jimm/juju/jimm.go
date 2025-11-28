@@ -66,7 +66,6 @@ func (j *JujuManager) ControllerInfo(ctx context.Context, name string) (*dbmodel
 
 // ListControllers returns a list of controllers the user has access to.
 func (j *JujuManager) ListControllers(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error) {
-
 	if !user.JimmAdmin {
 		return nil, errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
@@ -160,7 +159,6 @@ func (j *JujuManager) RemoveController(ctx context.Context, user *openfga.User, 
 
 // FullModelStatus returns the full status of the juju model.
 func (j *JujuManager) FullModelStatus(ctx context.Context, user *openfga.User, modelTag names.ModelTag, patterns []string) (*jujuparams.FullStatus, error) {
-
 	if !user.JimmAdmin {
 		return nil, errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
