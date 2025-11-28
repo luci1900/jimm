@@ -5,6 +5,10 @@ on:
   merge_group:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   startjimm:
     name: Test JIMM with Juju controller
@@ -21,6 +25,21 @@ jobs:
           sudo snap install microk8s --classic
           sudo usermod -a -G microk8s "$USER"
           newgrp microk8s
+
+          # Configure DockerHub mirror if provided
+          if [[ "${DOCKERHUB_MIRROR}" ]]; then
+            echo "Configuring DockerHub mirror: $DOCKERHUB_MIRROR"
+            sudo tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml > /dev/null << EOF
+          server = "$DOCKERHUB_MIRROR"
+
+          [host."$DOCKERHUB_MIRROR"]
+              capabilities = ["pull", "resolve"]
+          EOF
+            cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
+
+            microk8s stop
+            microk8s start
+          fi
 
           sudo microk8s enable storage
           subnet="$(ip route get 1 | head -n 1 | awk '{print $7}' | awk -F. '{print $1 "." $2 "." $3 ".240/24"}')"
