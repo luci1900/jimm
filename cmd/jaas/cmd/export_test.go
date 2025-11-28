@@ -278,3 +278,10 @@ func NewMigrateModelCommandForTesting(store jujuclient.ClientStore, lp jujuapi.L
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
 }
+
+func NewUpgradeToCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) *upgradeToCommand {
+	return &upgradeToCommand{
+		store:    store,
+		dialOpts: cmdtest.TestDialOpts(lp),
+	}
+}

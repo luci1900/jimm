@@ -63,8 +63,6 @@ func (e *Error) ErrorInfo() map[string]any {
 // is constructed by processing the given arguments. The meaning of the
 // arguments is as follows:
 //
-//	errors.Op   - string representation of the operation being
-//	              performed.
 //	errors.Code - string code classifying the error.
 //	error       - underlying error that caused the new error.
 //	string      - A human readable message describing the error.

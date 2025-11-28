@@ -100,6 +100,13 @@ func (c *Client) SetControllerDeprecated(req *params.SetControllerDeprecatedRequ
 	return info, err
 }
 
+// UpgradeTo initiates a controller upgrade to the specified version.
+func (c *Client) UpgradeTo(req *params.UpgradeToRequest) (params.UpgradeToResponse, error) {
+	var resp params.UpgradeToResponse
+	err := c.caller.APICall("JIMM", 4, "", "UpgradeTo", req, &resp)
+	return resp, err
+}
+
 // FullModelStatus returns the full status of the juju model.
 func (c *Client) FullModelStatus(req *params.FullModelStatusRequest) (jujuparams.FullStatus, error) {
 	var status jujuparams.FullStatus

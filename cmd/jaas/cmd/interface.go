@@ -13,4 +13,5 @@ type JIMMAPI interface {
 	StartDestroyControllerJob(req *params.DestroyControllerRequest) (*params.StartJobResponse, error)
 	ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)
 	PrepareModelMigration(req *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)
+	UpgradeTo(req *params.UpgradeToRequest) (params.UpgradeToResponse, error)
 }

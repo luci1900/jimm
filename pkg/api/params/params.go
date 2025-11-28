@@ -236,6 +236,20 @@ type SetControllerDeprecatedRequest struct {
 	Deprecated bool `json:"deprecated"`
 }
 
+// UpgradeToRequest holds the parameters for phase 1 for automated upgrades.
+type UpgradeToRequest struct {
+	// ModelTag is the tag of the model to upgrade.
+	ModelTag string `json:"model-tag"`
+	// TargetControllerVersion is the target controller version to upgrade to.
+	TargetControllerVersion string `json:"target-controller-version"`
+}
+
+// UpgradeToResponse holds the response for phase 1 of an automated upgrade.
+type UpgradeToResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+}
+
 // FullModelStatusRequest is the request that is sent in a FullModelStatus method.
 type FullModelStatusRequest struct {
 	ModelTag string
