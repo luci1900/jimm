@@ -7,11 +7,15 @@ package upgrade
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/juju/clock"
+	jujuerrors "github.com/juju/errors"
 	jujucloud "github.com/juju/juju/cloud"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
+	"github.com/juju/retry"
 	"github.com/juju/version/v2"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
@@ -21,6 +25,10 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm/bootstrap"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/openfga"
+)
+
+var (
+	AlreadyUpgradedError = jujuerrors.New("model has already been upgraded")
 )
 
 // BootstrapManager defines the bootstrap manager methods required by the upgrade manager.
@@ -59,6 +67,15 @@ func NewUpgradeManager(
 	if bootstrapManager == nil {
 		return nil, errors.E("bootstrap manager cannot be nil")
 	}
+	if jujumanager == nil {
+		return nil, errors.E("juju manager cannot be nil")
+	}
+	if store == nil {
+		return nil, errors.E("store cannot be nil")
+	}
+	if dialer == nil {
+		return nil, errors.E("dialer cannot be nil")
+	}
 	return &upgradeManager{
 		bootstrapManager: bootstrapManager,
 		jujuManager:      jujumanager,
@@ -73,11 +90,11 @@ func NewUpgradeManager(
 //
 // It returns the cloud and credential to be used for bootstrapping
 // the new controller.
-func (j *upgradeManager) PrepareUpgradeTo(ctx context.Context, modelUUID string, targetVersion version.Number) (jujucloud.Cloud, jujucloud.Credential, error) {
+func (u *upgradeManager) PrepareUpgradeTo(ctx context.Context, modelUUID string, targetVersion version.Number) (jujucloud.Cloud, jujucloud.Credential, error) {
 	var bootstrapCloud jujucloud.Cloud
 	var bootstrapCredential jujucloud.Credential
 
-	m, err := j.jujuManager.GetModel(ctx, modelUUID)
+	m, err := u.jujuManager.GetModel(ctx, modelUUID)
 	if err != nil {
 		return bootstrapCloud, bootstrapCredential, errors.E(err)
 	}
@@ -91,7 +108,7 @@ func (j *upgradeManager) PrepareUpgradeTo(ctx context.Context, modelUUID string,
 		return bootstrapCloud, bootstrapCredential, errors.E(errors.CodeBadRequest, "target version must be greater than current version")
 	}
 
-	api, err := j.dialer.Dial(ctx, &m.Controller, names.ModelTag{}, nil, nil)
+	api, err := u.dialer.Dial(ctx, &m.Controller, names.ModelTag{}, nil, nil)
 	if err != nil {
 		return bootstrapCloud, bootstrapCredential, errors.E(fmt.Errorf("failed to dial the controller: %w", err))
 	}
@@ -138,6 +155,10 @@ func (j *upgradeManager) PrepareUpgradeTo(ctx context.Context, modelUUID string,
 		return bootstrapCloud, bootstrapCredential, errors.E("controller cloud is not marked as a controller cloud")
 	}
 
+	if !bootstrapCloud.IsControllerCloud {
+		return bootstrapCloud, bootstrapCredential, errors.E("controller cloud is not marked as a controller cloud")
+	}
+
 	return bootstrapCloud, bootstrapCredential, nil
 }
 
@@ -172,4 +193,85 @@ func (u *upgradeManager) CloneController(ctx context.Context, user *openfga.User
 	}
 
 	return nil
+}
+
+// MigrateAndUpgradeModel migrates a model to a new controller and upgrades the model's agent to the controller's agent version.
+func (u *upgradeManager) MigrateAndUpgradeModel(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, targetVersion version.Number) (version.Number, error) {
+	var controllerChosenVersion version.Number
+
+	// TODO: Once precheck PR merged, run precheck.
+
+	iimResult, err := u.jujuManager.InitiateInternalMigration(ctx, user, modelUUID, targetControllerName)
+	if err != nil {
+		return controllerChosenVersion, errors.E(fmt.Errorf("failed to initiate internal migration for upgrade: %w", err))
+	}
+
+	mt, err := names.ParseModelTag(iimResult.ModelTag)
+	if err != nil {
+		return controllerChosenVersion, errors.E(fmt.Errorf("failed to parse model tag from initiate internal migration result: %w", err))
+	}
+
+	var mi *jujuparams.ModelInfo
+	if err := retry.Call(
+		retry.CallArgs{
+			Attempts: 10,
+			Delay:    5 * time.Second,
+			Func: func() error {
+				mi, err = u.jujuManager.ModelInfo(ctx, user, mt)
+				if err != nil {
+					return err
+				}
+
+				m, err := u.jujuManager.GetModel(ctx, mi.UUID)
+				if err != nil {
+					return err
+				}
+
+				// It hasn't migrated yet, so error out.
+				if m.Controller.Name != targetControllerName {
+					return errors.E("model has not yet migrated to target controller")
+				}
+
+				return nil
+			},
+			Clock: clock.WallClock,
+		},
+	); err != nil {
+		return controllerChosenVersion, errors.E(fmt.Errorf("failed to confirm internal migration completed: %w", err))
+	}
+
+	dbCtrl := &dbmodel.Controller{Name: targetControllerName}
+	if err := u.store.GetController(ctx, dbCtrl); err != nil {
+		return controllerChosenVersion, errors.E(errors.CodeNotFound, err, "controller not found")
+	}
+
+	api, err := u.dialer.Dial(ctx, dbCtrl, names.ModelTag{}, nil, nil)
+	if err != nil {
+		return controllerChosenVersion, errors.E(fmt.Errorf("failed to dial target controller: %w", err))
+	}
+
+	var upgradeErr error
+	controllerChosenVersion, upgradeErr = api.UpgradeModel(mi.UUID, targetVersion, "", false, true)
+	//nolint:staticcheck // Has a description to highlight this possibility.
+	if jujuparams.IsCodeUpgradeInProgress(upgradeErr) {
+		// Apparently upgrades can have issues, that can be manually resolved, then you can run
+		// the upgrade-model command with the --reset-previous-upgrade option.
+		// We can't do that here, so we just return an error. We could possible indicate to the user here
+		// that manual intervention is required.
+	}
+	if jujuerrors.Is(upgradeErr, jujuerrors.AlreadyExists) {
+		upgradeErr = AlreadyUpgradedError
+	}
+
+	if upgradeErr != nil {
+		return controllerChosenVersion, errors.E(fmt.Errorf("failed to upgrade model after migration: %w", upgradeErr))
+	}
+
+	zapctx.Info(ctx, "model migrate and upgrade complete",
+		zap.String("model-uuid", modelUUID),
+		zap.String("target-controller", targetControllerName),
+		zap.String("target-version", targetVersion.String()),
+		zap.String("controller-chosen-version", controllerChosenVersion.String()),
+	)
+	return controllerChosenVersion, nil
 }
