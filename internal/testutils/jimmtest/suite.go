@@ -4,7 +4,10 @@ package jimmtest
 
 import (
 	"context"
+	"crypto/x509"
 	"database/sql"
+	_ "embed"
+	"encoding/pem"
 	"net/http/httptest"
 	"os"
 	"strings"
@@ -19,12 +22,15 @@ import (
 	corejujutesting "github.com/juju/juju/juju/testing"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	gc "gopkg.in/check.v1"
 
 	"github.com/canonical/jimm/v3/internal/auth"
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/discharger"
+	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jimm/login"
@@ -35,6 +41,9 @@ import (
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/pubsub"
 )
+
+//go:embed testdata/jwks_private_key.pem
+var testJWKSPrivateKey []byte
 
 // ControllerUUID is the UUID of the JIMM controller used in tests.
 const ControllerUUID = "c1991ce8-96c2-497d-8e2a-e0cc42ca3aca"
@@ -60,7 +69,8 @@ func (t GocheckTester) Cleanup(f func()) {
 
 // jimmModifiers controls how JIMM is initialised.
 type jimmModifiers struct {
-	useRealAuthN bool
+	useRealAuthN     bool
+	useHardcodedJWKS bool
 }
 
 // A JIMMSuite is a suite that initialises a JIMM.
@@ -121,7 +131,16 @@ func (s *JIMMSuite) SetUpTest(c *gc.C) {
 	s.AdminUser.JimmAdmin = true
 
 	credentialStore := NewInMemoryCredentialStore()
-
+	if s.modifiers.useHardcodedJWKS {
+		set, privateKey, err := jwkSetFromPrivateKeyFile()
+		c.Assert(err, gc.IsNil)
+		err = credentialStore.PutJWKS(ctx, set)
+		c.Assert(err, gc.IsNil)
+		err = credentialStore.PutJWKSPrivateKey(ctx, privateKey)
+		c.Assert(err, gc.IsNil)
+		err = credentialStore.PutJWKSExpiry(ctx, time.Now().UTC().AddDate(10, 0, 0))
+		c.Assert(err, gc.IsNil)
+	}
 	var authenticator login.OAuthAuthenticator
 	if s.modifiers.useRealAuthN {
 		authenticator = s.realAuthenticationService(c, database)
@@ -179,7 +198,49 @@ func (s *JIMMSuite) SetUpTest(c *gc.C) {
 	// add jimmtest.DefaultControllerUUID as a controller to JIMM
 	err = s.OFGAClient.AddController(ctx, s.JIMM.ResourceTag(), names.NewControllerTag(DefaultControllerUUID))
 	c.Assert(err, gc.Equals, nil)
+}
 
+// jwkSetFromPrivateKeyFile reads a PEM-encoded RSA private key from a file
+// and returns a JWK set containing the public key along with the private key PEM bytes.
+// This is useful for testing scenarios where you want to use a pre-existing key.
+func jwkSetFromPrivateKeyFile() (jwk.Set, []byte, error) {
+	block, _ := pem.Decode(testJWKSPrivateKey)
+	if block == nil {
+		return nil, nil, errors.E("failed to decode PEM block from private key file")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, nil, errors.E(err)
+	}
+
+	jwks, err := jwk.FromRaw(privateKey.PublicKey)
+	if err != nil {
+		return nil, nil, errors.E(err)
+	}
+
+	if err := jwks.Set(jwk.KeyIDKey, "test-kid"); err != nil {
+		return nil, nil, errors.E(err)
+	}
+
+	if err := jwks.Set(jwk.KeyUsageKey, "sig"); err != nil {
+		return nil, nil, errors.E(err)
+	}
+
+	if err := jwks.Set(jwk.AlgorithmKey, jwa.RS256); err != nil {
+		return nil, nil, errors.E(err)
+	}
+
+	ks := jwk.NewSet()
+	if err := ks.AddKey(jwks); err != nil {
+		return nil, nil, errors.E(err)
+	}
+
+	return ks, testJWKSPrivateKey, nil
+}
+
+func (s *JIMMSuite) UseHardcodedJWKS(c *gc.C) {
+	s.modifiers.useHardcodedJWKS = true
 }
 
 func (s *JIMMSuite) TearDownTest(c *gc.C) {
@@ -298,6 +359,7 @@ func (s *JIMMSuite) AddController(c *gc.C, name string, info *api.Info) {
 			Port:    hp.Port(),
 		}})
 	}
+	ctl.TLSHostname = "juju-apiserver"
 	err := s.JIMM.JujuManager().AddController(context.Background(), s.AdminUser, ctl, ctlCreds)
 	c.Assert(err, gc.Equals, nil)
 }

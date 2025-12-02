@@ -1,0 +1,17 @@
+{
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast"
+    ],
+    "go.testEnvFile": "${workspaceFolder}/test.env",
+    "go.testEnvVars": {
+        "JIMM_TEST_LOG_SQL": "false",
+        // this is the logging level for juju connsuite logs
+        "TEST_LOGGING_CONFIG": "ERROR",
+        // this is needed to give snap vscode running in a snap access to juju client store
+        // to get credentials for tests.
+        "XDG_DATA_HOME": "/home/duttos/.local/share",
+        "JIMM_BACKING_CONTROLLER_CONFIG": "/home/duttos/jaas/jimm/controllers.yaml",
+        "RUN_E2E_TESTS": "1"
+    },
+}

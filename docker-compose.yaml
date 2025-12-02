@@ -2,7 +2,6 @@ services:
   traefik:
     image: "traefik:v2"
     container_name: traefik
-    profiles: ["dev", "test"]
     ports:
       - "80:80"
       - "443:443"
@@ -151,6 +150,18 @@ services:
       traefik.http.routers.juju-dashboard.entrypoints: websecure
       traefik.http.routers.juju-dashboard.tls: true
       traefik.http.services.juju-dashboard.loadbalancer.server.port: 8080
+
+  jwks-server:
+    image: nginx:alpine
+    container_name: jwks-server
+    volumes:
+      - ./internal/testutils/jimmtest/testdata/jwks.json:/usr/share/nginx/html/.well-known/jwks.json:ro
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jwks-server.rule: Host(`jwks.localhost`)
+      traefik.http.routers.jwks-server.entrypoints: websecure
+      traefik.http.routers.jwks-server.tls: true
+      traefik.http.services.jwks-server.loadbalancer.server.port: 80
 
 volumes:
   go-modules:

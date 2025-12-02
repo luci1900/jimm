@@ -27,3 +27,5 @@ db_schemas
 *.test
 __debug_bin*
 dist/
+controllers.yaml
+.vscode/settings.json
