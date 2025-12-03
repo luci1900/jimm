@@ -21,3 +21,7 @@ func NewConversationID() string {
 	}
 	return hex.EncodeToString(buf)
 }
+
+func Ptr[T any](v T) *T {
+	return &v
+}

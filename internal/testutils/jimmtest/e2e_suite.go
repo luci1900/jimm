@@ -11,10 +11,12 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"sync"
 
+	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/go-chi/chi/v5"
 	"github.com/juju/juju/api"
-	"github.com/juju/juju/cloud"
+	"github.com/juju/juju/api/client/application"
 	jclient "github.com/juju/juju/jujuclient"
 	"github.com/juju/juju/rpc/jsoncodec"
 	jujuparams "github.com/juju/juju/rpc/params"
@@ -25,6 +27,9 @@ import (
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
 	"github.com/canonical/jimm/v3/internal/jujuapi"
+	"github.com/canonical/jimm/v3/internal/openfga"
+	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
+	"github.com/canonical/jimm/v3/internal/utils"
 )
 
 const (
@@ -33,6 +38,7 @@ const (
 	ControllersConfigEnvVar = "JIMM_BACKING_CONTROLLER_CONFIG"
 	TestE2EProviderType     = "lxd"
 	TestE2ECloudName        = "localhost"
+	TestE2ECloudRegionName  = "localhost"
 )
 
 // ControllerInfo holds the controller connection information
@@ -142,6 +148,56 @@ func (s *WebsocketE2ESuite) SetUpTest(c *gc.C) {
 	s.APIHandler = mux
 	s.HTTP = httptest.NewTLSServer(s.APIHandler)
 
+	s.AddAdminUser(c, "alice@canonical.com")
+
+	cct := names.NewCloudCredentialTag(TestE2ECloudName + "/charlie@canonical.com/cred")
+	cloudCredentials := s.GetExistingClientCredentialsForCloud(c, TestE2ECloudName)
+	s.UpdateCloudCredential(c, cct, cloudCredentials)
+	s.Credential2 = new(dbmodel.CloudCredential)
+	s.Credential2.SetTag(cct)
+	err := s.JIMM.Database.GetCloudCredential(ctx, s.Credential2)
+	c.Assert(err, gc.Equals, nil)
+	mt := s.AddModel(c, names.NewUserTag("charlie@canonical.com"), petname.Generate(2, "-"), names.NewCloudTag(TestE2ECloudName), TestE2ECloudRegionName, cct)
+	s.Model2 = new(dbmodel.Model)
+	s.Model2.SetTag(mt)
+	err = s.JIMM.Database.GetModel(ctx, s.Model2)
+	c.Assert(err, gc.Equals, nil)
+	mt = s.AddModel(c, names.NewUserTag("charlie@canonical.com"), petname.Generate(2, "-"), names.NewCloudTag(TestE2ECloudName), TestE2ECloudRegionName, cct)
+	s.Model3 = new(dbmodel.Model)
+	s.Model3.SetTag(mt)
+	err = s.JIMM.Database.GetModel(ctx, s.Model3)
+	c.Assert(err, gc.Equals, nil)
+
+	bobIdentity, err := dbmodel.NewIdentity("bob@canonical.com")
+	c.Assert(err, gc.IsNil)
+
+	bob := openfga.NewUser(
+		bobIdentity,
+		s.OFGAClient,
+	)
+	err = bob.SetModelAccess(ctx, s.Model3.ResourceTag(), ofganames.ReaderRelation)
+	c.Assert(err, gc.Equals, nil)
+}
+
+func (s *WebsocketE2ESuite) DeployApplication(c *gc.C, user *openfga.User, modelTag names.Tag, appName string) {
+	modelTagConv, ok := modelTag.(names.ModelTag)
+	c.Assert(ok, gc.Equals, true)
+
+	conn := s.Open(c, nil, user.Name, &modelTagConv)
+	defer conn.Close()
+
+	client := application.NewClient(conn)
+
+	_, _, errs := client.DeployFromRepository(application.DeployFromRepositoryArg{
+		CharmName:       "juju-qa-test",
+		ApplicationName: appName,
+		Channel:         utils.Ptr("latest/stable"),
+		NumUnits:        utils.Ptr(1),
+	})
+	for err := range errs {
+		c.Assert(err, gc.Equals, nil)
+	}
+
 }
 
 func (s *WebsocketE2ESuite) TearDownTest(c *gc.C) {
@@ -157,7 +213,7 @@ func (s *WebsocketE2ESuite) TearDownTest(c *gc.C) {
 // openNoAssert creates a new websocket connection to the test server, using the
 // connection info specified in info, authenticating as the given user.
 // If info is nil then default values will be used.
-func (s *WebsocketE2ESuite) openNoAssert(c *gc.C, d loginDetails) (api.Connection, error) {
+func (s *WebsocketE2ESuite) openNoAssert(c *gc.C, d loginDetails, modelTag *names.ModelTag) (api.Connection, error) {
 	var inf api.Info
 	if d.info != nil {
 		inf = *d.info
@@ -174,6 +230,9 @@ func (s *WebsocketE2ESuite) openNoAssert(c *gc.C, d loginDetails) (api.Connectio
 	})
 	c.Assert(err, gc.Equals, nil)
 	inf.CACert = w.String()
+	if modelTag != nil {
+		inf.ModelTag = *modelTag
+	}
 
 	if d.lp == nil {
 		d.lp = NewUserSessionLogin(c, d.username)
@@ -191,9 +250,9 @@ func (s *WebsocketE2ESuite) openNoAssert(c *gc.C, d loginDetails) (api.Connectio
 	return api.Open(&inf, dialOpts)
 }
 
-func (s *WebsocketE2ESuite) Open(c *gc.C, info *api.Info, username string) api.Connection {
+func (s *WebsocketE2ESuite) Open(c *gc.C, info *api.Info, username string, modelTag *names.ModelTag) api.Connection {
 	ld := loginDetails{info: info, username: username}
-	conn, err := s.openNoAssert(c, ld)
+	conn, err := s.openNoAssert(c, ld, modelTag)
 	c.Assert(err, gc.Equals, nil)
 	return conn
 }
@@ -207,6 +266,13 @@ type E2ESuite struct {
 
 	CloudCredential *dbmodel.CloudCredential
 	Model           *dbmodel.Model
+
+	// cleanupFuncs holds functions to be called during TearDownTest.
+	cleanupFuncs []func()
+	// mutex to protect cleanupFuncs slice
+	// tests are not run in parallel, but multiple goroutines
+	// may add cleanup functions.
+	mutexCleanup sync.Mutex
 }
 
 func (s *E2ESuite) SetUpSuite(c *gc.C) {
@@ -218,6 +284,7 @@ func (s *E2ESuite) TearDownSuite(c *gc.C) {
 }
 
 func (s *E2ESuite) SetUpTest(c *gc.C) {
+	s.cleanupFuncs = nil
 	s.UseHardcodedJWKS(c)
 	s.JIMMSuite.SetUpTest(c)
 	s.LoggingSuite.SetUpTest(c)
@@ -230,13 +297,7 @@ func (s *E2ESuite) SetUpTest(c *gc.C) {
 	}
 
 	cct := names.NewCloudCredentialTag(TestE2ECloudName + "/bob@canonical.com/cred")
-	cred := getExistingClientCredentialsForCloud(c, TestE2ECloudName).AuthCredentials
-	cloudCredentials := jujuparams.CloudCredential{}
-	for _, cred := range cred {
-		cloudCredentials.AuthType = string(cred.AuthType())
-		cloudCredentials.Attributes = cred.Attributes()
-		break
-	}
+	cloudCredentials := s.GetExistingClientCredentialsForCloud(c, TestE2ECloudName)
 	s.UpdateCloudCredential(c, cct, cloudCredentials)
 	ctx := context.Background()
 	s.CloudCredential = new(dbmodel.CloudCredential)
@@ -244,25 +305,47 @@ func (s *E2ESuite) SetUpTest(c *gc.C) {
 	err := s.JIMM.Database.GetCloudCredential(ctx, s.CloudCredential)
 	c.Assert(err, gc.Equals, nil)
 
-	mt := s.AddModel(c, names.NewUserTag("bob@canonical.com"), "model-1", names.NewCloudTag(TestE2ECloudName), TestE2ECloudName, cct)
+	mt := s.AddModel(c, names.NewUserTag("bob@canonical.com"), petname.Generate(2, "-"), names.NewCloudTag(TestE2ECloudName), TestE2ECloudName, cct)
 	s.Model = new(dbmodel.Model)
 	s.Model.SetTag(mt)
 	err = s.JIMM.Database.GetModel(ctx, s.Model)
 	c.Assert(err, gc.Equals, nil)
 }
 
+// Cleanup registers a function to be called during TearDownTest.
+func (s *E2ESuite) Cleanup(f func()) {
+	s.mutexCleanup.Lock()
+	defer s.mutexCleanup.Unlock()
+	s.cleanupFuncs = append(s.cleanupFuncs, f)
+}
+
+func (s *E2ESuite) AddModel(c *gc.C, owner names.UserTag, name string, cloud names.CloudTag, region string, cred names.CloudCredentialTag) names.ModelTag {
+	mt := s.JIMMSuite.AddModel(c, owner, name, cloud, region, cred)
+	s.Cleanup(func() {
+		s.DestroyModelAndDeleteFromDatabase(c, mt)
+	})
+	return mt
+}
+
 func (s *E2ESuite) TearDownTest(c *gc.C) {
-	if s.Model != nil {
-		s.DestroyModelAndDeleteFromDatabase(c, s.Model.ResourceTag())
+	// Run cleanup functions in reverse order (LIFO), matching *testing.T.Cleanup behavior
+	for i := len(s.cleanupFuncs) - 1; i >= 0; i-- {
+		s.cleanupFuncs[i]()
 	}
 	s.JIMMSuite.TearDownTest(c)
 }
 
-func getExistingClientCredentialsForCloud(c *gc.C, cloudName string) cloud.CloudCredential {
+func (s *E2ESuite) GetExistingClientCredentialsForCloud(c *gc.C, cloudName string) jujuparams.CloudCredential {
 	store := jclient.NewFileClientStore()
 	existingCredentials, err := store.AllCredentials()
 	c.Assert(err, gc.IsNil)
 	cred, ok := existingCredentials[cloudName]
 	c.Assert(ok, gc.Equals, true)
-	return cred
+	cloudCredentials := jujuparams.CloudCredential{}
+	for _, cred := range cred.AuthCredentials {
+		cloudCredentials.AuthType = string(cred.AuthType())
+		cloudCredentials.Attributes = cred.Attributes()
+		break
+	}
+	return cloudCredentials
 }
