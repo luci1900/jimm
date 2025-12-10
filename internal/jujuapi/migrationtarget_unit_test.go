@@ -16,6 +16,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/jimm"
+	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jujuapi"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
@@ -129,7 +130,7 @@ func (s *migrationTargetUnitSuite) TestPreChecks(c *gc.C) {
 	preChecksCalled := false
 	jujuManager := mocks.JujuManager{
 		MigrationMocks: mocks.MigrationMocks{
-			Prechecks_: func(ctx context.Context, user *openfga.User, model migration.ModelInfo) error {
+			Prechecks_: func(ctx context.Context, user *openfga.User, model juju.MigratingModelInfo) error {
 				preChecksCalled = true
 				c.Assert(model.UUID, gc.Equals, "00000001-0000-0000-0000-000000000001")
 				c.Assert(model.Owner.Id(), gc.Equals, "bob")
@@ -161,10 +162,11 @@ func (s *migrationTargetUnitSuite) TestPreChecks(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	args := jujuparams.MigrationModelInfo{
-		UUID:             "00000001-0000-0000-0000-000000000001",
-		Name:             "test-model",
-		OwnerTag:         names.NewUserTag("bob").String(),
-		ModelDescription: serialisedDescription,
+		UUID:                   "00000001-0000-0000-0000-000000000001",
+		Name:                   "test-model",
+		OwnerTag:               names.NewUserTag("bob").String(),
+		ControllerAgentVersion: version.MustParse("3.6.9"),
+		ModelDescription:       serialisedDescription,
 	}
 
 	// Validate access denied without JIMM admin permissions.
@@ -182,31 +184,6 @@ func (s *migrationTargetUnitSuite) TestPreChecks(c *gc.C) {
 	args.OwnerTag = "invalid-owner-tag"
 	err = cr.Prechecks(ctx, args)
 	c.Assert(err, gc.ErrorMatches, `"invalid-owner-tag" is not a valid tag`)
-}
-
-func (s *migrationTargetUnitSuite) TestPreChecks_InvalidModelDescription(c *gc.C) {
-	ctx := context.Background()
-
-	jimm := &jimmtest.JIMM{}
-
-	var u dbmodel.Identity
-	u.SetTag(names.NewUserTag("alice@canonical.com"))
-	user := openfga.NewUser(&u, nil)
-	user.JimmAdmin = true
-
-	cr := jujuapi.NewControllerRoot(jimm, jujuapi.Params{})
-	jujuapi.SetUser(cr, user)
-
-	args := jujuparams.MigrationModelInfo{
-		UUID:             "00000001-0000-0000-0000-000000000001",
-		Name:             "test-model",
-		OwnerTag:         names.NewUserTag("bob").String(),
-		ModelDescription: []byte(`invalid`),
-	}
-
-	// Validate access denied without JIMM admin permissions.
-	err := cr.Prechecks(ctx, args)
-	c.Assert(err, gc.ErrorMatches, `(?s)failed to deserialize model description.*`)
 }
 
 func (s *migrationTargetUnitSuite) TestAdoptResources(c *gc.C) {

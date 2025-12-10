@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/juju/description/v9"
 	"github.com/juju/juju/core/migration"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/jujuapi/rpc"
 )
 
@@ -159,18 +159,13 @@ func (r *controllerRoot) Prechecks(ctx context.Context, args jujuparams.Migratio
 		return errors.E(err)
 	}
 
-	modelDescription, err := description.Deserialize(args.ModelDescription)
-	if err != nil {
-		return errors.E(fmt.Errorf("failed to deserialize model description: %w", err))
-	}
-
-	model := migration.ModelInfo{
+	model := juju.MigratingModelInfo{
 		UUID:                   args.UUID,
 		Name:                   args.Name,
 		Owner:                  ownerTag,
 		AgentVersion:           args.AgentVersion,
 		ControllerAgentVersion: args.ControllerAgentVersion,
-		ModelDescription:       modelDescription,
+		RawModelDescription:    args.ModelDescription,
 	}
 	err = r.jimm.JujuManager().Prechecks(ctx, r.user, model)
 	if err != nil {

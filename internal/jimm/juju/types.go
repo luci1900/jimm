@@ -5,9 +5,21 @@ package juju
 import (
 	"github.com/juju/juju/core/network"
 	jujuparams "github.com/juju/juju/rpc/params"
+	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 )
+
+// MigratingModelInfo is used to report basic details about a model.
+type MigratingModelInfo struct {
+	UUID                   string
+	Owner                  names.UserTag
+	Name                   string
+	AgentVersion           version.Number
+	ControllerAgentVersion version.Number
+	RawModelDescription    []byte
+}
 
 // ControllerCreds represent the admin username and password
 // used to authenticate with a Juju controller via basic auth.
