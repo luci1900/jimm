@@ -127,8 +127,8 @@ func (e *Environment) User(name string) *User {
 func (u User) addUserRelations(c *qt.C, jimmTag names.ControllerTag, db *db.Database, client *openfga.OFGAClient) {
 	if u.ControllerAccess == "superuser" {
 		dbUser := u.DBObject(c, db)
-		u := openfga.NewUser(&dbUser, client)
-		err := u.SetControllerAccess(context.Background(), jimmTag, ofganames.AdministratorRelation)
+		openfgaUser := openfga.NewUser(&dbUser, client)
+		err := openfgaUser.SetControllerAccess(context.Background(), jimmTag, ofganames.AdministratorRelation)
 		c.Assert(err, qt.IsNil)
 	}
 }
