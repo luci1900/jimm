@@ -4,6 +4,11 @@ package version
 
 import "strings"
 
+const (
+	// ControllerVersion is the controller version and client JIMM claims to be.
+	ControllerVersion = "3.6.12"
+)
+
 // Version describes the current version of the code being run.
 type Version struct {
 	GitCommit string
