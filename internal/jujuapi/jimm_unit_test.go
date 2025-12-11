@@ -4,16 +4,21 @@ package jujuapi_test
 
 import (
 	"context"
+	"testing"
+	"time"
 
+	qt "github.com/frankban/quicktest"
 	"github.com/google/uuid"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 	gc "gopkg.in/check.v1"
 
+	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm"
 	"github.com/canonical/jimm/v3/internal/jimm/bootstrap"
+	"github.com/canonical/jimm/v3/internal/jujuapi"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest/mocks"
@@ -322,4 +327,66 @@ func (s *jimmUnitTestSuite) TestStartDestroyControllerJob(c *gc.C) {
 	ctrlInfo.Models = append(ctrlInfo.Models, dbmodel.Model{})
 	_, err = root.StartDestroyControllerJob(ctx, req)
 	c.Assert(err, gc.ErrorMatches, "cannot destroy controller with models")
+}
+
+// TestAuditLogAPIParamsConversion tests the conversion of API params to a AuditLogFilter struct.
+// Note that this test doesn't require a running Juju/JIMM controller so it doesn't use gc + the jimmSuite.
+func TestAuditLogAPIParamsConversion(t *testing.T) {
+	c := qt.New(t)
+	testCases := []struct {
+		about   string
+		request apiparams.FindAuditEventsRequest
+		result  db.AuditLogFilter
+		err     error
+	}{
+		{
+			about: "Test basic conversion",
+			request: apiparams.FindAuditEventsRequest{
+				After:    "2023-08-14T00:00:00Z",
+				Before:   "2023-08-14T00:00:00Z",
+				UserTag:  "user-alice",
+				Model:    "123",
+				Method:   "Deploy",
+				Offset:   10,
+				Limit:    10,
+				SortTime: false,
+			},
+			result: db.AuditLogFilter{
+				Start:       time.Date(2023, 8, 14, 0, 0, 0, 0, time.UTC),
+				End:         time.Date(2023, 8, 14, 0, 0, 0, 0, time.UTC),
+				IdentityTag: "user-alice",
+				Model:       "123",
+				Method:      "Deploy",
+				Offset:      10,
+				Limit:       10,
+				SortTime:    false,
+			},
+		}, {
+			about: "Test limit lower bound",
+			request: apiparams.FindAuditEventsRequest{
+				Limit: 0,
+			},
+			result: db.AuditLogFilter{
+				Limit: jujuapi.AuditLogDefaultLimit,
+			},
+		}, {
+			about: "Test limit upper bound",
+			request: apiparams.FindAuditEventsRequest{
+				Limit: jujuapi.AuditLogUpperLimit + 1,
+			},
+			result: db.AuditLogFilter{
+				Limit: jujuapi.AuditLogUpperLimit,
+			},
+		},
+	}
+	for _, test := range testCases {
+		c.Log(test.about)
+		res, err := jujuapi.AuditParamsToFilter(test.request)
+		if test.err == nil {
+			c.Assert(err, qt.IsNil)
+			c.Assert(res, qt.DeepEquals, test.result)
+		} else {
+			c.Assert(err, qt.ErrorMatches, test.err)
+		}
+	}
 }

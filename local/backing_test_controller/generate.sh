@@ -39,8 +39,8 @@ echo "Extracting controller configuration for: ${CONTROLLER}"
 # Get controller UUID
 CONTROLLER_UUID=$(juju show-controller "${CONTROLLER}" | yq -r ".${CONTROLLER}.details.controller-uuid")
 
-# Get controller API addresses (first one with port)
-CONTROLLER_ADDRS=$(juju show-controller "${CONTROLLER}" | yq -r ".${CONTROLLER}.details.\"api-endpoints\"[0]")
+# Get all controller API addresses as a JSON array
+CONTROLLER_ADDRS=$(juju show-controller "${CONTROLLER}" | yq -r ".${CONTROLLER}.details.\"api-endpoints\" | @json")
 
 # Get username and password from accounts.yaml
 CONTROLLER_USERNAME=$(cat ~/.local/share/juju/accounts.yaml | yq -r ".controllers.${CONTROLLER}.user")
@@ -53,7 +53,7 @@ CONTROLLER_CACERT=$(juju show-controller "${CONTROLLER}" | yq -r ".${CONTROLLER}
 export CONTROLLER CONTROLLER_UUID CONTROLLER_ADDRS CONTROLLER_USERNAME CONTROLLER_PASSWORD CONTROLLER_CACERT
 yq -n '
   .controllers.[strenv(CONTROLLER)].uuid = strenv(CONTROLLER_UUID) |
-  .controllers.[strenv(CONTROLLER)].addrs = strenv(CONTROLLER_ADDRS) |
+  .controllers.[strenv(CONTROLLER)].addrs = (strenv(CONTROLLER_ADDRS) | fromjson) |
   .controllers.[strenv(CONTROLLER)].username = strenv(CONTROLLER_USERNAME) |
   .controllers.[strenv(CONTROLLER)].password = strenv(CONTROLLER_PASSWORD) |
   .controllers.[strenv(CONTROLLER)]."ca-cert" = strenv(CONTROLLER_CACERT)

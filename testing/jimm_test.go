@@ -1,24 +1,23 @@
 // Copyright 2025 Canonical.
 
-package jujuapi_test
+package testing
 
 import (
 	"context"
-	"testing"
+	"slices"
 	"time"
 
-	qt "github.com/frankban/quicktest"
+	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/juju/juju/api/client/modelconfig"
 	"github.com/juju/juju/api/client/modelmanager"
 	"github.com/juju/juju/cloud"
 	"github.com/juju/juju/core/network"
 	jujuparams "github.com/juju/juju/rpc/params"
-	jujuversion "github.com/juju/juju/version"
 	"github.com/juju/names/v5"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
@@ -27,59 +26,66 @@ import (
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/pkg/api"
+	jimmversion "github.com/canonical/jimm/v3/version"
+
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
 type jimmSuite struct {
-	websocketSuite
+	jimmtest.WebsocketE2ESuite
 }
 
 var _ = gc.Suite(&jimmSuite{})
 
 func (s *jimmSuite) TestListControllersAdmin(c *gc.C) {
-	s.AddController(c, "controller-0", s.APIInfo(c))
-	s.AddController(c, "controller-2", s.APIInfo(c))
-
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
 	cis, err := client.ListControllers()
 	c.Assert(err, gc.Equals, nil)
-	c.Check(cis, jc.DeepEquals, []apiparams.ControllerInfo{{
-		Name:          "controller-0",
-		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
-		Status: jujuparams.EntityStatus{
-			Status: "available",
-		},
-	}, {
-		Name:          "controller-1",
-		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
-		Status: jujuparams.EntityStatus{
-			Status: "available",
-		},
-	}, {
-		Name:          "controller-2",
-		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
-		Status: jujuparams.EntityStatus{
-			Status: "available",
-		},
-	}})
+	confs := s.GetControllersConfig(c)
+	controllerInfos := make([]apiparams.ControllerInfo, 0, len(confs.Controllers))
+	for name, conf := range confs.Controllers {
+		controllerInfos = append(controllerInfos, apiparams.ControllerInfo{
+			Name:          name,
+			UUID:          conf.UUID,
+			APIAddresses:  conf.ToAPIInfo().Addrs,
+			CACertificate: conf.ToAPIInfo().CACert,
+			CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+			CloudRegion:   jimmtest.TestE2ECloudRegionName,
+			Status: jujuparams.EntityStatus{
+				Status: "available",
+			},
+		})
+	}
+
+	assertControllerInfos(c, cis, controllerInfos, confs)
+}
+
+// assertControllerInfos verifies that the controller infos match expectations, including API addresses.
+func assertControllerInfos(c *gc.C, actual []apiparams.ControllerInfo, expected []apiparams.ControllerInfo, confs *jimmtest.ControllersConfig) {
+	c.Check(actual, jimmtest.CmpEquals(
+		cmpopts.IgnoreFields(apiparams.ControllerInfo{}, "AgentVersion", "APIAddresses"),
+		cmpopts.SortSlices(func(a, b apiparams.ControllerInfo) bool {
+			return a.UUID < b.UUID
+		}),
+	), expected)
+
+	// Verify all configured addresses are present in the response
+	for _, ci := range actual {
+		for name, conf := range confs.Controllers {
+			if conf.UUID == ci.UUID {
+				expectedAddrs := conf.ToAPIInfo().Addrs
+				for _, expectedAddr := range expectedAddrs {
+					found := slices.Contains(ci.APIAddresses, expectedAddr)
+					c.Assert(found, gc.Equals, true, gc.Commentf(
+						"controller %q: expected address %q not found in APIAddresses %v",
+						name, expectedAddr, ci.APIAddresses))
+				}
+			}
+		}
+	}
 }
 
 func (s *jimmSuite) TestListControllersOrdinaryUser(c *gc.C) {
@@ -88,19 +94,19 @@ func (s *jimmSuite) TestListControllersOrdinaryUser(c *gc.C) {
 	ctrl0 := &dbmodel.Controller{
 		Name:      "dummy-0",
 		UUID:      "00000001-0000-0000-0000-000000000000",
-		CloudName: "dummy",
+		CloudName: jimmtest.TestE2ECloudName,
 	}
 
 	ctrl1 := &dbmodel.Controller{
 		Name:      "dummy-1",
 		UUID:      "00000001-0000-0000-0000-000000000001",
-		CloudName: "dummy",
+		CloudName: jimmtest.TestE2ECloudName,
 	}
 
 	ctrl2 := &dbmodel.Controller{
 		Name:      "dummy-2",
 		UUID:      "00000001-0000-0000-0000-000000000002",
-		CloudName: "dummy",
+		CloudName: jimmtest.TestE2ECloudName,
 	}
 
 	err := s.JIMM.Database.AddController(ctx, ctrl0)
@@ -127,7 +133,7 @@ func (s *jimmSuite) TestListControllersOrdinaryUser(c *gc.C) {
 	err = openfgaUser.SetControllerAccess(ctx, names.NewControllerTag(ctrl2.UUID), ofganames.CanAddModelRelation)
 	c.Assert(err, gc.IsNil)
 
-	conn := s.open(c, nil, "alex@canonical.com")
+	conn := s.Open(c, nil, "alex@canonical.com", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -137,7 +143,7 @@ func (s *jimmSuite) TestListControllersOrdinaryUser(c *gc.C) {
 		{
 			Name:     "dummy-0",
 			UUID:     "00000001-0000-0000-0000-000000000000",
-			CloudTag: "cloud-dummy",
+			CloudTag: names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
 			Status: jujuparams.EntityStatus{
 				Status: "available",
 			},
@@ -145,7 +151,7 @@ func (s *jimmSuite) TestListControllersOrdinaryUser(c *gc.C) {
 		{
 			Name:     "dummy-2",
 			UUID:     "00000001-0000-0000-0000-000000000002",
-			CloudTag: "cloud-dummy",
+			CloudTag: names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
 			Status: jujuparams.EntityStatus{
 				Status: "available",
 			},
@@ -153,11 +159,24 @@ func (s *jimmSuite) TestListControllersOrdinaryUser(c *gc.C) {
 	})
 }
 
-func (s *jimmSuite) TestListControllersUnauthorized(c *gc.C) {
-	s.AddController(c, "controller-0", s.APIInfo(c))
-	s.AddController(c, "controller-2", s.APIInfo(c))
+func (s *jimmSuite) TestModelGet(c *gc.C) {
+	conn := s.Open(c, nil, "alice", nil)
+	defer conn.Close()
 
-	conn := s.open(c, nil, "abrandnewuserwithnopermissions")
+	client := modelconfig.NewClient(conn)
+
+	jimmCfg, err := client.ModelGet()
+	c.Assert(err, gc.IsNil)
+
+	v, ok := jimmCfg["agent-version"]
+	c.Assert(ok, gc.Equals, true)
+	vers, ok := v.(string)
+	c.Assert(ok, gc.Equals, true)
+	c.Assert(vers, gc.Equals, jimmversion.ControllerVersion)
+}
+
+func (s *jimmSuite) TestListControllersUnauthorized(c *gc.C) {
+	conn := s.Open(c, nil, "abrandnewuserwithnopermissions", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -167,9 +186,11 @@ func (s *jimmSuite) TestListControllersUnauthorized(c *gc.C) {
 }
 
 func (s *jimmSuite) TestAddControllerPublicAddressWithoutPort(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
+
+	_, conf := s.GetOneControllerConfig(c)
 
 	tests := []struct {
 		req           apiparams.AddControllerRequest
@@ -178,21 +199,21 @@ func (s *jimmSuite) TestAddControllerPublicAddressWithoutPort(c *gc.C) {
 		req: apiparams.AddControllerRequest{
 			Name:          "controller-2",
 			PublicAddress: "controller.test.com",
-			CACertificate: s.APIInfo(c).CACert,
+			CACertificate: conf.ToAPIInfo().CACert,
 		},
 		expectedError: `address controller.test.com: missing port in address \(bad request\)`,
 	}, {
 		req: apiparams.AddControllerRequest{
 			Name:          "controller-2",
 			PublicAddress: ":8080",
-			CACertificate: s.APIInfo(c).CACert,
+			CACertificate: conf.ToAPIInfo().CACert,
 		},
 		expectedError: `address :8080: host not specified in public address \(bad request\)`,
 	}, {
 		req: apiparams.AddControllerRequest{
 			Name:          "controller-2",
 			PublicAddress: "localhost:",
-			CACertificate: s.APIInfo(c).CACert,
+			CACertificate: conf.ToAPIInfo().CACert,
 		},
 		expectedError: `address localhost:: port not specified in public address \(bad request\)`,
 	}}
@@ -205,41 +226,43 @@ func (s *jimmSuite) TestAddControllerPublicAddressWithoutPort(c *gc.C) {
 }
 
 func (s *jimmSuite) TestAddController(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
-
-	info := s.APIInfo(c)
+	_, conf := s.GetOneControllerConfig(c)
+	info := conf.ToAPIInfo()
 
 	acr := apiparams.AddControllerRequest{
 		UUID:          info.ControllerUUID,
 		Name:          "controller-2",
 		APIAddresses:  info.Addrs,
 		CACertificate: info.CACert,
+		TLSHostname:   "juju-apiserver",
 		Username:      info.Tag.Id(),
 		Password:      info.Password,
 	}
 
 	ci, err := client.AddController(&acr)
 	c.Assert(err, gc.Equals, nil)
-	c.Assert(ci, jc.DeepEquals, apiparams.ControllerInfo{
-		Name:          "controller-2",
-		UUID:          info.ControllerUUID,
-		APIAddresses:  info.Addrs,
-		CACertificate: info.CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
+	ciExpected := apiparams.ControllerInfo{
+		Name:          acr.Name,
+		UUID:          acr.UUID,
+		CACertificate: acr.CACertificate,
+		APIAddresses:  acr.APIAddresses,
+		CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 		Status: jujuparams.EntityStatus{
 			Status: "available",
 		},
-	})
+	}
+
+	assertControllerInfos(c, []apiparams.ControllerInfo{ci}, []apiparams.ControllerInfo{ciExpected}, s.GetControllersConfig(c))
 
 	_, err = client.AddController(&acr)
 	c.Assert(err, gc.ErrorMatches, `failed to add controller: controller "controller-2" already exists \(already exists\)`)
 	c.Assert(jujuparams.IsCodeAlreadyExists(err), gc.Equals, true)
 
-	conn = s.open(c, nil, "bob")
+	conn = s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 	client = api.NewClient(conn)
 	acr.Name = "controller-2"
@@ -254,17 +277,19 @@ func (s *jimmSuite) TestAddController(c *gc.C) {
 }
 
 func (s *jimmSuite) TestRemoveAndAddController(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
-	info := s.APIInfo(c)
+	_, conf := s.GetOneControllerConfig(c)
+	info := conf.ToAPIInfo()
 
 	acr := apiparams.AddControllerRequest{
 		UUID:          info.ControllerUUID,
 		Name:          "controller-2",
 		APIAddresses:  info.Addrs,
 		CACertificate: info.CACert,
+		TLSHostname:   "juju-apiserver",
 		Username:      info.Tag.Id(),
 		Password:      info.Password,
 	}
@@ -276,15 +301,15 @@ func (s *jimmSuite) TestRemoveAndAddController(c *gc.C) {
 	ciNew, err := client.AddController(&acr)
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(ci, gc.DeepEquals, ciNew)
-
 }
 
 func (s *jimmSuite) TestAddControllerCustomTLSHostname(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
-	info := s.APIInfo(c)
+	_, conf := s.GetOneControllerConfig(c)
+	info := conf.ToAPIInfo()
 
 	acr := apiparams.AddControllerRequest{
 		UUID:          info.ControllerUUID,
@@ -301,101 +326,105 @@ func (s *jimmSuite) TestAddControllerCustomTLSHostname(c *gc.C) {
 	acr.TLSHostname = "juju-apiserver"
 	ci, err := client.AddController(&acr)
 	c.Assert(err, gc.IsNil)
-	c.Assert(ci, jc.DeepEquals, apiparams.ControllerInfo{
-		Name:          "controller-2",
-		UUID:          info.ControllerUUID,
-		APIAddresses:  info.Addrs,
-		CACertificate: info.CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
+	ciExpected := apiparams.ControllerInfo{
+		Name:          acr.Name,
+		UUID:          acr.UUID,
+		CACertificate: acr.CACertificate,
+		APIAddresses:  acr.APIAddresses,
+		CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 		Status: jujuparams.EntityStatus{
 			Status: "available",
 		},
-	})
-
+	}
+	assertControllerInfos(c, []apiparams.ControllerInfo{ci}, []apiparams.ControllerInfo{ciExpected}, s.GetControllersConfig(c))
 }
 
 func (s *jimmSuite) TestRemoveController(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
+	name, conf := s.GetOneControllerConfig(c)
+
 	_, err := client.RemoveController(&apiparams.RemoveControllerRequest{
-		Name: "controller-1",
+		Name: name,
 	})
 	c.Check(err, gc.ErrorMatches, `controller is still alive \(still alive\)`)
 	c.Check(jujuparams.ErrCode(err), gc.Equals, apiparams.CodeStillAlive)
 
-	conn2 := s.open(c, nil, "bob")
+	conn2 := s.Open(c, nil, "bob", nil)
 	defer conn2.Close()
 	client2 := api.NewClient(conn2)
 
 	_, err = client2.RemoveController(&apiparams.RemoveControllerRequest{
-		Name: "controller-1",
+		Name: name,
 	})
 	c.Check(err, gc.ErrorMatches, `unauthorized \(unauthorized access\)`)
 	c.Check(jujuparams.ErrCode(err), gc.Equals, jujuparams.CodeUnauthorized)
 
 	ci, err := client.RemoveController(&apiparams.RemoveControllerRequest{
-		Name:  "controller-1",
+		Name:  name,
 		Force: true,
 	})
 	c.Assert(err, gc.Equals, nil)
-	c.Check(ci, jc.DeepEquals, apiparams.ControllerInfo{
-		Name:          "controller-1",
+	ciExpected := apiparams.ControllerInfo{
+		Name:          name,
 		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
+		APIAddresses:  conf.ToAPIInfo().Addrs,
+		CACertificate: conf.ToAPIInfo().CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 		Status: jujuparams.EntityStatus{
 			Status: "available",
 		},
-	})
+	}
+	assertControllerInfos(c, []apiparams.ControllerInfo{ci}, []apiparams.ControllerInfo{ciExpected}, s.GetControllersConfig(c))
 }
 
 func (s *jimmSuite) TestSetControllerDeprecated(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
+	name, conf := s.GetOneControllerConfig(c)
+
 	ci, err := client.SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
-		Name:       "controller-1",
+		Name:       name,
 		Deprecated: true,
 	})
 	c.Assert(err, gc.Equals, nil)
-	c.Check(ci, jc.DeepEquals, apiparams.ControllerInfo{
-		Name:          "controller-1",
+	ciExpected := apiparams.ControllerInfo{
+		Name:          name,
 		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
-		AgentVersion:  s.Model.Controller.AgentVersion,
+		APIAddresses:  conf.ToAPIInfo().Addrs,
+		CACertificate: conf.ToAPIInfo().CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 		Status: jujuparams.EntityStatus{
 			Status: "deprecated",
 		},
-	})
+	}
+	assertControllerInfos(c, []apiparams.ControllerInfo{ci}, []apiparams.ControllerInfo{ciExpected}, s.GetControllersConfig(c))
 
 	ci, err = client.SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
-		Name:       "controller-1",
+		Name:       name,
 		Deprecated: false,
 	})
 	c.Assert(err, gc.Equals, nil)
-	c.Check(ci, jc.DeepEquals, apiparams.ControllerInfo{
-		Name:          "controller-1",
+	ciExpected = apiparams.ControllerInfo{
+		Name:          name,
 		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
+		APIAddresses:  conf.ToAPIInfo().Addrs,
+		CACertificate: conf.ToAPIInfo().CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 		AgentVersion:  s.Model.Controller.AgentVersion,
 		Status: jujuparams.EntityStatus{
 			Status: "available",
 		},
-	})
+	}
+	assertControllerInfos(c, []apiparams.ControllerInfo{ci}, []apiparams.ControllerInfo{ciExpected}, s.GetControllersConfig(c))
 
 	_, err = client.SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
 		Name:       "controller-2",
@@ -404,7 +433,7 @@ func (s *jimmSuite) TestSetControllerDeprecated(c *gc.C) {
 	c.Check(err, gc.ErrorMatches, `controller not found \(not found\)`)
 	c.Check(jujuparams.IsCodeNotFound(err), gc.Equals, true)
 
-	conn = s.open(c, nil, "bob")
+	conn = s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 	client = api.NewClient(conn)
 	_, err = client.SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
@@ -416,7 +445,7 @@ func (s *jimmSuite) TestSetControllerDeprecated(c *gc.C) {
 }
 
 func (s *jimmSuite) TestAuditLog(c *gc.C) {
-	conn := s.open(c, nil, "bob")
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
@@ -429,7 +458,7 @@ func (s *jimmSuite) TestAuditLog(c *gc.C) {
 	err = mmclient.DestroyModel(s.Model.ResourceTag(), nil, nil, nil, &zeroDuration)
 	c.Assert(err, gc.Equals, nil)
 
-	conn2 := s.open(c, nil, "alice")
+	conn2 := s.Open(c, nil, "alice", nil)
 	defer conn2.Close()
 	client2 := api.NewClient(conn2)
 
@@ -503,7 +532,7 @@ func (s *jimmSuite) TestAuditLog(c *gc.C) {
 	c.Assert(err, gc.Equals, nil)
 
 	// now bob can access audit events as well
-	conn3 := s.open(c, nil, "bob")
+	conn3 := s.Open(c, nil, "bob", nil)
 	defer conn3.Close()
 	client3 := api.NewClient(conn3)
 
@@ -514,7 +543,7 @@ func (s *jimmSuite) TestAuditLog(c *gc.C) {
 }
 
 func (s *jimmSuite) TestAuditLogFilterByMethod(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 	evs, err := client.FindAuditEvents(&apiparams.FindAuditEventsRequest{Method: "Deploy"})
@@ -522,73 +551,18 @@ func (s *jimmSuite) TestAuditLogFilterByMethod(c *gc.C) {
 	c.Assert(len(evs.Events), gc.Equals, 0)
 }
 
-// TestAuditLogAPIParamsConversion tests the conversion of API params to a AuditLogFilter struct.
-// Note that this test doesn't require a running Juju/JIMM controller so it doesn't use gc + the jimmSuite.
-func TestAuditLogAPIParamsConversion(t *testing.T) {
-	c := qt.New(t)
-	testCases := []struct {
-		about   string
-		request apiparams.FindAuditEventsRequest
-		result  db.AuditLogFilter
-		err     error
-	}{
-		{
-			about: "Test basic conversion",
-			request: apiparams.FindAuditEventsRequest{
-				After:    "2023-08-14T00:00:00Z",
-				Before:   "2023-08-14T00:00:00Z",
-				UserTag:  "user-alice",
-				Model:    "123",
-				Method:   "Deploy",
-				Offset:   10,
-				Limit:    10,
-				SortTime: false,
-			},
-			result: db.AuditLogFilter{
-				Start:       time.Date(2023, 8, 14, 0, 0, 0, 0, time.UTC),
-				End:         time.Date(2023, 8, 14, 0, 0, 0, 0, time.UTC),
-				IdentityTag: "user-alice",
-				Model:       "123",
-				Method:      "Deploy",
-				Offset:      10,
-				Limit:       10,
-				SortTime:    false,
-			},
-		}, {
-			about: "Test limit lower bound",
-			request: apiparams.FindAuditEventsRequest{
-				Limit: 0,
-			},
-			result: db.AuditLogFilter{
-				Limit: jujuapi.AuditLogDefaultLimit,
-			},
-		}, {
-			about: "Test limit upper bound",
-			request: apiparams.FindAuditEventsRequest{
-				Limit: jujuapi.AuditLogUpperLimit + 1,
-			},
-			result: db.AuditLogFilter{
-				Limit: jujuapi.AuditLogUpperLimit,
-			},
-		},
-	}
-	for _, test := range testCases {
-		c.Log(test.about)
-		res, err := jujuapi.AuditParamsToFilter(test.request)
-		if test.err == nil {
-			c.Assert(err, qt.IsNil)
-			c.Assert(res, qt.DeepEquals, test.result)
-		} else {
-			c.Assert(err, qt.ErrorMatches, test.err)
-		}
-	}
-}
-
 func (s *jimmSuite) TestFullModelStatus(c *gc.C) {
-	s.AddController(c, "controller-2", s.APIInfo(c))
-	mt := s.AddModel(c, names.NewUserTag("charlie@canonical.com"), "model-1", names.NewCloudTag(jimmtest.TestCloudName), jimmtest.TestCloudRegionName, s.Model2.CloudCredential.ResourceTag())
+	_, conf := s.GetOneControllerConfig(c)
 
-	conn := s.open(c, nil, "bob")
+	s.AddController(c, "controller-2", conf.ToAPIInfo())
+	modelName := petname.Generate(2, "-")
+	mt := s.AddModel(c, names.NewUserTag("charlie@canonical.com"),
+		modelName,
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
+		s.Model2.CloudCredential.ResourceTag())
+
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
@@ -602,7 +576,7 @@ func (s *jimmSuite) TestFullModelStatus(c *gc.C) {
 	})
 	c.Assert(err, gc.ErrorMatches, "unauthorized.*")
 
-	conn = s.open(c, nil, "alice@canonical.com")
+	conn = s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 	client = api.NewClient(conn)
 
@@ -610,49 +584,56 @@ func (s *jimmSuite) TestFullModelStatus(c *gc.C) {
 		ModelTag: mt.String(),
 	})
 	c.Assert(err, gc.Equals, nil)
-	c.Assert(status, jimmtest.CmpEquals(cmpopts.EquateEmpty(), cmpopts.IgnoreTypes(&time.Time{})), jujuparams.FullStatus{
-		Model: jujuparams.ModelStatusInfo{
-			Name:        "model-1",
-			Type:        "iaas",
-			CloudTag:    names.NewCloudTag(jimmtest.TestCloudName).String(),
-			CloudRegion: jimmtest.TestCloudRegionName,
-			Version:     jujuversion.Current.String(),
-			ModelStatus: jujuparams.DetailedStatus{
-				Status: "available",
+	c.Assert(status,
+		jimmtest.CmpEquals(
+			cmpopts.EquateEmpty(),
+			cmpopts.IgnoreTypes(&time.Time{}),
+			cmpopts.IgnoreFields(jujuparams.ModelStatusInfo{}, "Version"),
+		),
+		jujuparams.FullStatus{
+			Model: jujuparams.ModelStatusInfo{
+				Name:        modelName,
+				Type:        "iaas",
+				CloudTag:    names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+				CloudRegion: jimmtest.TestE2ECloudRegionName,
+				ModelStatus: jujuparams.DetailedStatus{
+					Status: "available",
+				},
+				SLA: "unsupported",
 			},
-			SLA: "unsupported",
-		},
-	})
+		})
 }
 
 func (s *jimmSuite) TestUpdateMigratedModel(c *gc.C) {
-	s.AddController(c, "controller-2", s.APIInfo(c))
+	name, conf := s.GetOneControllerConfig(c)
+
+	s.AddController(c, "controller-2", conf.ToAPIInfo())
 
 	// Open the API connection as user "bob".
-	conn := s.open(c, nil, "bob")
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 
 	req := apiparams.UpdateMigratedModelRequest{
 		ModelTag:         names.NewModelTag(s.Model2.UUID.String).String(),
-		TargetController: "controller-1",
+		TargetController: name,
 	}
 	err := conn.APICall("JIMM", 4, "", "UpdateMigratedModel", &req, nil)
 	c.Assert(err, gc.ErrorMatches, `unauthorized \(unauthorized access\)`)
 
 	// Open the API connection as user "alice".
-	conn = s.open(c, nil, "alice")
+	conn = s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	req = apiparams.UpdateMigratedModelRequest{
 		ModelTag:         names.NewModelTag(s.Model2.UUID.String).String(),
-		TargetController: "controller-1",
+		TargetController: name,
 	}
 	err = conn.APICall("JIMM", 4, "", "UpdateMigratedModel", &req, nil)
 	c.Assert(err, gc.Equals, nil)
 
 	req = apiparams.UpdateMigratedModelRequest{
 		ModelTag:         "invalid-model-tag",
-		TargetController: "controller-1",
+		TargetController: name,
 	}
 	err = conn.APICall("JIMM", 4, "", "UpdateMigratedModel", &req, nil)
 	c.Assert(err, gc.ErrorMatches, `"invalid-model-tag" is not a valid tag \(bad request\)`)
@@ -660,8 +641,10 @@ func (s *jimmSuite) TestUpdateMigratedModel(c *gc.C) {
 
 func (s *jimmSuite) TestImportModel(c *gc.C) {
 	// Open the API connection as user "bob".
-	conn := s.open(c, nil, "bob")
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
+
+	name, _ := s.GetOneControllerConfig(c)
 
 	err := s.JIMM.OpenFGAClient.RemoveControllerModel(context.Background(), s.Model2.Controller.ResourceTag(), s.Model2.ResourceTag())
 	c.Assert(err, gc.Equals, nil)
@@ -669,7 +652,7 @@ func (s *jimmSuite) TestImportModel(c *gc.C) {
 	c.Assert(err, gc.Equals, nil)
 
 	req := apiparams.ImportModelRequest{
-		Controller: "controller-1",
+		Controller: name,
 		ModelTag:   s.Model2.Tag().String(),
 		Owner:      "",
 	}
@@ -677,7 +660,7 @@ func (s *jimmSuite) TestImportModel(c *gc.C) {
 	c.Assert(err, gc.ErrorMatches, `unauthorized \(unauthorized access\)`)
 
 	// Open the API connection as user "alice".
-	conn = s.open(c, nil, "alice")
+	conn = s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	err = conn.APICall("JIMM", 4, "", "ImportModel", &req, nil)
@@ -690,7 +673,7 @@ func (s *jimmSuite) TestImportModel(c *gc.C) {
 	c.Check(model2.CreatedAt.After(s.Model2.CreatedAt), gc.Equals, true)
 
 	req = apiparams.ImportModelRequest{
-		Controller: "controller-1",
+		Controller: name,
 		ModelTag:   "invalid-model-tag",
 	}
 	err = conn.APICall("JIMM", 4, "", "ImportModel", &req, nil)
@@ -706,21 +689,24 @@ func (s *jimmSuite) TestAddCloudToController(c *gc.C) {
 	err = s.JIMM.Database.GetIdentity(ctx, u)
 	c.Assert(err, gc.IsNil)
 
-	conn := s.open(c, nil, "alice@canonical.com")
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
+	name, _ := s.GetOneControllerConfig(c)
+	cloudName := petname.Generate(2, "-")
+
 	req := apiparams.AddCloudToControllerRequest{
-		ControllerName: "controller-1",
+		ControllerName: name,
 		AddCloudArgs: jujuparams.AddCloudArgs{
-			Name: "test-cloud",
+			Name: cloudName,
 			Cloud: jujuapi.CloudToParams(cloud.Cloud{
-				Name:             "test-cloud",
+				Name:             cloudName,
 				Type:             "kubernetes",
 				AuthTypes:        cloud.AuthTypes{cloud.CertificateAuthType},
 				Endpoint:         "https://0.1.2.3:5678",
 				IdentityEndpoint: "https://0.1.2.3:5679",
 				StorageEndpoint:  "https://0.1.2.3:5680",
-				HostCloudRegion:  jimmtest.TestCloudName + "/" + jimmtest.TestCloudRegionName,
+				HostCloudRegion:  jimmtest.TestE2EProviderType + "/" + jimmtest.TestE2ECloudRegionName,
 			}),
 		},
 	}
@@ -729,10 +715,17 @@ func (s *jimmSuite) TestAddCloudToController(c *gc.C) {
 
 	user := openfga.NewUser(u, s.OFGAClient)
 
-	cloud, err := s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag("test-cloud"))
+	cloud, err := s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag(cloudName))
 	c.Assert(err, gc.IsNil)
-	c.Assert(cloud.Name, gc.DeepEquals, "test-cloud")
+	c.Assert(cloud.Name, gc.DeepEquals, cloudName)
 	c.Assert(cloud.Type, gc.DeepEquals, "kubernetes")
+
+	req1 := apiparams.RemoveCloudFromControllerRequest{
+		CloudTag:       names.NewCloudTag(cloudName).String(),
+		ControllerName: name,
+	}
+	err = conn.APICall("JIMM", 4, "", "RemoveCloudFromController", &req1, nil)
+	c.Assert(err, gc.Equals, nil)
 }
 
 func (s *jimmSuite) TestAddExistingCloudToController(c *gc.C) {
@@ -744,16 +737,19 @@ func (s *jimmSuite) TestAddExistingCloudToController(c *gc.C) {
 	err = s.JIMM.Database.GetIdentity(ctx, u)
 	c.Assert(err, gc.IsNil)
 
-	conn := s.open(c, nil, "alice@canonical.com")
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
+	name, _ := s.GetOneControllerConfig(c)
+
+	cloudName := petname.Generate(2, "-")
 	force := true
 	req := apiparams.AddCloudToControllerRequest{
-		ControllerName: "controller-1",
+		ControllerName: name,
 		AddCloudArgs: jujuparams.AddCloudArgs{
-			Name: "test-cloud",
+			Name: cloudName,
 			Cloud: jujuapi.CloudToParams(cloud.Cloud{
-				Name:             "test-cloud",
+				Name:             cloudName,
 				Type:             "MAAS",
 				AuthTypes:        cloud.AuthTypes{cloud.OAuth1AuthType},
 				Endpoint:         "https://0.1.2.3:5678",
@@ -766,22 +762,30 @@ func (s *jimmSuite) TestAddExistingCloudToController(c *gc.C) {
 	err = conn.APICall("JIMM", 4, "", "AddCloudToController", &req, nil)
 	c.Assert(err, gc.Equals, nil)
 	user := openfga.NewUser(u, s.OFGAClient)
-	cloud, err := s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag("test-cloud"))
+	cloud, err := s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag(cloudName))
 	c.Assert(err, gc.IsNil)
-	c.Assert(cloud.Name, gc.DeepEquals, "test-cloud")
+	c.Assert(cloud.Name, gc.DeepEquals, cloudName)
 	c.Assert(cloud.Type, gc.DeepEquals, "MAAS")
 	// Simulate the cloud being present on the Juju controller but not in JIMM.
 	err = s.JIMM.Database.DeleteCloud(ctx, &cloud)
 	c.Assert(err, gc.IsNil)
-	cloud, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag("test-cloud"))
+	cloud, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag(cloudName))
 	c.Assert(err, gc.NotNil)
 	c.Assert(errors.ErrorCode(err), gc.Equals, errors.CodeNotFound)
 	err = conn.APICall("JIMM", 4, "", "AddCloudToController", &req, nil)
 	c.Assert(err, gc.Equals, nil)
-	cloud, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag("test-cloud"))
+	cloud, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag(cloudName))
 	c.Assert(err, gc.IsNil)
-	c.Assert(cloud.Name, gc.DeepEquals, "test-cloud")
+	c.Assert(cloud.Name, gc.DeepEquals, cloudName)
 	c.Assert(cloud.Type, gc.DeepEquals, "MAAS")
+
+	req1 := apiparams.RemoveCloudFromControllerRequest{
+		CloudTag:       names.NewCloudTag(cloudName).String(),
+		ControllerName: name,
+	}
+	err = conn.APICall("JIMM", 4, "", "RemoveCloudFromController", &req1, nil)
+	c.Assert(err, gc.Equals, nil)
+
 }
 
 func (s *jimmSuite) TestRemoveCloudFromController(c *gc.C) {
@@ -793,21 +797,23 @@ func (s *jimmSuite) TestRemoveCloudFromController(c *gc.C) {
 	err = s.JIMM.Database.GetIdentity(ctx, u)
 	c.Assert(err, gc.IsNil)
 
-	conn := s.open(c, nil, "alice@canonical.com")
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
+	name, _ := s.GetOneControllerConfig(c)
+	cloudName := petname.Generate(2, "-")
 	req := apiparams.AddCloudToControllerRequest{
-		ControllerName: "controller-1",
+		ControllerName: name,
 		AddCloudArgs: jujuparams.AddCloudArgs{
-			Name: "test-cloud",
+			Name: cloudName,
 			Cloud: jujuapi.CloudToParams(cloud.Cloud{
-				Name:             "test-cloud",
+				Name:             cloudName,
 				Type:             "kubernetes",
 				AuthTypes:        cloud.AuthTypes{cloud.CertificateAuthType},
 				Endpoint:         "https://0.1.2.3:5678",
 				IdentityEndpoint: "https://0.1.2.3:5679",
 				StorageEndpoint:  "https://0.1.2.3:5680",
-				HostCloudRegion:  jimmtest.TestCloudName + "/" + jimmtest.TestCloudRegionName,
+				HostCloudRegion:  jimmtest.TestE2EProviderType + "/" + jimmtest.TestE2ECloudRegionName,
 			}),
 		},
 	}
@@ -816,48 +822,49 @@ func (s *jimmSuite) TestRemoveCloudFromController(c *gc.C) {
 
 	user := openfga.NewUser(u, s.OFGAClient)
 
-	_, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag("test-cloud"))
+	_, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag(cloudName))
 	c.Assert(err, gc.Equals, nil)
 
 	req1 := apiparams.RemoveCloudFromControllerRequest{
-		CloudTag:       names.NewCloudTag("test-cloud").String(),
-		ControllerName: "controller-1",
+		CloudTag:       names.NewCloudTag(cloudName).String(),
+		ControllerName: name,
 	}
 	err = conn.APICall("JIMM", 4, "", "RemoveCloudFromController", &req1, nil)
 	c.Assert(err, gc.Equals, nil)
 
-	_, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag("test-cloud"))
-	c.Assert(err, gc.ErrorMatches, `cloud "test-cloud" not found`)
+	_, err = s.JIMM.JujuManager().GetCloud(context.Background(), user, names.NewCloudTag(cloudName))
+	c.Assert(err, gc.ErrorMatches, `cloud "`+cloudName+`" not found`)
 }
 
 func (s *jimmSuite) TestCrossModelQuery(c *gc.C) {
-	s.AddController(c, "controller-2", s.APIInfo(c))
 	s.AddModel(
 		c,
 		names.NewUserTag("charlie@canonical.com"),
-		"model-20",
-		names.NewCloudTag(jimmtest.TestCloudName),
-		jimmtest.TestCloudRegionName,
+		petname.Generate(2, "-"),
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
 		s.Model2.CloudCredential.ResourceTag(),
 	)
+	model21Name := petname.Generate(2, "-")
 	s.AddModel(
 		c,
 		names.NewUserTag("charlie@canonical.com"),
-		"model-21",
-		names.NewCloudTag(jimmtest.TestCloudName),
-		jimmtest.TestCloudRegionName,
+		model21Name,
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
 		s.Model2.CloudCredential.ResourceTag(),
 	)
+	model22Name := petname.Generate(2, "-")
 	s.AddModel(
 		c,
 		names.NewUserTag("charlie@canonical.com"),
-		"model-22",
-		names.NewCloudTag(jimmtest.TestCloudName),
-		jimmtest.TestCloudRegionName,
+		model22Name,
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
 		s.Model2.CloudCredential.ResourceTag(),
 	)
 
-	conn := s.open(c, nil, "charlie")
+	conn := s.Open(c, nil, "charlie", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
@@ -896,7 +903,7 @@ func (s *jimmSuite) TestCrossModelQuery(c *gc.C) {
 	// Query for two very specific models
 	res, err = client.CrossModelQuery(&apiparams.CrossModelQueryRequest{
 		Type:  "jq",
-		Query: "select((.model.name==\"model-21\") or .model.name==\"model-22\")",
+		Query: "select((.model.name==\"" + model21Name + "\") or .model.name==\"" + model22Name + "\")",
 	})
 	c.Assert(err, gc.IsNil)
 	c.Assert(res.Results, gc.HasLen, 2)
@@ -907,23 +914,25 @@ func (s *jimmSuite) TestCrossModelQuery(c *gc.C) {
 // Because our test suite only spins up 1 controller the further we can go is reaching Juju pre-checks which
 // detect that a model with the same UUID already exists on the target controller.
 func (s *jimmSuite) TestJimmModelMigrationSuperuser(c *gc.C) {
+	modelName := petname.Generate(2, "-")
 	mt := s.AddModel(
 		c,
 		names.NewUserTag("charlie@canonical.com"),
-		"model-20",
-		names.NewCloudTag(jimmtest.TestCloudName),
-		jimmtest.TestCloudRegionName,
+		modelName,
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
 		s.Model2.CloudCredential.ResourceTag(),
 	)
 
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
+	name, _ := s.GetOneControllerConfig(c)
 	res, err := client.MigrateModel(&apiparams.MigrateModelRequest{
 		Specs: []apiparams.MigrateModelInfo{
-			{TargetModelNameOrUUID: mt.Id(), TargetController: "controller-1"},
-			{TargetModelNameOrUUID: "charlie@canonical.com/model-20", TargetController: "controller-1"},
+			{TargetModelNameOrUUID: mt.Id(), TargetController: name},
+			{TargetModelNameOrUUID: "charlie@canonical.com/" + modelName, TargetController: name},
 		},
 	})
 	c.Assert(err, gc.IsNil)
@@ -941,22 +950,23 @@ func (s *jimmSuite) TestJimmModelMigrationSuperuser(c *gc.C) {
 }
 
 func (s *jimmSuite) TestJimmModelMigrationNonSuperuser(c *gc.C) {
+	modelName := petname.Generate(2, "-")
 	mt := s.AddModel(
 		c,
 		names.NewUserTag("charlie@canonical.com"),
-		"model-20",
-		names.NewCloudTag(jimmtest.TestCloudName),
-		jimmtest.TestCloudRegionName,
+		modelName,
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
 		s.Model2.CloudCredential.ResourceTag(),
 	)
 
-	conn := s.open(c, nil, "bob")
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
-
+	name, _ := s.GetOneControllerConfig(c)
 	res, err := client.MigrateModel(&apiparams.MigrateModelRequest{
 		Specs: []apiparams.MigrateModelInfo{
-			{TargetModelNameOrUUID: mt.Id(), TargetController: "controller-1"},
+			{TargetModelNameOrUUID: mt.Id(), TargetController: name},
 		},
 	})
 	c.Assert(err, gc.IsNil)
@@ -966,7 +976,7 @@ func (s *jimmSuite) TestJimmModelMigrationNonSuperuser(c *gc.C) {
 }
 
 func (s *jimmSuite) TestVersion(c *gc.C) {
-	conn := s.open(c, nil, "bob")
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 	versionInfo, err := client.Version()
@@ -976,12 +986,13 @@ func (s *jimmSuite) TestVersion(c *gc.C) {
 }
 
 func (s *jimmSuite) TestPrepareModelMigration(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
+	_, conf := s.GetOneControllerConfig(c)
 
 	ctlName := "prepare-model-migration-controller"
-	s.AddController(c, ctlName, s.APIInfo(c))
+	s.AddController(c, ctlName, conf.ToAPIInfo())
 
 	migrationToken, err := client.PrepareModelMigration(&apiparams.PrepareModelMigrationRequest{
 		ModelTag:              names.NewModelTag("5650ac3f-8332-437f-874f-089e0e447e7f").String(),
@@ -997,21 +1008,23 @@ func (s *jimmSuite) TestListMigrationTargets(c *gc.C) {
 	mt := s.AddModel(
 		c,
 		names.NewUserTag("charlie@canonical.com"),
-		"model-0",
-		names.NewCloudTag(jimmtest.TestCloudName),
-		jimmtest.TestCloudRegionName,
+		petname.Generate(2, "-"),
+		names.NewCloudTag(jimmtest.TestE2ECloudName),
+		jimmtest.TestE2ECloudRegionName,
 		s.Model2.CloudCredential.ResourceTag(),
 	)
 
 	// Add migration target controller
-	info := s.APIInfo(c)
+	_, conf := s.GetOneControllerConfig(c)
+	info := conf.ToAPIInfo()
 	ctl := &dbmodel.Controller{
 		UUID:          info.ControllerUUID,
 		Name:          "controller-2",
 		CACertificate: info.CACert,
 		Addresses:     nil,
-		CloudName:     jimmtest.TestCloudName,
-		CloudRegion:   jimmtest.TestCloudRegionName,
+		CloudName:     jimmtest.TestE2ECloudName,
+		TLSHostname:   "juju-apiserver",
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 	}
 	ctlCreds := juju.ControllerCreds{
 		AdminIdentityName: info.Tag.Id(),
@@ -1029,7 +1042,7 @@ func (s *jimmSuite) TestListMigrationTargets(c *gc.C) {
 	err := s.JIMM.JujuManager().AddController(context.Background(), s.AdminUser, ctl, ctlCreds)
 	c.Assert(err, gc.Equals, nil)
 
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -1037,23 +1050,26 @@ func (s *jimmSuite) TestListMigrationTargets(c *gc.C) {
 		ModelTag: mt.String(),
 	})
 	c.Assert(err, gc.Equals, nil)
-	c.Check(cis, jc.DeepEquals, []apiparams.ControllerInfo{{
+
+	expectedControllerInfo := []apiparams.ControllerInfo{{
 		Name:          "controller-2",
 		UUID:          s.Model.Controller.UUID,
-		APIAddresses:  s.APIInfo(c).Addrs,
-		CACertificate: s.APIInfo(c).CACert,
-		CloudTag:      names.NewCloudTag(jimmtest.TestCloudName).String(),
-		CloudRegion:   jimmtest.TestCloudRegionName,
+		APIAddresses:  info.Addrs,
+		CACertificate: info.CACert,
+		CloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		CloudRegion:   jimmtest.TestE2ECloudRegionName,
 		AgentVersion:  s.Model.Controller.AgentVersion,
 		Status: jujuparams.EntityStatus{
 			Status: "available",
 		},
-	}})
+	}}
+
+	assertControllerInfos(c, cis, expectedControllerInfo, s.GetControllersConfig(c))
 }
 
 // TestUpgradeTo_Unauthorized verifies non-admins cannot call the facade.
 func (s *jimmSuite) TestUpgradeTo_Unauthorized(c *gc.C) {
-	conn := s.open(c, nil, "bob")
+	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -1068,7 +1084,7 @@ func (s *jimmSuite) TestUpgradeTo_Unauthorized(c *gc.C) {
 
 // TestUpgradeTo_InvalidModelTag verifies invalid model tags are rejected.
 func (s *jimmSuite) TestUpgradeTo_InvalidModelTag(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -1082,7 +1098,7 @@ func (s *jimmSuite) TestUpgradeTo_InvalidModelTag(c *gc.C) {
 
 // TestUpgradeTo_InvalidVersion verifies invalid version strings are rejected.
 func (s *jimmSuite) TestUpgradeTo_InvalidVersion(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -1096,7 +1112,7 @@ func (s *jimmSuite) TestUpgradeTo_InvalidVersion(c *gc.C) {
 
 // TestUpgradeTo_TargetVersionLowerOrEqual ensures we return a success=false response when the target is <= current.
 func (s *jimmSuite) TestUpgradeTo_TargetVersionLower(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)

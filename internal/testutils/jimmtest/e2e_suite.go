@@ -45,11 +45,11 @@ const (
 // ControllerInfo holds the controller connection information
 // retrieved from the configuration file.
 type ControllerInfo struct {
-	UUID     string `yaml:"uuid"`
-	Addrs    string `yaml:"addrs"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	CACert   string `yaml:"ca-cert"`
+	UUID     string   `yaml:"uuid"`
+	Addrs    []string `yaml:"addrs"`
+	Username string   `yaml:"username"`
+	Password string   `yaml:"password"`
+	CACert   string   `yaml:"ca-cert"`
 }
 
 // ControllersConfig holds the top-level structure of the controller.yaml file.
@@ -59,7 +59,7 @@ type ControllersConfig struct {
 
 // GetControllersConfig reads and parses the controller.yaml configuration file
 // from the path specified in the JIMM_BACKING_CONTROLLER_CONFIG environment variable.
-func GetControllersConfig(c *gc.C) *ControllersConfig {
+func (s *E2ESuite) GetControllersConfig(c *gc.C) *ControllersConfig {
 	configPath := os.Getenv(ControllersConfigEnvVar)
 	c.Assert(configPath, gc.Not(gc.Equals), "", gc.Commentf(
 		"%s environment variable is not set. "+
@@ -80,10 +80,22 @@ func GetControllersConfig(c *gc.C) *ControllersConfig {
 	return &config
 }
 
+// GetOneControllerConfig retrieves one controller configuration
+// from the controllers config file. It can be used in tests when
+// a valid controller config is needed.
+func (s *E2ESuite) GetOneControllerConfig(c *gc.C) (string, ControllerInfo) {
+	config := s.GetControllersConfig(c)
+	for name, info := range config.Controllers {
+		return name, info
+	}
+	c.Fatal("no controllers found in config")
+	return "", ControllerInfo{}
+}
+
 // Validate asserts that all required fields are set for this controller.
 func (info *ControllerInfo) Validate(c *gc.C, name string) {
 	c.Assert(info.UUID, gc.Not(gc.Equals), "", gc.Commentf("uuid is not set for controller %q", name))
-	c.Assert(info.Addrs, gc.Not(gc.Equals), "", gc.Commentf("addrs is not set for controller %q", name))
+	c.Assert(len(info.Addrs), gc.Not(gc.Equals), 0, gc.Commentf("addrs is not set for controller %q", name))
 	c.Assert(info.Username, gc.Not(gc.Equals), "", gc.Commentf("username is not set for controller %q", name))
 	c.Assert(info.Password, gc.Not(gc.Equals), "", gc.Commentf("password is not set for controller %q", name))
 	c.Assert(info.CACert, gc.Not(gc.Equals), "", gc.Commentf("ca-cert is not set for controller %q", name))
@@ -93,7 +105,7 @@ func (info *ControllerInfo) Validate(c *gc.C, name string) {
 func (info *ControllerInfo) ToAPIInfo() *api.Info {
 	return &api.Info{
 		ControllerUUID: info.UUID,
-		Addrs:          []string{info.Addrs},
+		Addrs:          info.Addrs,
 		Tag:            names.NewUserTag(info.Username),
 		Password:       info.Password,
 		CACert:         info.CACert,
@@ -291,7 +303,7 @@ func (s *E2ESuite) SetUpTest(c *gc.C) {
 	s.LoggingSuite.SetUpTest(c)
 
 	// Add all controllers from the config file
-	config := GetControllersConfig(c)
+	config := s.GetControllersConfig(c)
 	for name, info := range config.Controllers {
 		info.Validate(c, name)
 		controller := s.AddController(c, name, info.ToAPIInfo())
