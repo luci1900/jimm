@@ -1,10 +1,11 @@
 // Copyright 2024 Canonical.
 
-package jujuapi_test
+package testing
 
 import (
 	"time"
 
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/juju/juju/api/client/usermanager"
 	jujuparams "github.com/juju/juju/rpc/params"
 	jc "github.com/juju/testing/checkers"
@@ -12,13 +13,13 @@ import (
 )
 
 type userManagerSuite struct {
-	websocketSuite
+	jimmtest.WebsocketE2ESuite
 }
 
 var _ = gc.Suite(&userManagerSuite{})
 
 func (s *userManagerSuite) TestAddUser(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -27,7 +28,7 @@ func (s *userManagerSuite) TestAddUser(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestRemoveUser(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -36,7 +37,7 @@ func (s *userManagerSuite) TestRemoveUser(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestEnableUser(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -45,7 +46,7 @@ func (s *userManagerSuite) TestEnableUser(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestDisableUser(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -54,7 +55,7 @@ func (s *userManagerSuite) TestDisableUser(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestUserInfoAllUsers(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -64,7 +65,7 @@ func (s *userManagerSuite) TestUserInfoAllUsers(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestUserInfoSpecifiedUser(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -82,7 +83,7 @@ func (s *userManagerSuite) TestUserInfoSpecifiedUser(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestUserInfoSpecifiedUsers(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -92,7 +93,7 @@ func (s *userManagerSuite) TestUserInfoSpecifiedUsers(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestUserInfoWithDomain(c *gc.C) {
-	conn := s.open(c, nil, "alice@mydomain")
+	conn := s.Open(c, nil, "alice@mydomain", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -110,7 +111,7 @@ func (s *userManagerSuite) TestUserInfoWithDomain(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestUserInfoInvalidUsername(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -120,7 +121,7 @@ func (s *userManagerSuite) TestUserInfoInvalidUsername(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestUserInfoLocalUsername(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
@@ -130,7 +131,7 @@ func (s *userManagerSuite) TestUserInfoLocalUsername(c *gc.C) {
 }
 
 func (s *userManagerSuite) TestSetPassword(c *gc.C) {
-	conn := s.open(c, nil, "alice")
+	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
