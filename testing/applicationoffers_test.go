@@ -1,6 +1,6 @@
 // Copyright 2025 Canonical.
 
-package jujuapi_test
+package testing
 
 import (
 	"context"
@@ -10,127 +10,105 @@ import (
 	"github.com/juju/juju/api/client/applicationoffers"
 	"github.com/juju/juju/core/crossmodel"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/juju/testing/factory"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
 
 type applicationOffersSuite struct {
-	websocketSuite
-	state    *state.PooledState
-	factory  *factory.Factory
-	endpoint state.Endpoint
+	jimmtest.WebsocketE2ESuite
 }
 
 var _ = gc.Suite(&applicationOffersSuite{})
 
 func (s *applicationOffersSuite) SetUpTest(c *gc.C) {
-	s.websocketSuite.SetUpTest(c)
-	var err error
-	s.state, err = s.StatePool.Get(s.Model.UUID.String)
-	c.Assert(err, gc.Equals, nil)
-	s.factory = factory.NewFactory(s.state.State, s.StatePool)
-	app := s.factory.MakeApplication(c, &factory.ApplicationParams{
-		Name: "test-app",
-		Charm: s.factory.MakeCharm(c, &factory.CharmParams{
-			Name: "wordpress",
-		}),
+	s.WebsocketE2ESuite.SetUpTest(c)
+
+	s.DeployApplication(c, s.AdminUser, s.Model.Tag(), jimmtest.DeployApplicationParams{
+		App:   "test-app",
+		Charm: "juju-qa-dummy-sink",
 	})
-	s.factory.MakeUnit(c, &factory.UnitParams{
-		Application: app,
-	})
-	s.endpoint, err = app.Endpoint("url")
-	c.Assert(err, gc.Equals, nil)
 }
 
 func (s *applicationOffersSuite) TearDownTest(c *gc.C) {
-	s.endpoint = state.Endpoint{}
-	s.factory = nil
-	if s.state != nil {
-		s.state.Release()
-		s.state = nil
-	}
-	s.websocketSuite.TearDownTest(c)
+	s.WebsocketE2ESuite.TearDownTest(c)
 }
 
 func (s *applicationOffersSuite) TestOffer(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
-	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer", "test offer description")
+	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 
-	results, err = client.Offer(s.Model.UUID.String, "no-such-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer-foo", "test offer description")
+	results, err = client.Offer(s.Model.UUID.String, "no-such-app", []string{"source"}, "bob@canonical.com", "test-offer-foo", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Not(gc.IsNil))
 	c.Assert(results[0].Error.Code, gc.Equals, "not found")
 
-	conn1 := s.open(c, nil, "charlie@canonical.com")
+	conn1 := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn1.Close()
 	client1 := applicationoffers.NewClient(conn1)
 
-	results, err = client1.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer-2", "test offer description")
+	results, err = client1.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer-2", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error.Code, gc.Equals, "unauthorized access")
 }
 
 func (s *applicationOffersSuite) TestCreateMultipleOffersForSameApp(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
-	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer", "test offer description")
+	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 
 	// Creating an offer with the same name as above.
-	results, err = client.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer", "test offer description")
+	results, err = client.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
-	c.Assert(results[0].Error, gc.ErrorMatches, `offer bob@canonical.com/model-1.test-offer already exists, please use a different name.*`)
+	c.Assert(results[0].Error, gc.ErrorMatches, `offer bob@canonical.com/`+s.Model.Name+`.test-offer already exists, please use a different name.*`)
 
 	// Creating an offer with a new name.
-	results, err = client.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer-foo", "test offer description")
+	results, err = client.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer-foo", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 }
 
 func (s *applicationOffersSuite) TestGetConsumeDetails(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
-	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer", "test offer description")
+	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 
 	ourl := &crossmodel.OfferURL{
 		User:            "bob@canonical.com",
-		ModelName:       "model-1",
+		ModelName:       s.Model.Name,
 		ApplicationName: "test-offer",
 	}
-
 	details, err := client.GetConsumeDetails(ourl.Path())
 	c.Assert(err, gc.Equals, nil)
 	c.Check(details.Macaroon, gc.Not(gc.IsNil))
 	details.Macaroon = nil
 	c.Check(details.Offer.OfferUUID, gc.Matches, `[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	details.Offer.OfferUUID = ""
-	caCert, _ := s.ControllerConfig.CACert()
-	info := s.APIInfo(c)
+	_, info := s.GetOneControllerConfig(c)
 
 	sort.Slice(details.Offer.Users, func(i, j int) bool {
 		return details.Offer.Users[i].UserName < details.Offer.Users[j].UserName
@@ -142,9 +120,9 @@ func (s *applicationOffersSuite) TestGetConsumeDetails(c *gc.C) {
 			OfferName:              "test-offer",
 			ApplicationDescription: "test offer description",
 			Endpoints: []jujuparams.RemoteEndpoint{{
-				Name:      "url",
+				Name:      "source",
 				Role:      "provider",
-				Interface: "http",
+				Interface: "dummy-token",
 			}},
 			Users: []jujuparams.OfferUserDetails{{
 				UserName: "alice@canonical.com",
@@ -160,13 +138,13 @@ func (s *applicationOffersSuite) TestGetConsumeDetails(c *gc.C) {
 		ControllerInfo: &jujuparams.ExternalControllerInfo{
 			ControllerTag: s.Model.Controller.Tag().String(),
 			Addrs:         info.Addrs,
-			Alias:         "controller-1",
-			CACert:        caCert,
+			Alias:         s.Model.Controller.Name,
+			CACert:        info.CACert,
 		},
 	})
 
 	ourl2 := &crossmodel.OfferURL{
-		ModelName:       "model-1",
+		ModelName:       s.Model.Name,
 		ApplicationName: "test-offer",
 	}
 
@@ -186,9 +164,9 @@ func (s *applicationOffersSuite) TestGetConsumeDetails(c *gc.C) {
 			OfferName:              "test-offer",
 			ApplicationDescription: "test offer description",
 			Endpoints: []jujuparams.RemoteEndpoint{{
-				Name:      "url",
+				Name:      "source",
 				Role:      "provider",
-				Interface: "http",
+				Interface: "dummy-token",
 			}},
 			Users: []jujuparams.OfferUserDetails{{
 				UserName: "alice@canonical.com",
@@ -204,25 +182,25 @@ func (s *applicationOffersSuite) TestGetConsumeDetails(c *gc.C) {
 		ControllerInfo: &jujuparams.ExternalControllerInfo{
 			ControllerTag: s.Model.Controller.Tag().String(),
 			Addrs:         info.Addrs,
-			Alias:         "controller-1",
-			CACert:        caCert,
+			Alias:         s.Model.Controller.Name,
+			CACert:        info.CACert,
 		},
 	})
 }
 
 func (s *applicationOffersSuite) TestGetConsumeDetailsWithConsumeAccess(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
-	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{s.endpoint.Name}, "bob@canonical.com", "test-offer", "test offer description")
+	results, err := client.Offer(s.Model.UUID.String, "test-app", []string{"source"}, "bob@canonical.com", "test-offer", "test offer description")
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 
 	ourl := &crossmodel.OfferURL{
 		User:            "bob@canonical.com",
-		ModelName:       "model-1",
+		ModelName:       s.Model.Name,
 		ApplicationName: "test-offer",
 	}
 
@@ -230,10 +208,9 @@ func (s *applicationOffersSuite) TestGetConsumeDetailsWithConsumeAccess(c *gc.C)
 	err = client.GrantOffer(user, string(jujuparams.OfferConsumeAccess), ourl.String())
 	c.Assert(err, gc.Equals, nil)
 
-	info := s.APIInfo(c)
-	caCert, _ := s.ControllerConfig.CACert()
+	_, info := s.GetOneControllerConfig(c)
 
-	conn1 := s.open(c, nil, user)
+	conn1 := s.Open(c, nil, user, nil)
 	defer conn.Close()
 	client1 := applicationoffers.NewClient(conn1)
 
@@ -253,9 +230,9 @@ func (s *applicationOffersSuite) TestGetConsumeDetailsWithConsumeAccess(c *gc.C)
 			OfferName:              "test-offer",
 			ApplicationDescription: "test offer description",
 			Endpoints: []jujuparams.RemoteEndpoint{{
-				Name:      "url",
+				Name:      "source",
 				Role:      "provider",
-				Interface: "http",
+				Interface: "dummy-token",
 			}},
 			Users: []jujuparams.OfferUserDetails{{
 				UserName: ofganames.EveryoneUser,
@@ -268,8 +245,8 @@ func (s *applicationOffersSuite) TestGetConsumeDetailsWithConsumeAccess(c *gc.C)
 		ControllerInfo: &jujuparams.ExternalControllerInfo{
 			ControllerTag: s.Model.Controller.Tag().String(),
 			Addrs:         info.Addrs,
-			Alias:         "controller-1",
-			CACert:        caCert,
+			Alias:         s.Model.Controller.Name,
+			CACert:        info.CACert,
 		},
 	})
 
@@ -281,14 +258,14 @@ func (s *applicationOffersSuite) TestGetConsumeDetailsWithConsumeAccess(c *gc.C)
 }
 
 func (s *applicationOffersSuite) TestListApplicationOffers(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
 	results, err := client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer1",
 		"test offer 1 description",
@@ -300,7 +277,7 @@ func (s *applicationOffersSuite) TestListApplicationOffers(c *gc.C) {
 	results, err = client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer2",
 		"test offer 2 description",
@@ -333,11 +310,11 @@ func (s *applicationOffersSuite) TestListApplicationOffers(c *gc.C) {
 		OfferName:              "test-offer1",
 		ApplicationName:        "test-app",
 		ApplicationDescription: "test offer 1 description",
-		OfferURL:               "bob@canonical.com/model-1.test-offer1",
+		OfferURL:               "bob@canonical.com/" + s.Model.Name + ".test-offer1",
 		Endpoints: []charm.Relation{{
-			Name:      "url",
+			Name:      "source",
 			Role:      "provider",
-			Interface: "http",
+			Interface: "dummy-token",
 		}},
 		Users: []crossmodel.OfferUserDetails{{
 			UserName: "alice@canonical.com",
@@ -355,14 +332,14 @@ func (s *applicationOffersSuite) TestListApplicationOffers(c *gc.C) {
 func (s *applicationOffersSuite) TestModifyOfferAccess(c *gc.C) {
 	ctx := context.Background()
 
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
 	results, err := client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer1",
 		"test offer 1 description",
@@ -371,7 +348,7 @@ func (s *applicationOffersSuite) TestModifyOfferAccess(c *gc.C) {
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.IsNil)
 
-	offerURL := "bob@canonical.com/model-1.test-offer1"
+	offerURL := "bob@canonical.com/" + s.Model.Name + ".test-offer1"
 
 	err = client.RevokeOffer(ofganames.EveryoneUser, "read", offerURL)
 	c.Assert(err, jc.ErrorIsNil)
@@ -407,7 +384,7 @@ func (s *applicationOffersSuite) TestModifyOfferAccess(c *gc.C) {
 	testUserAccess = testUser.GetApplicationOfferAccess(ctx, offer.ResourceTag())
 	c.Assert(testUserAccess, gc.Equals, ofganames.NoRelation)
 
-	conn3 := s.open(c, nil, "user3")
+	conn3 := s.Open(c, nil, "user3", nil)
 	defer conn3.Close()
 	client3 := applicationoffers.NewClient(conn3)
 
@@ -422,14 +399,14 @@ func (s *applicationOffersSuite) TestModifyOfferAccess(c *gc.C) {
 }
 
 func (s *applicationOffersSuite) TestDestroyOffers(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
 	results, err := client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer1",
 		"test offer 1 description",
@@ -438,7 +415,7 @@ func (s *applicationOffersSuite) TestDestroyOffers(c *gc.C) {
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 
-	offerURL := "bob@canonical.com/model-1.test-offer1"
+	offerURL := "bob@canonical.com/" + s.Model.Name + ".test-offer1"
 
 	// charlie will have read access
 	// TODO (alesstimec) until i implement proper grant/revoke access
@@ -463,7 +440,7 @@ func (s *applicationOffersSuite) TestDestroyOffers(c *gc.C) {
 	err = client.DestroyOffers(true, "bob@canonical.com/model-1.test-offer2")
 	c.Assert(err, gc.ErrorMatches, "application offer not found")
 
-	conn2 := s.open(c, nil, "charlie@canonical.com")
+	conn2 := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn2.Close()
 	client2 := applicationoffers.NewClient(conn2)
 
@@ -485,14 +462,14 @@ func (s *applicationOffersSuite) TestDestroyOffers(c *gc.C) {
 }
 
 func (s *applicationOffersSuite) TestFindApplicationOffers(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
 	results, err := client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer1",
 		"test offer 1 description",
@@ -504,7 +481,7 @@ func (s *applicationOffersSuite) TestFindApplicationOffers(c *gc.C) {
 	results, err = client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer2",
 		"test offer 2 description",
@@ -535,11 +512,11 @@ func (s *applicationOffersSuite) TestFindApplicationOffers(c *gc.C) {
 		OfferName:              "test-offer1",
 		ApplicationName:        "test-app",
 		ApplicationDescription: "test offer 1 description",
-		OfferURL:               "bob@canonical.com/model-1.test-offer1",
+		OfferURL:               "bob@canonical.com/" + s.Model.Name + ".test-offer1",
 		Endpoints: []charm.Relation{{
-			Name:      "url",
+			Name:      "source",
 			Role:      "provider",
-			Interface: "http",
+			Interface: "dummy-token",
 		}},
 		Users: []crossmodel.OfferUserDetails{{
 			UserName: "alice@canonical.com",
@@ -555,7 +532,7 @@ func (s *applicationOffersSuite) TestFindApplicationOffers(c *gc.C) {
 
 	// by default each offer is publicly readable -> charlie should be
 	// able to find it
-	conn2 := s.open(c, nil, "charlie@canonical.com")
+	conn2 := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn2.Close()
 	client2 := applicationoffers.NewClient(conn2)
 
@@ -574,11 +551,11 @@ func (s *applicationOffersSuite) TestFindApplicationOffers(c *gc.C) {
 		OfferName:              "test-offer1",
 		ApplicationName:        "test-app",
 		ApplicationDescription: "test offer 1 description",
-		OfferURL:               "bob@canonical.com/model-1.test-offer1",
+		OfferURL:               "bob@canonical.com/" + s.Model.Name + ".test-offer1",
 		Endpoints: []charm.Relation{{
-			Name:      "url",
+			Name:      "source",
 			Role:      "provider",
-			Interface: "http",
+			Interface: "dummy-token",
 		}},
 		Users: []crossmodel.OfferUserDetails{{
 			UserName: ofganames.EveryoneUser,
@@ -588,14 +565,14 @@ func (s *applicationOffersSuite) TestFindApplicationOffers(c *gc.C) {
 }
 
 func (s *applicationOffersSuite) TestApplicationOffers(c *gc.C) {
-	conn := s.open(c, nil, "bob@canonical.com")
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := applicationoffers.NewClient(conn)
 
 	results, err := client.Offer(
 		s.Model.UUID.String,
 		"test-app",
-		[]string{s.endpoint.Name},
+		[]string{"source"},
 		"bob@canonical.com",
 		"test-offer1",
 		"test offer 1 description",
@@ -604,7 +581,7 @@ func (s *applicationOffersSuite) TestApplicationOffers(c *gc.C) {
 	c.Assert(results, gc.HasLen, 1)
 	c.Assert(results[0].Error, gc.Equals, (*jujuparams.Error)(nil))
 
-	url := "bob@canonical.com/model-1.test-offer1"
+	url := "bob@canonical.com/" + s.Model.Name + ".test-offer1"
 	offer, err := client.ApplicationOffer(url)
 	c.Assert(err, jc.ErrorIsNil)
 
@@ -617,11 +594,11 @@ func (s *applicationOffersSuite) TestApplicationOffers(c *gc.C) {
 		OfferName:              "test-offer1",
 		ApplicationName:        "test-app",
 		ApplicationDescription: "test offer 1 description",
-		OfferURL:               "bob@canonical.com/model-1.test-offer1",
+		OfferURL:               "bob@canonical.com/" + s.Model.Name + ".test-offer1",
 		Endpoints: []charm.Relation{{
-			Name:      "url",
+			Name:      "source",
 			Role:      "provider",
-			Interface: "http",
+			Interface: "dummy-token",
 		}},
 		Users: []crossmodel.OfferUserDetails{{
 			UserName: "alice@canonical.com",
@@ -635,10 +612,10 @@ func (s *applicationOffersSuite) TestApplicationOffers(c *gc.C) {
 		}},
 	})
 
-	_, err = client.ApplicationOffer("charlie@canonical.com/model-1.test-offer2")
+	_, err = client.ApplicationOffer("charlie@canonical.com/" + s.Model.Name + ".test-offer2")
 	c.Assert(err, gc.ErrorMatches, "application offer not found")
 
-	conn2 := s.open(c, nil, "charlie@canonical.com")
+	conn2 := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn2.Close()
 	client2 := applicationoffers.NewClient(conn2)
 
@@ -650,11 +627,11 @@ func (s *applicationOffersSuite) TestApplicationOffers(c *gc.C) {
 		OfferName:              "test-offer1",
 		ApplicationName:        "test-app",
 		ApplicationDescription: "test offer 1 description",
-		OfferURL:               "bob@canonical.com/model-1.test-offer1",
+		OfferURL:               "bob@canonical.com/" + s.Model.Name + ".test-offer1",
 		Endpoints: []charm.Relation{{
-			Name:      "url",
+			Name:      "source",
 			Role:      "provider",
-			Interface: "http",
+			Interface: "dummy-token",
 		}},
 		Users: []crossmodel.OfferUserDetails{{
 			UserName: ofganames.EveryoneUser,

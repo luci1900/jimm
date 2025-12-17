@@ -37,7 +37,10 @@ func (s *modelE2EManagerSuite) TestListModelSummaries(c *gc.C) {
 
 	client := modelmanager.NewClient(conn)
 
-	s.DeployApplication(c, s.AdminUser, s.Model.Tag(), "test-app")
+	s.DeployApplication(c, s.AdminUser, s.Model.Tag(), jimmtest.DeployApplicationParams{
+		App:   "test-app",
+		Charm: "juju-qa-test",
+	})
 
 	models, err := client.ListModelSummaries("bob@canonical.com", true)
 	c.Assert(err, gc.Equals, nil)
