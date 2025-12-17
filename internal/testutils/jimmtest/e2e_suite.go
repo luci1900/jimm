@@ -270,6 +270,18 @@ func (s *WebsocketE2ESuite) Open(c *gc.C, info *api.Info, username string, model
 	return conn
 }
 
+func (s *WebsocketE2ESuite) OpenWithDialWebsocket(
+	c *gc.C,
+	info *api.Info,
+	username string,
+	dialWebsocket func(ctx context.Context, urlStr string, tlsConfig *tls.Config, ipAddr string) (jsoncodec.JSONConn, error),
+) api.Connection {
+	ld := loginDetails{info: info, username: username, dialWebsocket: dialWebsocket}
+	conn, err := s.openNoAssert(c, ld, nil)
+	c.Assert(err, gc.Equals, nil)
+	return conn
+}
+
 // E2ESuite is a suite that initialises a JIMM with
 // an externally bootstrapped controller.
 // It creates cloud credential, and creates a model.
