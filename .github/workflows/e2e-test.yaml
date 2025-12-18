@@ -13,10 +13,13 @@ jobs:
   e2e-test:
     name: E2E Tests with External Controller
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted-linux-amd64-jammy-large]
     steps:
       - name: Checkout JIMM repo
         uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -40,13 +43,13 @@ jobs:
           sudo usermod -a -G lxd $USER && \
           sudo iptables -F FORWARD && \
           sudo iptables -P FORWARD ACCEPT
-      
+
       - name: Generate certs
         working-directory: local/traefik/certs
         run: ./certs.sh
       
       - name: Start test environment
-        run: make test-env
+        run: docker compose up -d --wait
 
       - name: Bootstrap controller with JWKS endpoint
         run: |
