@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 
 	petname "github.com/dustinkirkland/golang-petname"
@@ -78,6 +79,14 @@ func (s *E2ESuite) GetControllersConfig(c *gc.C) *ControllersConfig {
 	c.Assert(err, gc.IsNil, gc.Commentf("failed to parse controller config file"))
 
 	c.Assert(len(config.Controllers), gc.Not(gc.Equals), 0, gc.Commentf("no controllers found in config"))
+
+	// If cert ending newline was lost to YAML parsing, add it back
+	for name, info := range config.Controllers {
+		if !strings.HasPrefix(info.CACert, "\n") {
+			info.CACert += "\n"
+			config.Controllers[name] = info
+		}
+	}
 
 	return &config
 }
@@ -194,7 +203,14 @@ func (s *WebsocketE2ESuite) SetUpTest(c *gc.C) {
 	c.Assert(err, gc.Equals, nil)
 }
 
-func (s *WebsocketE2ESuite) DeployApplication(c *gc.C, user *openfga.User, modelTag names.Tag, appName string) {
+type DeployApplicationParams struct {
+	App     string
+	Charm   string
+	Channel string
+}
+
+// DeployApplication deploys a charm in the specified model as the given user.
+func (s *WebsocketE2ESuite) DeployApplication(c *gc.C, user *openfga.User, modelTag names.Tag, params DeployApplicationParams) {
 	modelTagConv, ok := modelTag.(names.ModelTag)
 	c.Assert(ok, gc.Equals, true)
 
@@ -202,11 +218,15 @@ func (s *WebsocketE2ESuite) DeployApplication(c *gc.C, user *openfga.User, model
 	defer conn.Close()
 
 	client := application.NewClient(conn)
+	channel := utils.Ptr("latest/stable")
+	if params.Channel != "" {
+		channel = &params.Channel
+	}
 
 	_, _, errs := client.DeployFromRepository(application.DeployFromRepositoryArg{
-		CharmName:       "juju-qa-test",
-		ApplicationName: appName,
-		Channel:         utils.Ptr("latest/stable"),
+		CharmName:       params.Charm,
+		ApplicationName: params.App,
+		Channel:         channel,
 		NumUnits:        utils.Ptr(1),
 		Cons:            constraints.Value{Arch: utils.Ptr(runtime.GOARCH)},
 	})
