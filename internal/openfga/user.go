@@ -463,7 +463,7 @@ func ListUsersWithAccess[T ofganames.ResourceTagger](ctx context.Context, client
 	entities, err := client.cofgaClient.FindUsersByRelation(ctx, Tuple{
 		Relation: relation,
 		Target:   ofganames.ConvertTag(resource),
-	}, 999)
+	})
 
 	if err != nil {
 		return nil, err

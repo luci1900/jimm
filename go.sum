@@ -164,8 +164,8 @@ github.com/canonical/go-service v1.0.0 h1:TF6TsEp04xAoI5pPoWjTYmEwLjbPATSnHEyeJC
 github.com/canonical/go-service v1.0.0/go.mod h1:GzNLXpkGdglL0kjREXoLXj2rB2Qx+EvAGncRDqCENYQ=
 github.com/canonical/lxd v0.0.0-20251112203541-660577aa1183 h1:RIcZMvVRrpT4RHiKr8byTa1rHYCQZF0q5rgVlbiovMM=
 github.com/canonical/lxd v0.0.0-20251112203541-660577aa1183/go.mod h1:MYdE1ID6Km0wWecLfqErbD0v6rqOgLQk91H/zSCWj0I=
-github.com/canonical/ofga v0.16.1 h1:gGmFLvYl6vxT0vUiw1y3uhKNPrWXhpzY0VdFErAn7Qk=
-github.com/canonical/ofga v0.16.1/go.mod h1:s9Tnedo/G2OSboSzW1kieCeXzAudOSA5FuakKi+Nn4o=
+github.com/canonical/ofga v0.17.1 h1:NLRXu62KZ2mh7b5gyeBcHJfvLPdCNX9uJCB7US+j/0A=
+github.com/canonical/ofga v0.17.1/go.mod h1:s9Tnedo/G2OSboSzW1kieCeXzAudOSA5FuakKi+Nn4o=
 github.com/canonical/rebac-admin-ui-handlers v0.2.0 h1:zzmixU1LNlbSktwkti6y8PuVqkbNPatj1tM4mC/G8Tk=
 github.com/canonical/rebac-admin-ui-handlers v0.2.0/go.mod h1:EIdBoaTHWYPkzNeUeXUBueJkglN9nQz5HLIvaOT7o1k=
 github.com/cenkalti/backoff/v3 v3.0.0/go.mod h1:cIeZDE3IrqwwJl6VUwCN6trj1oXrTS4rc0ij+ULvLYs=
