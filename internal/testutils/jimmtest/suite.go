@@ -418,6 +418,12 @@ func (s *JIMMSuite) DestroyModelAndDeleteFromDatabase(c *gc.C, modelTag names.Mo
 	c.Assert(err, gc.Equals, nil)
 }
 
+// RemoveCloud removes a cloud from JIMM and the backing controller.
+func (s *JIMMSuite) RemoveCloud(c *gc.C, cloudName string) {
+	err := s.JIMM.JujuManager().RemoveCloud(context.Background(), s.AdminUser, names.NewCloudTag(cloudName))
+	c.Assert(err, gc.Equals, nil)
+}
+
 func (s *JIMMSuite) AddGroup(c *gc.C, groupName string) dbmodel.GroupEntry {
 	ctx := context.Background()
 	group, err := s.JIMM.GroupManager().AddGroup(ctx, s.AdminUser, groupName)
