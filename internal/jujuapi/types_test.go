@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package jujuapi
 
@@ -15,6 +15,8 @@ import (
 
 func TestModelCreateArgs(t *testing.T) {
 	c := qt.New(t)
+
+	authenticatedUser := names.NewUserTag("vorbis@canonical.com")
 
 	tests := []struct {
 		about         string
@@ -82,11 +84,14 @@ func TestModelCreateArgs(t *testing.T) {
 	}, {
 		about: "owner tag not specified",
 		args: jujuparams.ModelCreateArgs{
-			Name:               "test-model",
-			CloudTag:           names.NewCloudTag("test-cloud").String(),
-			CloudCredentialTag: names.NewCloudCredentialTag("test-cloud/alice/test-credential-1").String(),
+			Name:     "test-model",
+			CloudTag: names.NewCloudTag("test-cloud").String(),
 		},
-		expectedError: "owner tag not specified",
+		expectedArgs: &juju.ModelCreateArgs{
+			Name:  "test-model",
+			Owner: names.NewUserTag("vorbis@canonical.com"),
+			Cloud: names.NewCloudTag("test-cloud"),
+		},
 	}}
 
 	opts := []cmp.Option{
@@ -102,7 +107,7 @@ func TestModelCreateArgs(t *testing.T) {
 	}
 	for _, test := range tests {
 		c.Run(test.about, func(c *qt.C) {
-			a, err := toAddModelArgs(test.args)
+			a, err := toAddModelArgs(test.args, authenticatedUser)
 			if test.expectedError == "" {
 				c.Assert(err, qt.IsNil)
 				c.Assert(a, qt.CmpEquals(opts...), test.expectedArgs)

@@ -55,6 +55,38 @@ Add group to jimm.
 Adds a group.
 
 
+# jaas add-model
+
+## Summary
+Adds a model to a specific controller.
+
+## Usage
+```jaas add-model [options] <model name> [cloud|region|(cloud/region)]```
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `-c`, `--controller` |  | Controller to operate in |
+| `--config` |  | Specify the path to a YAML model configuration file or individual configuration options (`--config config.yaml [--config key=value ...]`) |
+| `--credential` |  | Specify the credential to be used by the model |
+| `--no-switch` | false | Choose not to switch to the newly created model |
+| `--owner` |  | Specify the user who will own the model, if not the current user |
+| `--target-controller` |  | Target controller for the model |
+
+## Examples
+
+    juju [jaas] add-model mymodel mycloud --target-controller jaas-controller-1
+    juju [jaas] add-model mymodel us-east-1 --target-controller jaas-controller-1 
+	juju [jaas] add-model mymodel aws/us-east-1 --target-controller jaas-controller-2 --credential mycred
+    juju [jaas] add-model mymodel --target-controller jaas-controller-3 --config key=value
+
+
+## Details
+Adds a model to a specific controller.
+
+This command creates a new hosted model on the specified controller.
+
 # jaas add-permission
 
 ## Summary

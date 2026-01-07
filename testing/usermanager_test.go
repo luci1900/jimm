@@ -1,15 +1,16 @@
-// Copyright 2024 Canonical.
+// Copyright 2026 Canonical.
 
 package testing
 
 import (
 	"time"
 
-	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/juju/juju/api/client/usermanager"
 	jujuparams "github.com/juju/juju/rpc/params"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
+
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
 
 type userManagerSuite struct {

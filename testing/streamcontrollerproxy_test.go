@@ -1,12 +1,13 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package testing
 
 import (
-	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/controller/migrationtarget"
 	gc "gopkg.in/check.v1"
+
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
 
 type logTransferProxySuite struct {

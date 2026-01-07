@@ -35,6 +35,7 @@ parts:
       ln -sf jaas bin/juju-jaas
       ln -sf jaas bin/juju-add-cloud
       ln -sf jaas bin/juju-add-group
+      ln -sf jaas bin/juju-add-model
       ln -sf jaas bin/juju-add-permission
       ln -sf jaas bin/juju-add-role
       ln -sf jaas bin/juju-add-service-account

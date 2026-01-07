@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 // Package errors contains types to help handle errors in the system.
 package errors

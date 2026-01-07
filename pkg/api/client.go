@@ -1,9 +1,12 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package api
 
 import (
+	"github.com/juju/errors"
+	jujucloud "github.com/juju/juju/cloud"
 	jujuparams "github.com/juju/juju/rpc/params"
+	"github.com/juju/names/v5"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -305,4 +308,57 @@ func (c *Client) StartDestroyControllerJob(req *params.DestroyControllerRequest)
 	var response params.StartJobResponse
 	err := c.caller.APICall("JIMM", 4, "", "StartDestroyControllerJob", req, &response)
 	return &response, err
+}
+
+// ListUserClouds lists the clouds available to the specified user.
+func (c *Client) ListUserClouds(req *params.ListUserCloudsRequest) (map[names.CloudTag]jujucloud.Cloud, error) {
+	var resp jujuparams.CloudsResult
+	err := c.caller.APICall("JIMM", 4, "", "ListUserClouds", req, &resp)
+
+	clouds := make(map[names.CloudTag]jujucloud.Cloud)
+	for tagString, cloud := range resp.Clouds {
+		tag, err := names.ParseCloudTag(tagString)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		clouds[tag] = cloudFromParams(tag.Id(), cloud)
+	}
+	return clouds, err
+}
+
+func cloudFromParams(cloudName string, p jujuparams.Cloud) jujucloud.Cloud {
+	authTypes := make([]jujucloud.AuthType, len(p.AuthTypes))
+	for i, authType := range p.AuthTypes {
+		authTypes[i] = jujucloud.AuthType(authType)
+	}
+	regions := make([]jujucloud.Region, len(p.Regions))
+	for i, region := range p.Regions {
+		regions[i] = jujucloud.Region{
+			Name:             region.Name,
+			Endpoint:         region.Endpoint,
+			IdentityEndpoint: region.IdentityEndpoint,
+			StorageEndpoint:  region.StorageEndpoint,
+		}
+	}
+	var regionConfig map[string]jujucloud.Attrs
+	for r, attr := range p.RegionConfig {
+		if regionConfig == nil {
+			regionConfig = make(map[string]jujucloud.Attrs)
+		}
+		regionConfig[r] = attr
+	}
+	return jujucloud.Cloud{
+		Name:              cloudName,
+		Type:              p.Type,
+		AuthTypes:         authTypes,
+		Endpoint:          p.Endpoint,
+		IdentityEndpoint:  p.IdentityEndpoint,
+		StorageEndpoint:   p.StorageEndpoint,
+		Regions:           regions,
+		CACertificates:    p.CACertificates,
+		SkipTLSVerify:     p.SkipTLSVerify,
+		Config:            p.Config,
+		RegionConfig:      regionConfig,
+		IsControllerCloud: p.IsControllerCloud,
+	}
 }

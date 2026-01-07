@@ -1,16 +1,17 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package testing
 
 import (
 	"context"
 
-	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/juju/juju/api"
 	jujuparams "github.com/juju/juju/rpc/params"
 	jc "github.com/juju/testing/checkers"
 	"github.com/juju/version/v2"
 	gc "gopkg.in/check.v1"
+
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
 
 type controllerrootSuite struct {

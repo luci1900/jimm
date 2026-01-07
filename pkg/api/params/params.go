@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package params
 
@@ -661,4 +661,11 @@ type BootstrapParams struct {
 type DestroyControllerRequest struct {
 	// ControllerName of the controller to destroy
 	ControllerName string `json:"controller-name"`
+}
+
+// ListUserCloudsRequest holds the request parameters
+// for listing clouds available to the specified user.
+type ListUserCloudsRequest struct {
+	// UserTag is the tag of the user for which we are listing clouds.
+	UserTag string `json:"user"`
 }
