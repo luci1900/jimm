@@ -6,9 +6,6 @@ name: Publish Docs
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v3*'
 
 jobs:
   publish-jaas-plugin-docs:
