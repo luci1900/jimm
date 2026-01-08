@@ -12,6 +12,7 @@
         // to get credentials for tests.
         "XDG_DATA_HOME": "/home/duttos/.local/share",
         "JIMM_BACKING_CONTROLLER_CONFIG": "/home/duttos/jaas/jimm/controllers.yaml",
-        "RUN_E2E_TESTS": "1"
+        "RUN_E2E_TESTS": "1",
+        "JIMM_MICROK8S_TEST_CLOUD_NAME": "microk8s-cp"
     },
 }

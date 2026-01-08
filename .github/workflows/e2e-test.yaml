@@ -43,7 +43,20 @@ jobs:
           sudo usermod -a -G lxd $USER && \
           sudo iptables -F FORWARD && \
           sudo iptables -P FORWARD ACCEPT
-
+      
+      - name: Initialise Microk8s
+        run: |
+          sudo snap install microk8s --channel 1.32-strict
+          sudo adduser $(whoami) snap_microk8s
+          mkdir -p ~/.kube
+          sudo chown -f -R $(whoami) ~/.kube
+          sudo microk8s status --wait-ready
+          sudo microk8s enable hostpath-storage dns
+          sudo microk8s config > ~/.kube/config
+          sudo usermod -a -G snap_microk8s ubuntu
+          newgrp snap_microk8s
+          juju add-k8s microk8s-cp --client
+      
       - name: Generate certs
         working-directory: local/traefik/certs
         run: ./certs.sh
@@ -57,9 +70,19 @@ jobs:
 
       - name: Generate controller config
         run: CONTROLLER=test-e2e make generate-test-env
-
+      
+      - name: Proxy traffic from lxd to host for k8s api server
+        run: |
+          host_ip_addr=$(ip route get 1.1.1.1 | awk '{print $7; exit}')
+          lxc_name=$(lxc list --format json | jq -r '.[].name')
+          lxc config device add $lxc_name k8sproxy proxy \
+            listen=tcp:127.0.0.1:16443 \
+            connect=tcp:$host_ip_addr:16443 \
+            bind=container
+      
       - name: Run E2E tests
         run: go test -v ./testing/... -timeout 30m
         env:
           RUN_E2E_TESTS: "1"
+          JIMM_MICROK8S_TEST_CLOUD_NAME: "microk8s-cp"
           JIMM_BACKING_CONTROLLER_CONFIG: ${{ github.workspace }}/controllers.yaml

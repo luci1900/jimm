@@ -5,7 +5,6 @@ package jimmtest
 import (
 	"context"
 	"crypto/x509"
-	"database/sql"
 	_ "embed"
 	"encoding/pem"
 	"net/http/httptest"
@@ -404,18 +403,23 @@ func (s *JIMMSuite) DestroyModelAndDeleteFromDatabase(c *gc.C, modelTag names.Mo
 	err := s.JIMM.JujuManager().DestroyModel(ctx, s.AdminUser, modelTag, nil, nil, nil, nil)
 	c.Assert(err, gc.Equals, nil)
 
-	// Remove the dying model from the database.
-	// This is required because the model will be deleted in JIMM's state only when it's finally
-	// removed from the backing controller and the cleanup routine runs.
-	// Sometimes we don't want to wait for that in tests.
-	model := &dbmodel.Model{
-		UUID: sql.NullString{
-			String: modelTag.Id(),
-			Valid:  true,
-		},
+	// Poll until the model is destroyed with a timeout
+	timeout := time.After(5 * 60 * time.Second)
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			c.Fatalf("timeout waiting for model to be destroyed")
+		case <-ticker.C:
+			_, err := s.JIMM.JujuManager().ModelInfo(ctx, s.AdminUser, modelTag)
+			if errors.ErrorCode(err) == errors.CodeNotFound || errors.ErrorCode(err) == errors.CodeUnauthorized {
+				return
+			}
+			c.Assert(err, gc.IsNil)
+		}
 	}
-	err = s.JIMM.Database.DeleteModel(context.Background(), model)
-	c.Assert(err, gc.Equals, nil)
 }
 
 // RemoveCloud removes a cloud from JIMM and the backing controller.
@@ -479,44 +483,6 @@ func (s *JujuSuite) TearDownTest(c *gc.C) {
 	s.LoggingSuite.TearDownTest(c)
 	s.JujuConnSuite.TearDownTest(c)
 	s.JIMMSuite.TearDownTest(c)
-}
-
-type BootstrapSuite struct {
-	JujuSuite
-
-	CloudCredential *dbmodel.CloudCredential
-	Model           *dbmodel.Model
-}
-
-func (s *BootstrapSuite) SetUpTest(c *gc.C) {
-	s.JujuSuite.SetUpTest(c)
-
-	cct := names.NewCloudCredentialTag(TestCloudName + "/bob@canonical.com/cred")
-	s.UpdateCloudCredential(c, cct, jujuparams.CloudCredential{
-		AuthType: "empty",
-	})
-	ctx := context.Background()
-	s.CloudCredential = new(dbmodel.CloudCredential)
-	s.CloudCredential.SetTag(cct)
-	err := s.JIMM.Database.GetCloudCredential(ctx, s.CloudCredential)
-	c.Assert(err, gc.Equals, nil)
-
-	// Grant bob add-model access to controller-1
-	controller := dbmodel.Controller{Name: "controller-1"}
-	err = s.JIMM.Database.GetController(ctx, &controller)
-	c.Assert(err, gc.Equals, nil)
-	err = s.OFGAClient.AddRelation(ctx, cofga.Tuple{
-		Object:   ofganames.ConvertTag(names.NewUserTag("bob@canonical.com")),
-		Relation: ofganames.CanAddModelRelation,
-		Target:   ofganames.ConvertTag(controller.ResourceTag()),
-	})
-	c.Assert(err, gc.Equals, nil)
-
-	mt := s.AddModel(c, names.NewUserTag("bob@canonical.com"), "model-1", names.NewCloudTag(TestCloudName), TestCloudRegionName, cct)
-	s.Model = new(dbmodel.Model)
-	s.Model.SetTag(mt)
-	err = s.JIMM.Database.GetModel(ctx, s.Model)
-	c.Assert(err, gc.Equals, nil)
 }
 
 type mockMigrationTokenGenerator struct{}

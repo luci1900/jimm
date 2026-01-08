@@ -19,6 +19,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/client/application"
+	"github.com/juju/juju/cloud"
+	"github.com/juju/juju/cmd/juju/common"
 	"github.com/juju/juju/core/constraints"
 	jclient "github.com/juju/juju/jujuclient"
 	"github.com/juju/juju/rpc/jsoncodec"
@@ -43,6 +45,7 @@ const (
 	TestE2EProviderType     = "lxd"
 	TestE2ECloudName        = "localhost"
 	TestE2ECloudRegionName  = "localhost"
+	Microk8sCloudNameEnv    = "JIMM_MICROK8S_TEST_CLOUD_NAME"
 )
 
 // ControllerInfo holds the controller connection information
@@ -233,7 +236,6 @@ func (s *WebsocketE2ESuite) DeployApplication(c *gc.C, user *openfga.User, model
 	for _, err := range errs {
 		c.Assert(err, gc.Equals, nil)
 	}
-
 }
 
 func (s *WebsocketE2ESuite) TearDownTest(c *gc.C) {
@@ -409,4 +411,22 @@ func (s *E2ESuite) GetExistingClientCredentialsForCloud(c *gc.C, cloudName strin
 		break
 	}
 	return cloudCredentials
+}
+
+// GetMicrok8sCloudAndCloudCredential retrieves the microk8s cloud
+// and corresponding cloud credential for use in tests.
+// The name of the microk8s cloud is read from the
+// JIMM_MICROK8S_TEST_CLOUD_NAME environment variable.
+func (s *E2ESuite) GetMicrok8sCloudAndCloudCredential(c *gc.C) (cloud.Cloud, jujuparams.CloudCredential) {
+	testCloudName := os.Getenv(Microk8sCloudNameEnv)
+	c.Assert(testCloudName, gc.Not(gc.Equals), "", gc.Commentf(
+		"%s environment variable is not set. "+
+			"Set it to the name of your microk8s cloud added to juju or configure it in VS Code settings.",
+		Microk8sCloudNameEnv))
+	cloud, err := common.CloudByName(testCloudName)
+	c.Assert(err, gc.IsNil)
+	cloud.HostCloudRegion = TestE2EProviderType + "/" + TestE2ECloudRegionName
+	cloud.Name = petname.Generate(2, "-")
+	credential := s.GetExistingClientCredentialsForCloud(c, testCloudName)
+	return *cloud, credential
 }

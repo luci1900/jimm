@@ -28,6 +28,30 @@ This guide outlines the steps to set up and run the e2e test suite.
    CONTROLLER=test-e2e make generate-test-env
    ```
 
+
+## Setup microk8s cloud
+
+Our tests run using an lxd backing controller against the lxd cloud, but there are suites requiring a microk8s cloud to test specific
+JAAS functionalities.
+
+After setting up microk8s we add the k8s cloud to the client:
+`juju add-k8s microk8s-cp --client`
+
+Then, to make sure the lxd backing controller is able to talk with the k8s API server we need to make
+sure that the k8s API endpoint inside the cloud config is reachable from within the k8s cluster because Juju workers will use it.
+The easiest way to do so is to use lxc devices.
+```
+lxc config device add <lxc_name_running_juju_controller> k8sproxy proxy \
+         listen=tcp:127.0.0.1:16443 \
+         connect=tcp:<your_host_machine_ip>:16443 \
+         bind=container
+```
+
+In this way when the lxc controller tries to connect to the k8s API server for microk8s it will use `127.0.0.1`, which is proxied to the host machine.
+
+Then, configure the environvent variable to use the microk8s cloud to run the specific suite:
+- `JIMM_MICROK8S_TEST_CLOUD_NAME = microk8s-cp`
+
 ## VS Code Configuration
 
 Add the following environment variables to your `go.testEnvVars` in `.vscode/settings.json`:
@@ -37,7 +61,8 @@ Add the following environment variables to your `go.testEnvVars` in `.vscode/set
     "go.testEnvVars": {
         "RUN_E2E_TESTS": "1",
         "XDG_DATA_HOME": "~/.local/share",
-        "JIMM_BACKING_CONTROLLER_CONFIG": "/home/<user>/jaas/jimm/controllers.yaml"
+        "JIMM_BACKING_CONTROLLER_CONFIG": "/home/<user>/jaas/jimm/controllers.yaml",
+        "JIMM_MICROK8S_TEST_CLOUD_NAME": "microk8s-cp"
     }
 }
 ```
