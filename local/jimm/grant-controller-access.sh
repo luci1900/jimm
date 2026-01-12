@@ -6,6 +6,8 @@
 
 set -eux
 
+CONTROLLER_NAME="${CONTROLLER_NAME:-qa-lxd}"
+
 # Source the `JAAS` variable for executing jaas commands.
 source "$(dirname "${BASH_SOURCE[0]}")/detect-jaas.sh"
 
