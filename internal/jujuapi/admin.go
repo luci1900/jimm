@@ -49,7 +49,7 @@ func (r *controllerRoot) LoginDevice(ctx context.Context) (params.LoginDeviceRes
 
 	deviceResponse, err := r.jimm.LoginManager().LoginDevice(ctx)
 	if err != nil {
-		return response, errors.E(err, errors.CodeUnauthorized)
+		return response, err
 	}
 	// NOTE: As this is on the controller root struct, and a new controller root
 	// is created per WS, it is EXPECTED that the subsequent call to GetDeviceSessionToken

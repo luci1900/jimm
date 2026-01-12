@@ -141,6 +141,7 @@ const (
 	CodeFailedToResolveTupleResource Code = "failed resolve resource"
 	CodeOpenFGARequestFailed         Code = "failed request to OpenFGA"
 	CodeJWKSRetrievalFailed          Code = "jwks retrieval failure"
+	CodeFatalLoginError              Code = "fatal login error"
 )
 
 // ErrorCode returns the error code from the given error.

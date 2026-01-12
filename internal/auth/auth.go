@@ -388,10 +388,6 @@ func (as *AuthenticationService) NewMigrationToken(ctx context.Context, username
 // The error code returned here is used by the Juju CLI to know when to start a
 // device login flow, prompting the user to login again.
 func (as *AuthenticationService) VerifySessionToken(token string) (_ jwt.Token, err error) {
-
-	errorFn := func(message string) error {
-		return errors.E(message, errors.CodeSessionTokenInvalid)
-	}
 	defer func() {
 		if err != nil {
 			servermon.AuthenticationFailCount.WithLabelValues("VerifySessionToken").Inc()
@@ -401,24 +397,24 @@ func (as *AuthenticationService) VerifySessionToken(token string) (_ jwt.Token, 
 	}()
 
 	if len(token) == 0 {
-		return nil, errorFn("no token presented")
+		return nil, errors.E(errors.CodeSessionTokenInvalid, "no token presented")
 	}
 
 	decodedToken, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
-		return nil, errorFn(fmt.Sprintf("failed to decode token: %s", err))
+		return nil, errors.E(err, "failed to decode token")
 	}
 
 	parsedToken, err := jwt.Parse(decodedToken, jwt.WithKey(as.signingAlg, []byte(as.jwtSessionKey)))
 	if err != nil {
 		if stderrors.Is(err, jwt.ErrTokenExpired()) {
-			return nil, errorFn("JIMM session token expired")
+			return nil, errors.E(errors.CodeSessionTokenInvalid, "JIMM session token expired")
 		}
-		return nil, errorFn(err.Error())
+		return nil, err
 	}
 
 	if _, err = mail.ParseAddress(parsedToken.Subject()); err != nil {
-		return nil, errorFn("failed to parse email")
+		return nil, errors.E(errors.CodeSessionTokenInvalid, "failed to parse email")
 	}
 
 	return parsedToken, nil
