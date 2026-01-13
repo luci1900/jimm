@@ -106,7 +106,7 @@ func (s streamModelProxier) ServeWS(ctx context.Context, clientConn *websocket.C
 	}
 	defer api.Close()
 
-	controllerStream, err := api.ConnectStream(finalPath, nil)
+	controllerStream, err := api.ConnectStream(finalPath, jimmhttp.QueryParamsFromContext(ctx))
 	if err != nil {
 		zapctx.Error(ctx, "failed to connect stream", zap.Error(err))
 		writeError(fmt.Sprintf("failed to connect stream: %s", err.Error()), errors.CodeConnectionFailed)

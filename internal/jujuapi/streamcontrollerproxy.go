@@ -116,7 +116,7 @@ func (s streamControllerProxier) ServeWS(ctx context.Context, clientConn *websoc
 		jujuparams.JujuClientVersion:        []string{jimmhttp.ClientVersionFromContext(ctx)},
 	}
 
-	controllerStream, err := api.ConnectControllerStream(logTransferPath, nil, headers)
+	controllerStream, err := api.ConnectControllerStream(logTransferPath, jimmhttp.QueryParamsFromContext(ctx), headers)
 	if err != nil {
 		zapctx.Error(ctx, "failed to connect stream", zap.Error(err))
 		writeError(fmt.Sprintf("failed to connect stream: %s", err.Error()), errors.CodeConnectionFailed)

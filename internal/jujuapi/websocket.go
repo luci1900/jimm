@@ -228,7 +228,7 @@ func controllerConnectionFunc(s apiModelProxier, jwtGenerator *jujuauth.LoginTok
 		jwtGenerator.SetTags(m.ResourceTag(), m.Controller.ResourceTag())
 		mt := m.ResourceTag()
 		zapctx.Debug(ctx, "Dialing Controller", zap.String("path", path))
-		controllerConn, err := jimmRPC.Dial(ctx, &m.Controller, mt, finalPath, nil)
+		controllerConn, err := jimmRPC.Dial(ctx, &m.Controller, mt, finalPath, nil, nil)
 		if err != nil {
 			zapctx.Error(ctx, "cannot dial controller", zap.String("controller", m.Controller.Name), zap.Error(err))
 			return rpcproxy.WebsocketConnectionWithMetadata{}, err

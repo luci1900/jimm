@@ -4,6 +4,7 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/common"
@@ -28,6 +29,30 @@ func (s *streamProxySuite) TestDebugLogs(c *gc.C) {
 	// No actual logs come through either because of the JujuConnSuite or the fact that there is no application deployed.
 	_, err := common.StreamDebugLog(context.TODO(), conn, common.DebugLogParams{})
 	c.Assert(err, gc.IsNil)
+}
+
+func (s *streamProxySuite) TestDebugLogsWithParams(c *gc.C) {
+	conn := s.Open(c, &api.Info{ModelTag: s.Model.ResourceTag()}, "bob", nil)
+	defer conn.Close()
+
+	logChan, err := common.StreamDebugLog(context.TODO(), conn, common.DebugLogParams{
+		NoTail: true,
+		Limit:  1,
+	})
+	c.Assert(err, gc.IsNil)
+	messages := 0
+	for {
+		select {
+		case _, ok := <-logChan:
+			if !ok {
+				c.Assert(messages, gc.Equals, 1)
+				return
+			}
+			messages++
+		case <-time.After(5 * time.Second):
+			c.Fatal("expected log channel to be closed, but it is still open after timeout")
+		}
+	}
 }
 
 // TestDebugLogsError tests that an error is returned from JIMM

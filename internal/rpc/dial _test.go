@@ -40,7 +40,7 @@ func TestDialIPv4(t *testing.T) {
 		},
 		Port: hp.Port(),
 	}})
-	_, err = rpc.Dial(ctx, &controller, names.ModelTag{}, "", http.Header{})
+	_, err = rpc.Dial(ctx, &controller, names.ModelTag{}, "", http.Header{}, nil)
 	c.Assert(err, qt.Equals, nil)
 }
 
@@ -64,7 +64,7 @@ func TestDialIPv6(t *testing.T) {
 		},
 		Port: hp.Port(),
 	}})
-	_, err = rpc.Dial(ctx, &controller, names.ModelTag{}, "", http.Header{})
+	_, err = rpc.Dial(ctx, &controller, names.ModelTag{}, "", http.Header{}, nil)
 	c.Assert(err, qt.Equals, nil)
 }
 

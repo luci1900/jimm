@@ -112,7 +112,7 @@ func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller
 // Dial implements jimm.Dialer.
 func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, withPermissions map[string]string) (juju.API, error) {
 
-	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil)
+	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -360,8 +360,7 @@ func (c *Connection) ConnectStream(path string, attrs url.Values) (base.Stream, 
 		return nil, errors.E("invalid/missing controller credentials")
 	}
 	requestHeader := jujuhttp.BasicAuthHeader(names.NewUserTag(user).String(), pass)
-
-	conn, err := rpc.Dial(c.ctx, c.ctl, modelTag, path, requestHeader)
+	conn, err := rpc.Dial(c.ctx, c.ctl, modelTag, path, requestHeader, attrs)
 	if err != nil {
 		return nil, errors.E(err)
 	}
@@ -387,7 +386,7 @@ func (c *Connection) ConnectControllerStream(path string, attrs url.Values, extr
 		}
 	}
 
-	conn, err := rpc.Dial(c.ctx, c.ctl, names.ModelTag{}, path, header)
+	conn, err := rpc.Dial(c.ctx, c.ctl, names.ModelTag{}, path, header, attrs)
 	if err != nil {
 		return nil, errors.E(err)
 	}

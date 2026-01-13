@@ -90,14 +90,14 @@ func GetAddressesAndTLSConfig(ctx context.Context, ctl *dbmodel.Controller) ([]s
 // Dial connects to the controller/model and returns a raw websocket
 // that can be used as is.
 // It accepts the endpoints to dial, normally /api or /commands.
-func Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, finalPath string, headers http.Header) (*websocket.Conn, error) {
+func Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, finalPath string, headers http.Header, attrs url.Values) (*websocket.Conn, error) {
 	addrs, tlsConfig := GetAddressesAndTLSConfig(ctx, ctl)
 	dialer := Dialer{
 		TLSConfig: tlsConfig,
 	}
 	var websocketUrls []string
 	for _, addr := range addrs {
-		websocketUrls = append(websocketUrls, websocketURL(addr, modelTag, finalPath))
+		websocketUrls = append(websocketUrls, websocketURL(addr, modelTag, finalPath, attrs))
 	}
 	zapctx.Debug(ctx, "Dialling all URLs", zap.Any("urls", websocketUrls))
 	conn, err := dialAll(ctx, &dialer, websocketUrls, headers)
@@ -122,7 +122,7 @@ func maybeReachable(scope network.Scope) bool {
 	}
 }
 
-func websocketURL(s string, mt names.ModelTag, finalPath string) string {
+func websocketURL(s string, mt names.ModelTag, finalPath string, attrs url.Values) string {
 	u := url.URL{
 		Scheme: "wss",
 		Host:   s,
@@ -135,6 +135,7 @@ func websocketURL(s string, mt names.ModelTag, finalPath string) string {
 	} else {
 		u.Path = path.Join(u.Path, finalPath)
 	}
+	u.RawQuery = attrs.Encode()
 	return u.String()
 }
 

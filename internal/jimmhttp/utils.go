@@ -14,6 +14,7 @@ import (
 )
 
 type contextPathKey struct{}
+type urlQueryParamsKey struct{}
 type migratingModelUUIDKey struct{}
 type clientVersionKey struct{}
 
@@ -22,6 +23,12 @@ type clientVersionKey struct{}
 func PathElementFromContext(ctx context.Context) string {
 	s, _ := ctx.Value(contextPathKey{}).(string)
 	return s
+}
+
+// QueryParamsFromContext returns the URL query parameters stored in the context.
+func QueryParamsFromContext(ctx context.Context) url.Values {
+	v, _ := ctx.Value(urlQueryParamsKey{}).(url.Values)
+	return v
 }
 
 // MigratingModelUUIDFromContext returns the value of the migrating model UUID
