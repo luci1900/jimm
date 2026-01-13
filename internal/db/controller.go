@@ -174,3 +174,23 @@ func (d *Database) ForEachControllerModel(ctx context.Context, ctl *dbmodel.Cont
 	}
 	return nil
 }
+
+// CountControllers returns the number of controllers stored in the database.
+func (d *Database) CountControllers(ctx context.Context) (count int, err error) {
+	const op = "db.CountControllers"
+
+	if err := d.ready(); err != nil {
+		return -1, errors.E(err)
+	}
+
+	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
+	defer durationObserver()
+	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
+
+	db := d.DB.WithContext(ctx)
+	var count64 int64
+	if err := db.Model(&dbmodel.Controller{}).Count(&count64).Error; err != nil {
+		return -1, errors.E(dbError(err))
+	}
+	return int(count64), nil
+}
