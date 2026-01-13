@@ -8,110 +8,155 @@ With JAAS set up, you will be able to enjoy enterprise-level authentication and 
 ## Prerequisites
 
 - A workstation, e.g., a laptop, that has sufficient resources to launch a virtual machine with 4 CPUs, 8 GB RAM, and 50 GB disk space.
+- (Optional, recommended:) Some familiarity with Juju and the Terraform Provider for Juju.
 
 
 ## Set up an isolated test environment
 
-On your machine, install Multipass and use it to set up an Ubuntu virtual machine (VM) called `my-juju-vm`. This will provide all the necessary tools and configuration for the tutorial (a localhost machine cloud and Kubernetes cloud, Juju, etc.).
-
-> See more: {external+juju:ref}`Juju | Set things up <set-things-up>`. Please follow the automatic path with the `charm-dev` blueprint.
-
-```{note}
-This document also contains a manual path, using which you can set things up without the Multipass VM or the `charm-dev` blueprint. However, please note that the manual path may yield slightly different results that may impact your experience of this tutorial.
-For best results we strongly recommend the automatic path, or else suggest that you follow the manual path in a way that stays very close to [the definition of the charm-dev blueprint](https://github.com/canonical/multipass-blueprints/blob/e270a76093aad7b178ce0df5b7aa00e9dfd9b054/v1/charm-dev.yaml).
-
+For this tutorial we will set up an isolated environment using [Multipass](https://canonical.com/multipass). We will start by installing it, if not already installed:
+```text
+sudo snap install multipass --channel latest/stable
 ```
+
+To create a `jaas-workshop` Multipass instance we'll use throughout this tutorial run: 
+```text
+multipass launch 24.04 \
+  --name jaas-workshop  \
+  --cpus 4 \
+  --memory 8G \
+  --disk 50G \
+  --timeout 1800 \
+  --cloud-init https://raw.githubusercontent.com/canonical/multipass/refs/heads/main/data/cloud-init-yaml/cloud-init-charm-dev.yaml
+```
+This might take a while to run (~10min).
+
+We will need the IP of the started Multipass instance later in the tutorial. To record the IP run:
+```text
+multipass list --format json | yq  '.list | .[] | select(.name == "jaas-workshop") | .ipv4[0]' > multipass_ip.txt
+```
+Then copy the file to the instance:
+```text
+multipass transfer multipass_ip.txt jaas-workshop:/home/ubuntu/multipass_ip.txt
+```
+
 
 Open a shell in the VM:
-
 ```text
-multipass shell my-juju-vm
+multipass shell jaas-workshop
 ```
 
-Make sure MicroK8s is correctly set up:
+And load the instance IP we copied in a file earlier:
+```text
+multipass_ip=$(cat /home/ubuntu/multipass_ip.txt)
+```
 
+
+Make sure MicroK8s is correctly set up with the needed add-ons:
 ```text
 # enable necessary add-ons
-sudo microk8s enable dns host-access
+sudo microk8s enable host-access
 # reconfigure metallb
 sudo microk8s disable metallb
 sudo microk8s enable metallb:10.64.140.43-10.64.140.49
 ```
 
-Then install some handy tools to query and extract info from json and yaml:
-
+Install the needed utilities we'll need in this tutorial:
 ```text
-sudo apt install jq
-sudo snap install yq
+sudo snap install terraform --classic
+sudo snap install vault
+sudo snap install go --classic
+sudo snap install jaas --channel 3/edge
 ```
 
-You are now all set and ready to deploy JAAS.
+You are now all set and ready to start deploying JAAS.
 
-## Deploy the identity bundle
+## Deploy the identity platform
 
-For this tutorial we will use Canonical's identity bundle to provide authentication. JIMM uses OAuth 2.0, a provider agnostic way of handling authentication.
-Although any compliant identity provider could be used with JIMM, we recommend the use Canonical's identity platform for the best compatibility.
-Canonical's identity bundle uses Ory Hydra/Kratos to provide an OAuth server and user management, respectively.
 
-Now we will create a Juju model for the identity platform and deploy the bundle.
-
+JIMM uses OAuth 2.0, a provider agnostic way of handling authentication. In this tutorial we will combine it with the Canonical Identical Platform, which uses Ory Hydra to provide an OAuth server and Kratos for user management, respectively. To speed things up, we will deploy all these components through the ready-to-use Terraform plan:
 ```text
-juju add-model iam
-juju deploy identity-platform --trust --channel latest/edge
+git clone https://github.com/canonical/iam-bundle-integration.git && cd iam-bundle-integration
+git checkout v1.0.0
 ```
 
-Watch the deployment by running:
+And use Terraform to deploy the Canonical Identity Platform.
+```text
+terraform -chdir=examples/tutorial init
+terraform -chdir=examples/tutorial apply -auto-approve
+```
 
+This will deploy the Canonical Identity Platform in two models - `core` and `iam` models. Run
+```text
+juju switch iam
+```
+
+to switch to the `iam` model and watch the deployment by running:
 ```text
 juju status --watch 1s
 ```
+Use `CTRL-C` to exit.
 
-Eventually all application should reach an `active` state except for the `kratos-external-idp-integrator` application. This application allows you to connect your identity platform
-to an external identity provider like Google, GitHub, Microsoft, etc. This is necessary because the identity provider only acts as an identity broker. A summary on how to set this up is
-provided in the next step.
+Eventually all applications should reach an `active` state. We will create a user on Kratos in the next step.
 
-Now run the following commands to create offers that will be consumed in the next step.
-
+For now running `apply` with Terraform will create a few application offers. To see the created offers run:
 ```text
-juju offer hydra:oauth
-juju offer self-signed-certificates:send-ca-cert
+juju find-offers
+```
+Which should output something like:
+```text
+Store     URL                          Access  Interfaces
+microk8s  admin/core.send-ca-cert      admin   certificate_transfer:send-ca-cert
+microk8s  admin/core.traefik-route     admin   traefik_route:traefik-route
+microk8s  admin/iam.kratos-info-offer  admin   kratos_info:kratos-info
+microk8s  admin/iam.oauth-offer        admin   oauth:oauth
+microk8s  admin/core.certificates      admin   tls-certificates:certificates
+microk8s  admin/core.postgresql        admin   postgresql_client:database
 ```
 
-Running `juju status` should now two offers that we will use from a different model in the next step.
+We will use `admin/iam.oauth-offer` and `admin/core.send-ca-cert` offers to connect to JIMM later in this tutorial.
 
 ### Create a user
 
+**It is important that all applications are in an `active` state before you proceed as described above**
+
+To create a user we will run the `create-admin-account` action on Kratos and then set a password for the created user. Run:
 ```text
+juju switch iam
 # disable MFA to avoid unnecessary steps
 juju config kratos enforce_mfa=False
 # create the user and get the identity-id
-juju run kratos/0 create-admin-account email=test@example.com password=test username=admin
-# reset the password to make it active
-juju add-secret password-secret password=abc
+action_output=$(juju run kratos/0 create-admin-account email=admin@workshop password=test username=admin --format json)
+identity_id=$(echo $action_output | yq '."kratos/0".results."identity-id"')
+# create a password secret and get the secret-uri
+password_secret=$(juju add-secret password-secret password=Pa55word)
+# grant kratos access to the created secret
 juju grant-secret password-secret kratos
-juju run kratos/0 reset-password identity-id=<identity-id> password-secret-id=<secret:id>
+juju run kratos/0 reset-password identity-id="$identity_id" password-secret-id="$password_secret"
 ```
+
+We have now created a user that can login with the `admin@workshop` email and `Pa55word` as password.
 
 ### Expose the identity bundle to your host machine
 
-> If you chose not to use a Multipass VM, you can skip this step.
-
 At the end of this tutorial you'll need to log in via a web browser. Given that we're in a Multipass VM, for that to work we need to expose the identity bundle to our host machine.
 
-Locate the IP of your Multipass instance by running `multipass list` on your host machine, if you have multiple IPs pick the first one.
+Locate the IP of your Multipass instance by running `multipass list` on your host machine, if you have multiple IPs pick **the first one**. You can do this by running on your host machine (in a different terminal window, not when shelled into the `jaas-workshop` VM):
 ```text
+multipass list --format json | yq  '.list | .[] | select(.name == "jaas-workshop") | .ipv4[0]' 
+```
+
+Then we configure the `traefik-public` in the `core` model:
+```text
+juju switch core
 juju config traefik-public external_hostname=<multipass-ip>
-sudo microk8s.kubectl port-forward traefik-public-0 443:443 --namespace=iam --address=<multipass_ip> &
+sudo microk8s.kubectl port-forward traefik-public-0 443:443 --namespace=core --address=$multipass_ip  > /dev/null 2>&1 &
 ```
 
 Run the following on your host machine to test that you've successfully exposed the identity bundle:
 ```text
-curl -k https://<multipass-ip>/iam-hydra/health/ready
+curl -k https://$multipass_ip/.well-known/jwks.json
 ```
-The response should be:
-```
-{"status":"ok"}
-```
+You should get a JSON response showing JWKS.
 
 ## Deploy JIMM
 
@@ -123,12 +168,11 @@ Now we will deploy JIMM and its dependencies into a new model. Let's first explo
 - Ingress: There are various charms that provide ingress into a K8s cluster. JIMM supports [Traefik Ingress](https://charmhub.io/traefik-k8s) and [Nginx Ingress Integrator](https://charmhub.io/nginx-ingress-integrator), this tutorial will use the latter.
 
 ```{note}
-In a production environment you may want to structure your deployment slightly differently.You might consider placing your database on a VM and performing a cross-model relation.
+In a production environment you may want to structure your deployment slightly differently. You might consider placing your database on a VM and performing a cross-model relation.
 You might also consider deploying a central Vault and relating to it cross-model.
 ```
 
 Let's begin by creating a new model for JIMM and deploying the necessary applications:
-
 ```text
 juju add-model jimm
 # The channel used for the JIMM charm is currently 3/edge.
@@ -148,14 +192,12 @@ juju trust postgresql --scope=cluster
 
 At this point only OpenFGA and PostgreSQL should be in an active state.
 JIMM, Vault and the ingress should all be in a blocked state. Next we will relate JIMM to the cross-model offers we created previously.
-
 ```text
-juju relate jimm admin/iam.hydra
-juju relate jimm admin/iam.self-signed-certificates
+juju relate jimm admin/iam.oauth-offer
+juju relate jimm admin/core.send-ca-cert
 ```
 Before we move on we will deploy our own self-signed-certificates operator in order to eventually use JIMM with HTTPS.
 We are doing this step afterwards to avoid issues that occur when performing the relations before the ingress is ready.
-
 ```text
 juju deploy self-signed-certificates jimm-cert
 juju relate ingress:certificates jimm-cert:certificates
@@ -167,12 +209,6 @@ Now move onto the next step to initialise Vault.
 
 The Vault charm has documentation on how to initialise it [here](https://charmhub.io/vault-k8s/docs/h-getting-started?channel=1.15/beta). But an abridged version of the steps are provided here.
 
-Install the Vault CLI client.
-
-```text
-sudo snap install vault
-```
-
 To communicate with the Vault server we now need to setup 3 environment variables:
 
 - `VAULT_ADDR`
@@ -180,23 +216,19 @@ To communicate with the Vault server we now need to setup 3 environment variable
 - `VAULT_CAPATH`
 
 Run the following commands to setup the first two variables that will enable communication with Vault.
-
 ```text
-
 export VAULT_ADDR=https://$(juju status vault/leader --format=yaml | yq '.applications.vault.address'):8200; echo "Vault address =" "$VAULT_ADDR"
-cert_juju_secret_id=$(juju secrets --format=yaml | yq 'to_entries | .[] | select(.value.label == "self-signed-vault-ca-certificate") | .key'); echo "Vault ca-cert secret ID =" "$cert_juju_secret_id"
+cert_juju_secret_id=$(juju secrets --format=yaml | yq 'to_entries | .[] | select(.value.label == "self-signed-vault-ca-certificate") | .key'); echo "Vault ca-cert secret ID=$cert_juju_secret_id"
 juju show-secret ${cert_juju_secret_id} --reveal --format=yaml | yq '.[].content.certificate' > vault.pem && echo "saved certificate contents to vault.pem"
 export VAULT_CAPATH=$(pwd)/vault.pem; echo "Setting VAULT_CAPATH from" "$VAULT_CAPATH"
 ```
 
 Verify that Vault is accessible.
-
 ```text
 vault status
 ```
 
 The output should resemble the following
-
 ```text
 Key                Value
 ---                -----
@@ -215,7 +247,6 @@ HA Enabled         true
 
 Now you can create an unseal key. For this tutorial we will only use a single key but in a production environment you will want to require more than 1 key-share to unseal Vault.
 Run the following command to unseal Vault and export the unseal token and root key.
-
 ```text
 key_init=$(vault operator init -key-shares=1 -key-threshold=1); echo "$key_init"
 export VAULT_TOKEN=$(echo "$key_init" | sed -n -e 's/.*Root Token: //p'); echo "RootToken = $VAULT_TOKEN"
@@ -223,8 +254,7 @@ export UNSEAL_KEY=$(echo "$key_init" | sed -n -e 's/.*Unseal Key 1: //p'); echo 
 vault operator unseal "$UNSEAL_KEY"
 ```
 
-Authorises the charm to be able to interact with Vault to manage its operations.
-
+Authorize the charm to be able to interact with Vault to manage its operations.
 ```text
 vault_secret_id=$(juju add-secret vault-token token="$VAULT_TOKEN")
 juju grant-secret vault-token vault
@@ -237,7 +267,6 @@ Now run `juju status` again and confirm your Vault unit is in an active state.
 Finally, save the root token and unseal key for later use.
 
 ```{note}
-
 The unseal key is especially important. If your PC is restarted or any of the vault pods are recreated, then Vault will become resealed and the unseal key will be needed again.
 ```
 
@@ -253,36 +282,35 @@ We are now ready to move onto the next step.
 Nearing the end, we will configure JIMM. Here we will configure required config parameters with an explanation of what they do.
 
 Run the following commands:
-
 ```text
 # The UUID value is used internally to represent the JIMM controller in OpenFGA relations/tuples.
 # Changes to the UUID value after deployment will likely result in broken permissions.
 # Use a randomly generated UUID.
 juju config jimm uuid=3f4d142b-732e-4e99-80e7-5899b7e67e59
-```
 
-```text
-sudo snap install go --classic
 # A private and public key for macaroon based authentication with Juju controllers.
-go run github.com/go-macaroon-bakery/macaroon-bakery/cmd/bakery-keygen/v3@latest
-# extract the public and private keys from the response
-juju config jimm public-key="<public-key>"
-juju config jimm private-key="<private-key>"
+keypair=$(go run github.com/go-macaroon-bakery/macaroon-bakery/cmd/bakery-keygen/v3@latest)
+juju config jimm public-key=$(echo $keypair | yq .public )
+juju config jimm private-key=$(echo $keypair | yq .private )
 ```
 
-Now you need to amend your `/etc/hosts` to create a DNS record for your ingress.
+Now you need to amend the `/etc/hosts` file on the `jaas-workshop` VM to create a DNS record the deployed ingress.
 To do so you need to locate the IP MetalLB assigned to your ingress by running `juju status` and locating the IP
 in the description of the `ingress` application ("Serving at <IP>").
 
 ```
-echo "<ip> test-jimm.localhost" | sudo tee -a /etc/hosts
+# Get the metallb IP assigned to ingress
+ingress_status=$(juju status --format json | yq '.applications.ingress.units."ingress/0"."workload-status".message')
+metallb_ip=$(echo $ingress_status | cut -d' ' -f3 | cut -d'/' -f3)
+
+# Create a DNS entry for jimm in your multipass VM.
+echo "$metallb_ip jimm.workshop" | sudo tee -a /etc/hosts
 # The address to reach JIMM, this will configure ingress and is also used for OAuth flows/redirects.
-juju config jimm dns-name=test-jimm.localhost
-juju config ingress external_hostname=test-jimm.localhost
+juju config jimm dns-name=jimm.workshop
+juju config ingress external_hostname=jimm.workshop
 ```
 
 Optionally, if you have deployed Juju Dashboard, you can configure JIMM to enable browser flow for authentication:
-
 ```text
 juju config jimm juju-dashboard-location="<juju-dashboard-url>"
 ```
@@ -291,47 +319,202 @@ juju config jimm juju-dashboard-location="<juju-dashboard-url>"
 However, in absence of a Juju Dashboard, you can still enable OAuth browser authentication flow by setting this parameter to any valid URL. For example:
 
 ```text
-juju config jimm juju-dashboard-location="http://test-jimm.localhost/auth/whoami"
+juju config jimm juju-dashboard-location="http://jimm.workshop/auth/whoami"
 ```
 
 At this point you can run `juju status` and you should observe JIMM is active.
-Navigate to `http://test-jimm.localhost/debug/info` to verify your JIMM deployment.
+Navigate to `http://jimm.workshop/debug/info` to verify your JIMM deployment.
 
 Finally we will obtain the ca-certificate generated to ensure that we can connect to JIMM with HTTPS.
 This is necessary for the Juju CLI to work properly
-
 ```text
 juju run jimm-cert/0 get-ca-certificate --quiet | yq .ca-certificate | sudo tee /usr/local/share/ca-certificates/jimm-test.crt
 sudo update-ca-certificates --fresh
 ```
 
 Verify that you can securely connect to JIMM with the following command:
-
 ```text
-curl https://test-jimm.localhost/jimm-jimm/debug/info
+curl https://jimm.workshop/jimm-jimm/debug/info
 ```
 
 Verify that you can login to your new controller with the Juju CLI.
 You should be presented with a message to login.
-
 ```text
-juju login test-jimm.localhost:443/jimm-jimm -c jimm-k8s
-# Please visit https://<multipass-ip>/iam-hydra/oauth2/device/verify and entercode <code> to log in.
+juju login jimm.workshop:443/jimm-jimm -c jimm.workshop
+# Please visit https://<multipass-ip>/iam-hydra/oauth2/device/verify and enter code <code> to log in.
 ```
-Visit the link from your browser, fill the credentials you've created before and you should see.
+Visit the link from your browser, fill the username and password you created on Kratos and you should see.
 ```text
-Welcome, test@example.com. You are now logged into "jimm-k8s".
+Welcome, admin@workshop. You are now logged into "jimm.workshop".
 
 There are no models available. You can add models with
 "juju add-model", or you can ask an administrator or owner
 of a model to grant access to that model with "juju grant".
 ```
 
-## Using Your JIMM Deployment
+## Using Your JAAS Deployment
 
-Now that you have JIMM running you can browse our additional guides to setup an admin user, add controllers and migrate existing workloads.
+### Add Juju controllers
 
-> See more: {ref}`howtos`
+To use the deployed JAAS we must first add a Juju controller to the deployed JIMM. This can be done in two ways: either we manually bootstrap a Juju controller with the required `login-token-refresh-url` config option and then add it to JIMM, or we use JIMM to bootstrap a new controller of a specific Juju version.
+
+Microk8s is a Juju built-in cloud and as such cannot be used to bootstrap controller via JIMM. For the purpose of this tutorial, we will register microk8s as a `workshop-k8s` cloud. Run:
+```text
+microk8s config | juju add-k8s workshop-k8s --cluster-name microk8s-cluster --client
+```
+
+To manually add a Juju controller we first need to bootstrap it. 
+```text
+juju bootstrap workshop-k8s controller-workshop-1 --config login-token-refresh-url=http://jimm-endpoints.jimm.svc.cluster.local:8080/.well-known/jwks.json
+```
+Then we switch to the JIMM controller and add the bootstrapped controller:
+```text
+juju switch jimm.workshop
+juju jaas register-controller controller-workshop-1 --local --tls-hostname juju-apiserver
+```
+
+Or we can use JIMM to bootstrap a Juju controller:
+```
+juju jaas bootstrap workshop-k8s controller-workshop-2 3.6.9 --config login-token-refresh-url=http://jimm-endpoints.jimm.svc.cluster.local:8080/.well-known/jwks.json
+```
+which will bootstrap a Juju 3.6.9 controller and add it to JIMM. We override the `login-token-refresh-url` config option in the command above, because of our specific setup for this tutorial.
+
+We now have two Juju controllers added to JIMM: controller-workshop-1 and controller-workshop-2, both in microk8s, which you can verify by running:
+```text
+juju jaas controllers
+```
+
+### Deploy applications using Terraform
+
+In this tutorial we will use the Juju Terraform provider to deploy a simple application, Wordpress, and relate it to a database.
+
+When using the Juju Terraform provider with JAAS we need to provider a service account that is used to authenticate. To create one run:
+```text
+juju switch microk8s:iam
+service_account=$(juju run hydra/0 create-oauth-client --quiet --format yaml redirect-uris='[https://10.64.140.44/jimm-jimm/callback]' scope='[openid,profile,email,phone,offline_access,offline]' grant-types='[authorization_code,refresh_token,urn:ietf:params:oauth:grant-type:device_code,client_credentials]' token-endpoint-auth-method=client_secret_basic --format json)
+```
+And then:
+```text
+export TF_VAR_client_id=$(echo "$service_account" | yq '.["hydra/0"].results."client-id"') 
+export TF_VAR_client_secret=$(echo "$service_account" | yq '.["hydra/0"].results."client-secret"')
+export TF_VAR_client_key_data=$(microk8s config | yq '.users[0].user."client-key-data"')
+export TF_VAR_client_certificate_data=$(microk8s config | yq '.users[0].user."client-certificate-data"')
+```
+to create environment variables that will be used in the Terraform plan.
+
+Next, create a Terraform plan by running:
+```text
+kdir tf; cd tf
+cat <<EOF > main.tf
+terraform {
+  required_providers {
+    juju = {
+      source = "juju/juju"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
+  }
+}
+
+variable "client_key_data" {
+  type = string
+  description = "client key data"
+}
+
+variable "client_certificate_data" {
+  type = string
+  description = "client certificate data"
+}
+
+variable "client_id" {
+  type = string
+  description = "client id"
+}
+variable "client_secret" {
+  type = string
+  description = "client id"
+}
+
+provider "juju" {
+    controller_addresses="$metallb_ip:443/jimm-jimm"
+    
+    client_id=var.client_id
+    client_secret=var.client_secret
+}
+
+resource "juju_credential" "credential" {
+  name = "k8s-credential"
+  cloud {
+    name = "workshop-k8s"
+  }
+
+  auth_type = "certificate"
+  attributes = {
+    "client-certificate-data" = var.client_key_data
+    "client-key-data"         = var.client_certificate_data
+  }
+}
+
+resource "juju_model" "workshop_model_1" {
+  name = "workshop-model-1"
+
+  credential = juju_credential.credential.name 
+
+  cloud {
+    name = "workshop-k8s"
+  }
+}
+
+resource "juju_application" "wordpress" {
+  model_uuid = juju_model.workshop_model_1.uuid
+  name       = "wordpress"
+
+  charm {
+    name = "wordpress-k8s"
+  }
+}
+
+resource "juju_application" "mysql" {
+  model_uuid = juju_model.workshop_model_1.uuid
+  name       = "mysql"
+  trust      = true
+
+  charm {
+    name = "mysql-k8s"
+  }
+}
+
+resource "juju_integration" "wordpress_mysql" {
+  model_uuid = juju_model.workshop_model_1.uuid
+
+  application {
+    name     = juju_application.wordpress.name
+    endpoint = "database"
+  }
+
+  application {
+    name     = juju_application.mysql.name
+    endpoint = "database"
+  }
+
+}
+EOF
+```
+
+Run:
+```text
+terraform init
+terraform apply -auto-approve
+``
+to apply the plan and deploy Wordpress.
+
+Once Terraform applies the plan you can inspect the created model by running:
+```text
+juju switch $TF_VAR_client_id@serviceaccount/workshop-model-1
+juju status
+```
 
 ## Common Issues
 
@@ -339,22 +522,20 @@ The following are some common issues that may arise especially after a reboot of
 
 ### JIMM shows invalid certificate
 
-Try `curl https://jimm-test.localhost/debug/info`, if you receive an SSL certificate error then it's likely that the K8s ingress is no longer
+Try `curl https://jimm.workshop/debug/info`, if you receive an SSL certificate error then it's likely that the K8s ingress is no longer
 serving the correct TLS certificate. The following command can help verify this.
-
 ```text
-openssl s_client -showcerts -servername test-jimm.localhost -connect test-jimm.localhost:443 < /dev/null
+openssl s_client -showcerts -servername jimm.workshop -connect jimm.workshop:443 < /dev/null
 ```
 
 If the certificates CN (Common Name) is "Kubernetes Ingress Controller Fake Certificate" then the self-signed certificate is missing.
 Run the following to fix the issue.
-
 ```text
+juju switch jimm
 juju remove-relation ingress jimm-cert
 ```
 
 Wait for the relation to be removed by observing the output from `juju status --relations --watch 2s`.
-
 ```text
 juju relate ingress jimm-cert
 ```
@@ -364,9 +545,8 @@ Try `curl` the server again the certificate issue should be resolved.
 ### JIMM is not serving requests
 
 If JIMM is not responding to requests, run the following commands to check the logs.
-
 ```text
-microk8s kubectl exec -it -n jimm jimm-0 -c jimm -- /charm/bin/pebble logs
+microk8s kubectl logs jimm-0 -n jimm -c jimm -f 
 ```
 
 This will present the server logs and debug further.
@@ -374,19 +554,17 @@ This will present the server logs and debug further.
 ### JIMM can't communicate with the identity platform
 
 If JIMM's logs show an error similar to the following,
-
 ```text
 {"level":"error","ts":"2024-05-31T07:00:03.827Z","msg":"failed to create oidc provider","error":"Get \"https://iam.10.64.140.43.nip.io/iam-hydra/.well-known/openid-configuration\": tls: failed to verify certificate: x509: certificate is not valid for any names, but wanted to match iam.10.64.140.43.nip.io"}
 {"level":"error","ts":"2024-05-31T07:00:03.827Z","msg":"failed to setup authentication service","error":"failed to create oidc provider"}
 {"level":"error","ts":"2024-05-31T07:00:03.827Z","msg":"shutdown","error":"failed to setup authentication service"}
 ```
 
-then it is likely that the IP address for the `traefik-public` and `traefik-admin` services in the `iam` model have changed.
+then it is likely that the IP address for the `traefik-public` service in the `core` model has changed.
 
 Run the following to verify this,
-
 ```text
-juju switch iam
+juju switch core
 juju status
 juju config traefik-public external_hostname
 juju status --format yaml | yq .applications.traefik-public.address
@@ -396,22 +574,14 @@ If you have used the `nip.io` service to setup hostnames, you may find that the 
 
 Update the `external_hostname` config of `traefik-public` to the correct hostname and update your approved redirect URIs/URLs in your identity provider.
 Assuming use of the `nip.io` service, we can simply rerun the steps used previously.
-
 ```text
-TRAEFIK_PUBLIC=$(juju status traefik-public --format yaml | yq .applicationstraefik-public.address)
+TRAEFIK_PUBLIC=$(juju status traefik-public --format yaml | yq .applications.traefik-public.address)
 juju config traefik-public external_hostname="iam.$TRAEFIK_PUBLIC.nip.io"
 ```
 
 ## Cleanup
 
-To remove the Juju controller you initially created and all models with associated applications, run the following command:
-
+Since we used Multipass to create an isolated environment for this tutorial all you need is to remove the instance:
 ```text
-juju destroy-controller --destroy-all-models --destroy-storage --no-prompt jimm-demo-controller
-```
-
-And to cleanup the Multipass VM if one was used:
-
-```text
-multipass delete --purge jimm-deploy
+multipass delete -p jaas-workshop
 ```
