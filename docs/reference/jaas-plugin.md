@@ -3,6 +3,7 @@
 
 
 ```{toctree}
+:hidden:
 
 list-of-jaas-plugin-commands/index
 ```
