@@ -91,7 +91,7 @@ juju jaas boostrap microk8s workload-microk8s 3.6.8 --config controller-service-
 ```
 
 ```{note}
-The desired controller version is passed to JIMM, as opposed to needing that specific version installed locally. 
+The desired controller version is passed to JIMM, as opposed to needing that specific version installed locally.
 ```
 
 See the `jaas` plugin's {doc}`docs <../reference/jaas-plugin>` for more details on how to bootstrap a controller on Kubernetes.
@@ -142,7 +142,7 @@ juju jaas register-controller "${CONTROLLER_NAME}" --local --tls-hostname juju-a
 ````{dropdown} JIMM bootstrap
 
 Bootstrapping a controller to LXD via JIMM faces additional networking hurdles because JIMM needs
-to communicate with the LXD server to bootstrap a controller. 
+to communicate with the LXD server to bootstrap a controller.
 
 We suggest consulting the `jaas` CLI bootstrap command {doc}`reference <../reference/jaas-plugin>` docs to better understand how to
 use the command in your desired use-case.

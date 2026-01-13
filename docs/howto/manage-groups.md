@@ -4,11 +4,6 @@
 >
 > See also: {ref}`group`
 
-```{note}
-This guide assumes you have the `jaas` plugin installed.
-See {doc}`here <../explanation/jaas-plugin>` for more information.
-```
-
 ````{dropdown} Preview an example workflow
 ```text
 # Create a group:

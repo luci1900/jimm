@@ -3,10 +3,10 @@ set -euo pipefail
 
 # Regenerates the JAAS CLI reference documentation.
 #
-# Output: docs/reference/jaas-plugin.md
+# Output: docs/reference/list-of-jaas-plugin-commands/index.md
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-out_file="${repo_root}/docs/reference/jaas-plugin.md"
+out_file="${repo_root}/docs/reference/list-of-jaas-plugin-commands/index.md"
 
 tmp_dir="$(mktemp -d)"
 cleanup() {
