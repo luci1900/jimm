@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package testing
 
@@ -27,9 +27,8 @@ import (
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/pkg/api"
-	jimmversion "github.com/canonical/jimm/v3/version"
-
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
+	jimmversion "github.com/canonical/jimm/v3/version"
 )
 
 type jimmSuite struct {

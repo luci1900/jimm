@@ -1,4 +1,5 @@
-// Copyright 2024 Canonical.
+// Copyright 2026 Canonical.
+
 package utils
 
 import (

@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package jimmtest
 
@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	cofga "github.com/canonical/ofga"
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/go-chi/chi/v5"
 	"github.com/juju/juju/api"
@@ -35,7 +36,6 @@ import (
 	"github.com/canonical/jimm/v3/internal/openfga"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/utils"
-	cofga "github.com/canonical/ofga"
 )
 
 const (

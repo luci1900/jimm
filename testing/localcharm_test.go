@@ -1,4 +1,4 @@
-// Copyright 2024 Canonical.
+// Copyright 2026 Canonical.
 
 package testing
 
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/juju/charm/v12"
 	"github.com/juju/charm/v12/resource"
 	"github.com/juju/juju/api"
@@ -15,6 +14,8 @@ import (
 	"github.com/juju/juju/testcharms"
 	"github.com/juju/version/v2"
 	gc "gopkg.in/check.v1"
+
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
 
 // localCharmSuite tests end-to-end deployment of a local charm.

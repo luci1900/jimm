@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package main
 
@@ -28,6 +28,7 @@ func NewSuperCommand() *jujucmd.SuperCommand {
 	// Register commands here:
 	jaasCmd.Register(cmd.NewAddCloudToControllerCommand())
 	jaasCmd.Register(cmd.NewAddGroupCommand())
+	jaasCmd.Register(cmd.NewAddModelCommand())
 	jaasCmd.Register(cmd.NewAddPermissionCommand())
 	jaasCmd.Register(cmd.NewAddRoleCommand())
 	jaasCmd.Register(cmd.NewCheckPermissionCommand())
