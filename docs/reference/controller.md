@@ -31,3 +31,8 @@ Abilities: Can do anything that it is possible to do at the level of a controlle
 #### `audit_log_viewer`
 
 Abilities: Can read audit logs.
+
+(controller-permission-can-addmodel)=
+#### `can_addmodel`
+
+Abilities: Can host a model on this controller.
