@@ -507,7 +507,7 @@ Run:
 ```text
 terraform init
 terraform apply -auto-approve
-``
+```
 to apply the plan and deploy Wordpress.
 
 Once Terraform applies the plan you can inspect the created model by running:
@@ -620,6 +620,139 @@ juju status
 
 If everything is configured correctly, `juju status` should report the applications deployed earlier (e.g. Wordpress and MySQL).
  
+### Cross-model queries
+
+When you manage many models, it’s often useful to run queries *across all models* without switching into each one.
+JAAS supports this with `juju jaas query-models`: you provide a `jq` query expression on the command line, and JAAS evaluates it across the models you’re allowed to access.
+The command prints the matching results as JSON. In the examples below we pipe the output to `jq .` purely to pretty-print it (the actual query is the argument passed to `juju jaas query-models`).
+
+In this section we will:
+
+1. create a second model (`workshop-model-2`) with Terraform;
+2. run cross-model queries to answer operational questions.
+
+#### Create another model
+
+To make the examples more interesting, create a second model and deploy a small charm into it.
+Here the plan:
+
+```text
+mkdir tf1; cd tf1
+cat <<EOF > main.tf
+terraform {
+  required_providers {
+    juju = {
+      source = "juju/juju"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
+  }
+}
+
+variable "client_key_data" {
+  type = string
+  description = "client key data"
+}
+
+variable "client_certificate_data" {
+  type = string
+  description = "client certificate data"
+}
+
+variable "client_id" {
+  type = string
+  description = "client id"
+}
+variable "client_secret" {
+  type = string
+  description = "client id"
+}
+
+provider "juju" {
+    controller_addresses="$metallb_ip:443/jimm-jimm"
+    
+    client_id=var.client_id
+    client_secret=var.client_secret
+}
+
+resource "juju_credential" "credential" {
+  name = "k8s-credential"
+  cloud {
+    name = "workshop-k8s"
+  }
+
+  auth_type = "certificate"
+  attributes = {
+    "client-certificate-data" = var.client_key_data
+    "client-key-data"         = var.client_certificate_data
+  }
+}
+
+resource "juju_model" "workshop_model_2" {
+  name = "workshop-model-2"
+
+  credential = juju_credential.credential.name 
+
+  cloud {
+    name = "workshop-k8s"
+  }
+}
+
+resource "juju_application" "hello" {
+  model_uuid = juju_model.workshop_model_2.uuid
+  name       = "hello-kubecon"
+  charm {
+    name = "hello-kubecon"
+  }
+}
+EOF
+
+terraform init
+terraform apply -auto-approve
+```
+
+After the apply, you should see a new model in `juju models`.
+
+#### Query across all models
+
+`juju jaas query-models` sends the query expression to JAAS for evaluation.
+You can optionally pipe the JSON output to `jq .` to render it nicely.
+
+##### Example 1: Find units in an error state
+
+This query returns all units whose workload status is `error` across *all* accessible models:
+
+```text
+# query for all units in error state
+juju jaas query-models '.applications[].units | .[] | select(."workload-status".current=="error")' | jq .
+```
+
+##### Example 2: Check the revision of a charm across models
+
+This query returns the charm revision for `mysql-k8s` anywhere it is deployed:
+
+```text
+# query for the revision of the mysql-k8s charm in all models
+juju jaas query-models '.applications[] | select(.charm=="mysql-k8s") | ."charm-rev"' | jq .
+```
+
+### Audit logs
+
+JIMM provides audit logging functionality, tracking all requests/responses into the system. This gives administrators of JIMM the ability to audit changes at a very granular level.
+
+All requests to controllers and models are logged and can enable an analysis into why the state of the underlying Juju estate has changed.
+
+To see all audit logs run:
+```text
+juju jaas audit-events
+```
+
+To see, for example, all `CreateModel` events, with timestamps, parameters and who ran the command use:
+```text
+juju jaas  audit-events --method CreateModel --format json | jq  '[.events[]| select(."is-response"==false) | {time, "user-tag", params}]'
+```
 
 ## Common Issues
 
