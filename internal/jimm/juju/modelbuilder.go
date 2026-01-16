@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package juju
 
@@ -417,7 +417,7 @@ func (b *modelBuilder) CreateDatabaseModel() *modelBuilder {
 	if b.credential == nil {
 		// try to select a valid credential
 		if err := b.selectCloudCredentials(); err != nil {
-			b.err = errors.E(err, "could not select cloud credentials")
+			b.err = fmt.Errorf("could not select cloud credentials: %w", err)
 			return b
 		}
 	}

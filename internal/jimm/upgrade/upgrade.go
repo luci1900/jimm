@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 // upgrade package provides functionality to manage the upgrade process
 // for controllers in JIMM.
@@ -302,7 +302,7 @@ func (u *upgradeManager) MigrateAndUpgradeModel(ctx context.Context, user *openf
 // Further work in Phase 2 is expected to be done here: https://warthogs.atlassian.net/browse/JUJU-8918
 func (u *upgradeManager) UpgradeTo(ctx context.Context, user *openfga.User, modelUUID string, targetVersion version.Number) (version.Number, error) {
 	var chosenVersion version.Number
-	var newControllerName string = fmt.Sprintf("controller-%d", time.Now().Unix())
+	var newControllerName = fmt.Sprintf("controller-%d", time.Now().Unix())
 
 	bsCloud, bsCloudRegion, bsCredential, err := u.PrepareUpgradeTo(ctx, modelUUID, targetVersion)
 	if err != nil {

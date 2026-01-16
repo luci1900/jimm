@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package jujuapi
 
@@ -71,52 +71,54 @@ func init() {
 		startBootstrapJob := rpc.Method(r.StartBootstrapJob)
 		startDestroyControllerJob := rpc.Method(r.StartDestroyControllerJob)
 		upgradeToMethod := rpc.Method(r.UpgradeTo)
+		listUserCloudsMethod := rpc.Method(r.ListUserClouds)
 
 		// JIMM Generic RPC
+		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
 		r.AddMethod("JIMM", 4, "AddController", addControllerMethod)
+		r.AddMethod("JIMM", 4, "AddModelToController", addModelToControllerMethod)
 		r.AddMethod("JIMM", 4, "DisableControllerUUIDMasking", disableControllerUUIDMaskingMethod)
 		r.AddMethod("JIMM", 4, "FindAuditEvents", findAuditEventsMethod)
 		r.AddMethod("JIMM", 4, "FullModelStatus", fullModelStatusMethod)
 		r.AddMethod("JIMM", 4, "GrantAuditLogAccess", grantAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "ImportModel", importModelMethod)
 		r.AddMethod("JIMM", 4, "ListControllers", listControllersMethod)
+		r.AddMethod("JIMM", 4, "ListUserClouds", listUserCloudsMethod)
+		r.AddMethod("JIMM", 4, "MigrateModel", migrateModel)
+		r.AddMethod("JIMM", 4, "PurgeLogs", purgeLogsMethod)
+		r.AddMethod("JIMM", 4, "RemoveCloudFromController", removeCloudFromControllerMethod)
 		r.AddMethod("JIMM", 4, "RemoveController", removeControllerMethod)
 		r.AddMethod("JIMM", 4, "RevokeAuditLogAccess", revokeAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "SetControllerDeprecated", setControllerDeprecatedMethod)
 		r.AddMethod("JIMM", 4, "UpdateMigratedModel", updateMigratedModelMethod)
-		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
-		r.AddMethod("JIMM", 4, "AddModelToController", addModelToControllerMethod)
-		r.AddMethod("JIMM", 4, "RemoveCloudFromController", removeCloudFromControllerMethod)
-		r.AddMethod("JIMM", 4, "PurgeLogs", purgeLogsMethod)
-		r.AddMethod("JIMM", 4, "MigrateModel", migrateModel)
 
 		// JIMM ReBAC RPC
 		r.AddMethod("JIMM", 4, "AddGroup", addGroupMethod)
-		r.AddMethod("JIMM", 4, "GetGroup", getGroupMethod)
-		r.AddMethod("JIMM", 4, "RenameGroup", renameGroupMethod)
-		r.AddMethod("JIMM", 4, "RemoveGroup", removeGroupMethod)
-		r.AddMethod("JIMM", 4, "ListGroups", listGroupsMethod)
 		r.AddMethod("JIMM", 4, "AddRelation", addRelationMethod)
-		r.AddMethod("JIMM", 4, "RemoveRelation", removeRelationMethod)
+		r.AddMethod("JIMM", 4, "AddRole", addRoleMethod)
 		r.AddMethod("JIMM", 4, "CheckRelation", checkRelationMethod)
 		r.AddMethod("JIMM", 4, "CheckRelations", checkRelationsMethod)
-		r.AddMethod("JIMM", 4, "ListRelationshipTuples", listRelationshipTuplesMethod)
-		r.AddMethod("JIMM", 4, "AddRole", addRoleMethod)
+		r.AddMethod("JIMM", 4, "GetGroup", getGroupMethod)
 		r.AddMethod("JIMM", 4, "GetRole", getRoleMethod)
-		r.AddMethod("JIMM", 4, "RenameRole", renameRoleMethod)
-		r.AddMethod("JIMM", 4, "RemoveRole", removeRoleMethod)
+		r.AddMethod("JIMM", 4, "ListGroups", listGroupsMethod)
+		r.AddMethod("JIMM", 4, "ListRelationshipTuples", listRelationshipTuplesMethod)
 		r.AddMethod("JIMM", 4, "ListRoles", listRolesMethod)
+		r.AddMethod("JIMM", 4, "RemoveGroup", removeGroupMethod)
+		r.AddMethod("JIMM", 4, "RemoveRelation", removeRelationMethod)
+		r.AddMethod("JIMM", 4, "RemoveRole", removeRoleMethod)
+		r.AddMethod("JIMM", 4, "RenameGroup", renameGroupMethod)
+		r.AddMethod("JIMM", 4, "RenameRole", renameRoleMethod)
 		// JIMM Cross-model queries
 		r.AddMethod("JIMM", 4, "CrossModelQuery", crossModelQueryMethod)
 		r.AddMethod("JIMM", 4, "Version", version)
 		// JIMM Model Migrations
-		r.AddMethod("JIMM", 4, "PrepareModelMigration", prepareModelMigration)
 		r.AddMethod("JIMM", 4, "ListMigrationTargets", listMigrationTargetsMethod)
+		r.AddMethod("JIMM", 4, "PrepareModelMigration", prepareModelMigration)
 		// JIMM Bootstrap
 		r.AddMethod("JIMM", 4, "GetJobInfo", getJobInfo)
-		r.AddMethod("JIMM", 4, "StopJob", stopJob)
 		r.AddMethod("JIMM", 4, "StartBootstrapJob", startBootstrapJob)
 		r.AddMethod("JIMM", 4, "StartDestroyControllerJob", startDestroyControllerJob)
+		r.AddMethod("JIMM", 4, "StopJob", stopJob)
 		// JIMM Upgrades
 		r.AddMethod("JIMM", 4, "UpgradeTo", upgradeToMethod)
 
@@ -184,7 +186,7 @@ func (r *controllerRoot) AddCloudToController(ctx context.Context, req apiparams
 
 // AddModelToController adds a new model to a specific controller.
 func (r *controllerRoot) AddModelToController(ctx context.Context, req apiparams.AddModelToControllerRequest) (jujuparams.ModelInfo, error) {
-	mca, err := toAddModelArgs(req.ModelCreateArgs)
+	mca, err := toAddModelArgs(req.ModelCreateArgs, r.user.ResourceTag())
 	if err != nil {
 		return jujuparams.ModelInfo{}, errors.E(err)
 	}
@@ -738,4 +740,36 @@ func (r *controllerRoot) UpgradeTo(ctx context.Context, req apiparams.UpgradeToR
 	return apiparams.UpgradeToResponse{
 		Success: true,
 	}, nil
+}
+
+// ListUserClouds lists the clouds accessible to the user.
+func (r *controllerRoot) ListUserClouds(ctx context.Context, req apiparams.ListUserCloudsRequest) (jujuparams.CloudsResult, error) {
+	if !r.user.JimmAdmin && r.user.ResourceTag().String() != req.UserTag {
+		return jujuparams.CloudsResult{}, errors.E(errors.CodeUnauthorized, "unauthorized")
+	}
+
+	user := r.user
+	if r.user.ResourceTag().String() != req.UserTag {
+		ut, err := names.ParseUserTag(req.UserTag)
+		if err != nil {
+			return jujuparams.CloudsResult{}, errors.E(err, errors.CodeBadRequest, "invalid user tag")
+		}
+		u, err := r.jimm.IdentityManager().FetchIdentity(ctx, ut.Id())
+		if err != nil {
+			return jujuparams.CloudsResult{}, errors.E(err)
+		}
+
+		user = u
+	}
+	res := jujuparams.CloudsResult{
+		Clouds: make(map[string]jujuparams.Cloud),
+	}
+	err := r.jimm.JujuManager().ForEachUserCloud(ctx, user, func(cld *dbmodel.Cloud) error {
+		res.Clouds[cld.Tag().String()] = cld.ToJujuCloud()
+		return nil
+	})
+	if err != nil {
+		return res, errors.E(err)
+	}
+	return res, nil
 }

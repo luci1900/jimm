@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package jujuapi
 
@@ -185,7 +185,7 @@ func (r *controllerRoot) CreateModel(ctx context.Context, args jujuparams.ModelC
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	mca, err := toAddModelArgs(args)
+	mca, err := toAddModelArgs(args, r.user.ResourceTag())
 	if err != nil {
 		return jujuparams.ModelInfo{}, errors.E(err)
 	}

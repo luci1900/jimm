@@ -1,4 +1,4 @@
-// Copyright 2026 Canonical Ltd.
+// Copyright 2026 Canonical.
 
 package testing
 
@@ -8,16 +8,16 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/juju/errors"
+	"github.com/juju/juju/api"
+	"github.com/juju/juju/api/client/client"
+	"github.com/juju/names/v5"
 	gc "gopkg.in/check.v1"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
-	"github.com/juju/errors"
-	"github.com/juju/juju/api"
-	"github.com/juju/juju/api/client/client"
-	"github.com/juju/names/v5"
 )
 
 type apiProxySuite struct {

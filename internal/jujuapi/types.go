@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 package jujuapi
 
@@ -49,7 +49,7 @@ func cloudFromParams(cloudName string, p jujuparams.Cloud) cloud.Cloud {
 	}
 }
 
-func toAddModelArgs(args jujuparams.ModelCreateArgs) (*juju.ModelCreateArgs, error) {
+func toAddModelArgs(args jujuparams.ModelCreateArgs, authenticatedUser names.UserTag) (*juju.ModelCreateArgs, error) {
 	// FromJujuModelCreateArgs converts jujuparams.ModelCreateArgs into AddModelArgs.
 	var a juju.ModelCreateArgs
 	if args.Name == "" {
@@ -66,14 +66,15 @@ func toAddModelArgs(args jujuparams.ModelCreateArgs) (*juju.ModelCreateArgs, err
 		a.Cloud = ct
 	}
 
-	if args.OwnerTag == "" {
-		return nil, errors.E("owner tag not specified")
+	if args.OwnerTag != "" {
+		ot, err := names.ParseUserTag(args.OwnerTag)
+		if err != nil {
+			return nil, errors.E(err, errors.CodeBadRequest)
+		}
+		a.Owner = ot
+	} else {
+		a.Owner = authenticatedUser
 	}
-	ot, err := names.ParseUserTag(args.OwnerTag)
-	if err != nil {
-		return nil, errors.E(err, errors.CodeBadRequest)
-	}
-	a.Owner = ot
 
 	if args.CloudCredentialTag != "" {
 		ct, err := names.ParseCloudCredentialTag(args.CloudCredentialTag)

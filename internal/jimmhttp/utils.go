@@ -1,4 +1,4 @@
-// Copyright 2025 Canonical.
+// Copyright 2026 Canonical.
 
 // Package jimmhttp contains utilities for HTTP connections.
 package jimmhttp
