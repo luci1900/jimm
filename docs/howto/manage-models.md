@@ -27,7 +27,7 @@ flowchart LR
     end
     C2 -- selected for model --> M
 ```
-_A user trying to add a model on an Openstack cloud and their access to various controllers_
+_A user trying to add a model on an OpenStack cloud and their access to various controllers._
 
 Adding a model in JAAS requires permissions on a cloud as well as a controller. In the example above, multiple controllers (in green) support the `openstack` cloud while controller C (in red) does not. The user has access to controllers B and C. Based on these 2 factors the only valid placement is controller B.
 
@@ -37,6 +37,13 @@ To create a model:
 
 - `can_addmodel` permission on the target cloud.
 - `can_addmodel` permission on one or more controllers that support that cloud.
+
+Grant these permissions with,
+
+```text
+juju add-permission user-example@canonical.com can_addmodel cloud-openstack
+juju add-permission user-example@canonical.com can_addmodel controller-ctrlA
+```
 
 > See more: {ref}`verify-a-permission`
 
@@ -124,9 +131,9 @@ alice: alice@canonical.com
 
 The file must include entries for:
 
-1. The existing model owner
-2. Any users with model access
-3. Any users with access to offers hosted within the model
+1. the existing model owner;
+2. any users with model access;
+3. any users with access to offers hosted within the model.
 
 If any entries are missing, the migration process will return an error indicating the missing users.
 The special string `everyone@external`, representing all users, should not be included in the mapping.
@@ -214,7 +221,7 @@ The below is also useful if you want to move a model to a specific controller.
 
 - A basic understanding of Juju model migrations, see the [docs](https://juju.is/docs/juju/manage-models).
 - A running JAAS with with multiple controllers attached, see the {doc}`the tutorial <../tutorial/index>` for deploying JAAS.
-- Administrator permissions for JAAS, see {ref}`add-a-juju-controller`.
+- Administrator permissions for JAAS. See more: {ref}`add-a-juju-controller`.
 
 Connecting multiple controllers to JAAS can be accomplished adding LXD controllers as described in {ref}`add-a-juju-controller`.
 
