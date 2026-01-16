@@ -516,6 +516,111 @@ juju switch $TF_VAR_client_id@serviceaccount/workshop-model-1
 juju status
 ```
 
+### Permission management
+
+JAAS uses relationship-based access control (ReBAC) to manage permissions.
+```{note}
+You can read more about it here: {ref}`Authorization <jaas-authorization>`
+```
+
+In this section we will:
+
+1. create a new user in the identity platform (`user1@workshop`);
+2. create a group (`workshop-users`);
+3. add the user to the group;
+4. grant the group administrator access to the model created via Terraform;
+5. verify that the user can access the model.
+
+```{note}
+The tutorial earlier created `admin@workshop` in Kratos. Here we create an additional user to demonstrate how access can be delegated and verified.
+```
+
+#### Create a user in Kratos
+
+Switch to the `iam` model and create a new user identity.
+We follow the same approach as in the earlier "Create a user" step: create the identity, store the password in a Juju secret, then reset the password using that secret.
+
+```text
+juju switch microk8s:iam
+
+# create user user1@workshop
+action_output=$(juju run kratos/0 create-admin-account email=user1@workshop password=test username=user1 --format json)
+identity_id=$(echo $action_output | yq '."kratos/0".results."identity-id"')
+password_secret=$(juju add-secret password-secret-user1 password=Pa55word)
+juju grant-secret password-secret-user1 kratos
+juju run kratos/0 reset-password identity-id="$identity_id" password-secret-id="$password_secret"
+```
+
+At this point `user1@workshop` can log in using the password `Pa55word`.
+
+#### Create a group and add the user
+
+Now switch back to the JIMM controller and create a group.
+
+```text
+juju switch jimm.workshop
+
+# create group workshop-users
+juju jaas add-group workshop-users
+
+# add user1@workshop to the group workshop-users
+juju jaas add-permission user-user1@workshop member group-workshop-users
+
+# check if user1@workshop is a member of group workshop-users
+juju jaas check-permission user-user1@workshop member group-workshop-users
+```
+
+If membership is configured correctly, the final command should report that access is allowed.
+
+#### Grant the group access to the model
+
+The Terraform plan created a model named `workshop-model-1` owned by the service account identified by `$TF_VAR_client_id`.
+We will grant *administrator* access to all members of `workshop-users`.
+
+```text
+# give group workshop-users administrator access to the model created via Terraform
+juju jaas add-permission group-workshop-users#member administrator model-$TF_VAR_client_id@serviceaccount/workshop-model-1
+
+# check if group members have administrator access to the model
+juju jaas check-permission group-workshop-users#member administrator model-$TF_VAR_client_id@serviceaccount/workshop-model-1
+```
+
+You should see output similar to:
+
+```text
+access check for group-workshop-users#member on resource model-$TF_VAR_client_id@serviceaccount/workshop-model-1 with role administrator is allowed
+```
+
+Because `user1@workshop` is a member of the group, the user should also have administrator access:
+
+```text
+juju jaas check-permission user-user1@workshop administrator model-$TF_VAR_client_id@serviceaccount/workshop-model-1
+```
+
+#### Log in as the delegated user
+
+Finally, confirm the permission grant works end-to-end by logging in as `user1@workshop` and verifying the model is visible and accessible.
+
+```text
+juju logout
+juju login
+
+juju whoami
+juju models
+```
+
+Your `juju whoami` output should show `User: user1@workshop` and you should see the model `$TF_VAR_client_id@serviceaccount/workshop-model-1`.
+
+Switch into the model and check you can view workload state:
+
+```text
+juju switch $TF_VAR_client_id@serviceaccount/workshop-model-1
+juju status
+```
+
+If everything is configured correctly, `juju status` should report the applications deployed earlier (e.g. Wordpress and MySQL).
+ 
+
 ## Common Issues
 
 The following are some common issues that may arise especially after a reboot of your local machine.
@@ -578,6 +683,14 @@ Assuming use of the `nip.io` service, we can simply rerun the steps used previou
 TRAEFIK_PUBLIC=$(juju status traefik-public --format yaml | yq .applications.traefik-public.address)
 juju config traefik-public external_hostname="iam.$TRAEFIK_PUBLIC.nip.io"
 ```
+
+Another issue that might occur is certificate validation failures in JIMM. To resolve those try ro run the following:
+```text
+juju switch microk8s:core
+juju remove-relation self-signed-certificates traefik-public
+juju relate self-signed-certificates traefik-public
+```
+to cause recreation of Traefik certificates.
 
 ## Cleanup
 
