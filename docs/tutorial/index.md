@@ -628,8 +628,15 @@ The command prints the matching results as JSON. In the examples below we pipe t
 
 In this section we will:
 
+0. Log back in `admin@workshop`
 1. create a second model (`workshop-model-2`) with Terraform;
 2. run cross-model queries to answer operational questions.
+
+#### Log back in `admin@workshop`
+```text
+juju logout
+juju login
+```
 
 #### Create another model
 
@@ -742,6 +749,10 @@ juju jaas query-models '.applications[] | select(.charm=="mysql-k8s") | ."charm-
 
 JIMM provides audit logging functionality, tracking all requests/responses into the system. This gives administrators of JIMM the ability to audit changes at a very granular level.
 
+```{note}
+You can read more about it here: {ref}`Audit Logs <audit-logs>`
+```
+
 All requests to controllers and models are logged and can enable an analysis into why the state of the underlying Juju estate has changed.
 
 To see all audit logs run:
@@ -749,9 +760,41 @@ To see all audit logs run:
 juju jaas audit-events
 ```
 
-To see, for example, all `CreateModel` events, with timestamps, parameters and who ran the command use:
+### Internal migrations
+
+JAAS can perform *internal migrations* of a model between registered controllers.
+
+#### Migrate a model between controllers
+
+In this workshop we registered two controllers, `controller-workshop-1` and `controller-workshop-2`.
+To demonstrate model migration we will bootstrap a new controller as we currently do not expose a way to tell which controller is running a model. Run:
 ```text
-juju jaas  audit-events --method CreateModel --format json | jq  '[.events[]| select(."is-response"==false) | {time, "user-tag", params}]'
+juju jaas bootstrap workshop-k8s controller-workshop-3 3.6.12 --config login-token-refresh-url=http://jimm-endpoints.jimm.svc.cluster.local:8080/.well-known/jwks.json
+```
+to bootstrap controller `controller-workshop-3`.
+
+Once the controller is bootstrapped and added to JIMM, which we can verify by running
+```text
+juju jaas controllers
+```
+we can initiate the model migration of the `workshop-model-1` to controller `controller-workshop-3.
+
+Run:
+```text
+juju jaas migrate-internal controller-workshop-3 $TF_VAR_client_id@serviceaccount/workshop-model-1
+```
+
+After the migration completes, we must run:
+```text
+model_uuid=$(juju show-model $TF_VAR_client_id@serviceaccount/workshop-model-1 --format json | yq '."workshop-model-1"."model-uuid"')
+juju jaas update-migrated-model controller-workshop-3 $model_uuid
+```
+
+Now switch back to the model and confirm it’s healthy:
+
+```text
+juju switch $TF_VAR_client_id@serviceaccount/workshop-model-1
+juju status
 ```
 
 ## Common Issues
