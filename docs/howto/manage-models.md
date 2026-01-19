@@ -1,6 +1,72 @@
 (manage-models)=
 # Manage models
 
+(create-a-model)=
+## Create a model
+
+```{mermaid}
+flowchart LR
+    U["User </br> (limited controller access)"]
+    subgraph Controllers
+        C1["Controller A</br>(supports openstack)"]
+        C2["Controller B</br>(supports openstack)"]
+        C3["Controller C</br>(does NOT support openstack)"]
+        C4["Controller D</br>(supports openstack)"]
+    end
+    U -. no access .-> C1
+    U -- access --> C2
+    U -- access --> C3
+    U -. no access .-> C4
+    classDef ok fill:#b3e6b3,stroke:#2d662d,stroke-width:1px;
+    classDef no fill:#f2b3b3,stroke:#662d2d,stroke-width:1px;
+    class C1,C2,C4 ok;
+    class C3 no;
+    %% Model placement result
+    subgraph Result
+        M[(my-model)]
+    end
+    C2 -- selected for model --> M
+```
+_A user trying to add a model on an OpenStack cloud and their access to various controllers._
+
+Adding a model in JAAS requires permissions on a cloud as well as a controller. In the example above, multiple controllers (in green) support the `openstack` cloud while controller C (in red) does not. The user has access to controllers B and C. Based on these 2 factors the only valid placement is controller B.
+
+To create a model:
+
+1. Make sure you have the necessary permissions:
+
+- `can_addmodel` permission on the target cloud.
+- `can_addmodel` permission on one or more controllers that support that cloud.
+
+Grant these permissions with,
+
+```text
+juju add-permission user-example@canonical.com can_addmodel cloud-openstack
+juju add-permission user-example@canonical.com can_addmodel controller-ctrlA
+```
+
+> See more: {ref}`verify-a-permission`
+
+2. Add the model using the `jaas add-model` command, optionally specifying a target controller:
+For example:
+
+```
+# View all the controllers you have access to:
+juju jaas list-controllers
+# Add a model to any valid controller
+juju add-model <modelname>
+# Add your model to the controller of your choice:
+juju jaas add-model --target-controller <mytargetcontroller> <modelname>
+```
+
+> See more: {ref}`command-jaas-add-model`
+
+When you don't specify a controller:
+
+- If you only have access to one controller, JIMM will automatically add the model to that controller.
+- If you have access to multiple controllers, JIMM will randomly choose one for you, prioritizing controllers hosted within the cloud to reduce latency.
+
+
 (migrate-a-model-to-jaas)=
 ## Migrate a model to JAAS
 
@@ -64,9 +130,10 @@ alice: alice@canonical.com
 ```
 
 The file must include entries for:
-1. The existing model owner
-2. Any users with model access
-3. any users with access to offers hosted within the model
+
+1. the existing model owner;
+2. any users with model access;
+3. any users with access to offers hosted within the model.
 
 If any entries are missing, the migration process will return an error indicating the missing users.
 The special string `everyone@external`, representing all users, should not be included in the mapping.
@@ -79,10 +146,11 @@ to see the users that have access to any offers hosted within the model.
 Any users that you do not wish to map must still be included with a null value or empty
 string in place of the external user. This indicates that you are intentionally skipping this
 local user, for example:
-'''
+
+```yaml
 alice: alice@canonical.com
 bob: null # or ""
-'''
+```
 
 The mapping is consulted when Juju relations are periodically validated.
 
@@ -147,16 +215,13 @@ See Juju documentation for [more info](https://juju.is/docs/juju/user-permission
 
 This document briefly covers how to migrate a model between two controllers within JAAS.
 
-JIMM can have multiple controllers connected to it, where more than 1 controller has access to the same cloud.
-When a model is requested on such a cloud, JIMM will randomly select an appropriate controller.
-
-The below is useful if you want to move the model to a specific controller.
+The below is also useful if you want to move a model to a specific controller.
 
 ### Prerequisites
 
 - A basic understanding of Juju model migrations, see the [docs](https://juju.is/docs/juju/manage-models).
 - A running JAAS with with multiple controllers attached, see the {doc}`the tutorial <../tutorial/index>` for deploying JAAS.
-- Administrator permissions for JAAS, so our {ref}`add-a-juju-controller`.
+- Administrator permissions for JAAS. See more: {ref}`add-a-juju-controller`.
 
 Connecting multiple controllers to JAAS can be accomplished adding LXD controllers as described in {ref}`add-a-juju-controller`.
 
@@ -208,7 +273,7 @@ To inspect the reason for failure, consult the output from `juju debug-log` and 
 (control-user-access-to-a-model)=
 ## Control user access to a model
 
-To grant a (collection of) user(s) access to a model, add a `reader`, `writer`, or `administrator` permission between the user(s) and the model. For example:
+To grant a (collection of) user(s) access to a model, add a `reader`, `writer`, or `administrator` permission between the user(s) and the model.
 
 For example:
 
