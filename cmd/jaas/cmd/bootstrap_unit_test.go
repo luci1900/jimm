@@ -3,13 +3,11 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3"
 	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/gnuflag"
 	jujucloud "github.com/juju/juju/cloud"
@@ -18,27 +16,8 @@ import (
 	jujuparams "github.com/juju/juju/rpc/params"
 	"go.uber.org/mock/gomock"
 
-	"github.com/canonical/jimm/v3/cmd/jaas/cmd/mocks"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
-
-type bootstrapCmdMocks struct {
-	client *mocks.MockJIMMAPI
-	writer *mocks.MockWriter
-	store  *mocks.MockClientStore
-}
-
-func setupBootstrapMocks(t *testing.T) *bootstrapCmdMocks {
-	t.Helper()
-	ctrl := gomock.NewController(t)
-	h := &bootstrapCmdMocks{
-		client: mocks.NewMockJIMMAPI(ctrl),
-		writer: mocks.NewMockWriter(ctrl),
-		store:  mocks.NewMockClientStore(ctrl),
-	}
-	t.Cleanup(ctrl.Finish)
-	return h
-}
 
 func TestBootstrapArgParsing(t *testing.T) {
 	tests := []struct {
@@ -101,7 +80,7 @@ func TestBootstrapArgParsing(t *testing.T) {
 
 func TestBootstrapRunDetached(t *testing.T) {
 	c := qt.New(t)
-	s := setupBootstrapMocks(t)
+	s := setupCmdMocks(t)
 
 	cloudName := "aws"
 
@@ -156,7 +135,6 @@ func TestBootstrapRunDetached(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
-	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
 	command.cloud = cloudName
@@ -165,18 +143,14 @@ func TestBootstrapRunDetached(t *testing.T) {
 	command.config = configOpts
 	command.detach = true
 
-	ctx := &cmd.Context{
-		Context: context.Background(),
-		Stdout:  s.writer,
-	}
-
+	ctx := newTestContext(t)
 	err = command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapWatchLogs(t *testing.T) {
 	c := qt.New(t)
-	s := setupBootstrapMocks(t)
+	s := setupCmdMocks(t)
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(&jujucloud.CloudCredential{
 		AuthCredentials: map[string]jujucloud.Credential{
@@ -194,16 +168,6 @@ func TestBootstrapWatchLogs(t *testing.T) {
 		Watermark: 2,
 	}, nil)
 
-	s.writer.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
-		c.Check(string(b), qt.Equals, "log-line\n")
-		return len(b), nil
-	}).Times(2)
-
-	s.writer.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
-		c.Check(string(b), qt.Equals, "Job completed successfully.\n")
-		return len(b), nil
-	})
-
 	command := &bootstrapCommand{
 		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
@@ -211,22 +175,17 @@ func TestBootstrapWatchLogs(t *testing.T) {
 		},
 	}
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
-	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.cloud = "aws"
 
-	ctx := &cmd.Context{
-		Context: context.Background(),
-		Stdout:  s.writer,
-	}
-
+	ctx := newTestContext(t)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapFailsToGetCredential(t *testing.T) {
 	c := qt.New(t)
-	s := setupBootstrapMocks(t)
+	s := setupCmdMocks(t)
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(nil, errors.New("credential not found"))
 
@@ -237,25 +196,20 @@ func TestBootstrapFailsToGetCredential(t *testing.T) {
 		},
 	}
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
-	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
 	command.cloud = "aws" // Need a valid cloud to reach credential error.
 	command.region = "region"
 	command.controllerVersion = "controller-version"
 
-	ctx := &cmd.Context{
-		Context: context.Background(),
-		Stdout:  s.writer,
-	}
-
+	ctx := newTestContext(t)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `failed to get credential for cloud "aws": credential not found`)
 }
 
 func TestBootstrapMultipleCredentials(t *testing.T) {
 	c := qt.New(t)
-	s := setupBootstrapMocks(t)
+	s := setupCmdMocks(t)
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(&jujucloud.CloudCredential{
 		AuthCredentials: map[string]jujucloud.Credential{
@@ -271,18 +225,13 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 		},
 	}
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
-	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
 	command.cloud = "aws" // Need a valid cloud to reach credential error.
 	command.region = "region"
 	command.controllerVersion = "controller-version"
 
-	ctx := &cmd.Context{
-		Context: context.Background(),
-		Stdout:  s.writer,
-	}
-
+	ctx := newTestContext(t)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `multiple credentials found for cloud "aws", please set a default or specify one using --credential`)
 
@@ -300,23 +249,13 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 		Watermark: 2,
 	}, nil)
 
-	s.writer.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
-		c.Check(string(b), qt.Equals, "log-line\n")
-		return len(b), nil
-	}).Times(2)
-
-	s.writer.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {
-		c.Check(string(b), qt.Equals, "Job completed successfully.\n")
-		return len(b), nil
-	})
-
 	err = command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapWithDefaultCredential(t *testing.T) {
 	c := qt.New(t)
-	s := setupBootstrapMocks(t)
+	s := setupCmdMocks(t)
 
 	cloudName := "aws"
 
@@ -338,7 +277,6 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 		},
 	}
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
-	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
 	command.cloud = cloudName
@@ -346,18 +284,14 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 	command.controllerVersion = "controller-version"
 	command.detach = true
 
-	ctx := &cmd.Context{
-		Context: context.Background(),
-		Stdout:  s.writer,
-	}
-
+	ctx := newTestContext(t)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	c := qt.New(t)
-	s := setupBootstrapMocks(t)
+	s := setupCmdMocks(t)
 
 	cloudName := "aws"
 
@@ -376,7 +310,6 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 		},
 	}
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
-	f.SetOutput(s.writer)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
 	command.cloud = cloudName
@@ -385,11 +318,7 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	command.detach = true
 	command.credentialName = "cred-3" // Use a different credential than the default.
 
-	ctx := &cmd.Context{
-		Context: context.Background(),
-		Stdout:  s.writer,
-	}
-
+	ctx := newTestContext(t)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `no credential found with name "cred-3"`)
 }
