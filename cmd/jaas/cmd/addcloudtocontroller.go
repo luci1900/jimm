@@ -8,19 +8,15 @@ import (
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	"github.com/juju/juju/cloud"
 	jujucmd "github.com/juju/juju/cmd"
-	jujucmdcloud "github.com/juju/juju/cmd/juju/cloud"
 	jujucmdcommon "github.com/juju/juju/cmd/juju/common"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 	"github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	jimmjujuapi "github.com/canonical/jimm/v3/internal/jujuapi"
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -42,8 +38,8 @@ is already known and will error otherwise.
 // controller in JIMM.
 func NewAddCloudToControllerCommand() cmd.Command {
 	cmd := &addCloudToControllerCommand{
-		store:           jujuclient.NewFileClientStore(),
 		cloudByNameFunc: jujucmdcommon.CloudByName,
+		jimmAPIFunc:     NewClient,
 	}
 
 	return modelcmd.WrapBase(cmd)
@@ -68,9 +64,8 @@ type addCloudToControllerCommand struct {
 	// compatible with the cloud on which the controller is running.
 	force bool
 
+	jimmAPIFunc     APIClientFunc
 	cloudByNameFunc func(string) (*cloud.Cloud, error)
-	store           jujuclient.ClientStore
-	dialOpts        *jujuapi.DialOpts
 }
 
 // Info implements Command.Info.
@@ -93,7 +88,7 @@ func (c *addCloudToControllerCommand) SetFlags(f *gnuflag.FlagSet) {
 	})
 
 	f.BoolVar(&c.force, "force", false, "Forces the cloud to be added to the controller")
-	f.StringVar(&c.cloudDefinitionFile, "cloud", "", "The path to the cloud's definition file.")
+	f.StringVar(&c.cloudDefinitionFile, "cloud", "", "The path to the cloud's definition file. The cloud name must be present in the file.")
 }
 
 // Init implements the cmd.Command interface.
@@ -121,7 +116,7 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 	var newCloud *cloud.Cloud
 	var err error
 	if c.cloudDefinitionFile != "" {
-		newCloud, err = c.readCloudFromFile(ctxt)
+		newCloud, err = c.readCloudFromFile()
 		if err != nil {
 			return errors.E(err, fmt.Sprintf("error reading cloud from file: %v", err))
 		}
@@ -139,80 +134,44 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 		newCloud.Regions = []cloud.Region{{Name: cloud.DefaultCloudRegion}}
 	}
 
-	err = c.addCloudToController(ctxt, newCloud)
+	jimmAPI, err := c.jimmAPIFunc(nil)
 	if err != nil {
-		return errors.E(err, fmt.Sprintf("error adding cloud to controller: %v", err))
+		return errors.E(err, "could not create JIMM API client")
 	}
+	defer jimmAPI.Close()
 
-	return nil
-}
-
-func (c *addCloudToControllerCommand) addCloudToController(ctxt *cmd.Context, cloud *cloud.Cloud) error {
-	currentController, err := c.store.CurrentController()
-	if err != nil {
-		return errors.E(err, "could not determine the current controller")
-	}
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
-	if err != nil {
-		return err
-	}
-	client := api.NewClient(apiCaller)
-
-	params := &apiparams.AddCloudToControllerRequest{
+	if err := jimmAPI.AddCloudToController(&apiparams.AddCloudToControllerRequest{
 		ControllerName: c.dstControllerName,
 		AddCloudArgs: params.AddCloudArgs{
 			Name:  c.cloudName,
-			Cloud: jimmjujuapi.CloudToParams(*cloud),
+			Cloud: jimmjujuapi.CloudToParams(*newCloud),
 			Force: &c.force,
 		},
-	}
-
-	err = client.AddCloudToController(params)
-	if err != nil {
+	}); err != nil {
 		return errors.E(err)
 	}
-
 	ctxt.Infof("Cloud %q added to controller %q.", c.cloudName, c.dstControllerName)
+
 	return nil
 }
 
-func (c *addCloudToControllerCommand) readCloudFromFile(ctxt *cmd.Context) (*cloud.Cloud, error) {
-	r := &jujucmdcloud.CloudFileReader{
-		CloudMetadataStore: &cloudToCommandAdapter{},
-		CloudName:          c.cloudName,
-	}
-	newCloud, err := r.ReadCloudFromFile(c.cloudDefinitionFile, ctxt)
+func (c *addCloudToControllerCommand) readCloudFromFile() (*cloud.Cloud, error) {
+	cloudDefinitionData, err := os.ReadFile(c.cloudDefinitionFile)
 	if err != nil {
 		return nil, errors.E(err)
 	}
-	return newCloud, nil
-}
+	specifiedClouds, err := cloud.ParseCloudMetadata(cloudDefinitionData)
+	if err != nil {
+		return nil, errors.E(err)
+	}
+	if len(specifiedClouds) == 0 {
+		return nil, errors.E("no clouds found in parsed yaml, please validate yaml keys")
+	}
+	var ok bool
+	foundCloud, ok := specifiedClouds[c.cloudName]
+	if !ok {
+		return nil, errors.E(fmt.Sprintf("cloud %q not found in file %q", c.cloudName, c.cloudDefinitionFile))
+	}
 
-type cloudToCommandAdapter struct {
-	jujucmdcloud.CloudMetadataStore
-}
-
-// ReadCloudData implements CloudMetadataStore.ReadCloudData.
-func (cloudToCommandAdapter) ReadCloudData(path string) ([]byte, error) {
-	return os.ReadFile(path)
-}
-
-// ParseOneCloud implements CloudMetadataStore.ParseOneCloud.
-func (cloudToCommandAdapter) ParseOneCloud(data []byte) (cloud.Cloud, error) {
-	return cloud.ParseOneCloud(data)
-}
-
-// PublicCloudMetadata implements CloudMetadataStore.PublicCloudMetadata.
-func (cloudToCommandAdapter) PublicCloudMetadata(searchPaths ...string) (map[string]cloud.Cloud, bool, error) {
-	return cloud.PublicCloudMetadata(searchPaths...)
-}
-
-// PersonalCloudMetadata implements CloudMetadataStore.PersonalCloudMetadata.
-func (cloudToCommandAdapter) PersonalCloudMetadata() (map[string]cloud.Cloud, error) {
-	return cloud.PersonalCloudMetadata()
-}
-
-// WritePersonalCloudMetadata implements CloudMetadataStore.WritePersonalCloudMetadata.
-func (cloudToCommandAdapter) WritePersonalCloudMetadata(cloudsMap map[string]cloud.Cloud) error {
-	return cloud.WritePersonalCloudMetadata(cloudsMap)
+	return &foundCloud, nil
 }
