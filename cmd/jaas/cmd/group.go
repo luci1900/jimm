@@ -53,6 +53,7 @@ func NewAddGroupCommand() cmd.Command {
 	cmd := &addGroupCommand{
 		store: jujuclient.NewFileClientStore(),
 	}
+	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -62,8 +63,9 @@ type addGroupCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
-	dialOpts *jujuapi.DialOpts
+	store       jujuclient.ClientStore
+	dialOpts    *jujuapi.DialOpts
+	jimmAPIFunc func() (JIMMAPI, error)
 
 	name string
 }
@@ -102,17 +104,15 @@ func (c *addGroupCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *addGroupCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
-	if err != nil {
-		return errors.E(err, "could not determine controller")
+	if c.jimmAPIFunc == nil {
+		c.jimmAPIFunc = c.newClient
 	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	client, err := c.jimmAPIFunc()
 	if err != nil {
-		return err
+		return errors.E(fmt.Errorf("could not create JIMM client: %v", err))
 	}
+	defer client.Close()
 
-	client := api.NewClient(apiCaller)
 	resp, err := client.AddGroup(&apiparams.AddGroupRequest{
 		Name: c.name,
 	})
@@ -127,11 +127,26 @@ func (c *addGroupCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
+func (c *addGroupCommand) newClient() (JIMMAPI, error) {
+	currentController, err := c.store.CurrentController()
+	if err != nil {
+		return nil, errors.E(fmt.Errorf("could not determine controller: %v", err))
+	}
+
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.NewClient(apiCaller), nil
+}
+
 // NewRenameGroupCommand returns a command to rename a group.
 func NewRenameGroupCommand() cmd.Command {
 	cmd := &renameGroupCommand{
 		store: jujuclient.NewFileClientStore(),
 	}
+	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -140,8 +155,9 @@ func NewRenameGroupCommand() cmd.Command {
 type renameGroupCommand struct {
 	modelcmd.ControllerCommandBase
 
-	store    jujuclient.ClientStore
-	dialOpts *jujuapi.DialOpts
+	store       jujuclient.ClientStore
+	dialOpts    *jujuapi.DialOpts
+	jimmAPIFunc func() (JIMMAPI, error)
 
 	name    string
 	newName string
@@ -172,22 +188,20 @@ func (c *renameGroupCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *renameGroupCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
-	if err != nil {
-		return errors.E(err, "could not determine controller")
+	if c.jimmAPIFunc == nil {
+		c.jimmAPIFunc = c.newClient
 	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	client, err := c.jimmAPIFunc()
 	if err != nil {
-		return err
+		return errors.E("could not create JIMM client: %v", err)
 	}
+	defer client.Close()
 
 	params := apiparams.RenameGroupRequest{
 		Name:    c.name,
 		NewName: c.newName,
 	}
 
-	client := api.NewClient(apiCaller)
 	err = client.RenameGroup(&params)
 	if err != nil {
 		return errors.E(err)
@@ -196,11 +210,26 @@ func (c *renameGroupCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
+func (c *renameGroupCommand) newClient() (JIMMAPI, error) {
+	currentController, err := c.store.CurrentController()
+	if err != nil {
+		return nil, errors.E(fmt.Errorf("could not determine controller: %v", err))
+	}
+
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.NewClient(apiCaller), nil
+}
+
 // NewRemoveGroupCommand returns a command to Remove a group.
 func NewRemoveGroupCommand() cmd.Command {
 	cmd := &removeGroupCommand{
 		store: jujuclient.NewFileClientStore(),
 	}
+	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -210,8 +239,9 @@ type removeGroupCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
-	dialOpts *jujuapi.DialOpts
+	store       jujuclient.ClientStore
+	dialOpts    *jujuapi.DialOpts
+	jimmAPIFunc func() (JIMMAPI, error)
 
 	name  string
 	force bool
@@ -246,16 +276,11 @@ func (c *removeGroupCommand) SetFlags(f *gnuflag.FlagSet) {
 	c.out.AddFlags(f, "smart", map[string]cmd.Formatter{
 		"smart": cmd.FormatSmart,
 	})
-	f.BoolVar(&c.force, "y", false, "delete group without prompt")
+	f.BoolVar(&c.force, "force", false, "delete group without prompt")
 }
 
 // Run implements Command.Run.
 func (c *removeGroupCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
-	if err != nil {
-		return errors.E(err, "could not determine controller")
-	}
-
 	if !c.force {
 		reader := bufio.NewReader(ctxt.Stdin)
 		// Using Fprintf over c.out.write to avoid printing a new line.
@@ -272,17 +297,20 @@ func (c *removeGroupCommand) Run(ctxt *cmd.Context) error {
 			return nil
 		}
 	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
-	if err != nil {
-		return err
+	if c.jimmAPIFunc == nil {
+		c.jimmAPIFunc = c.newClient
 	}
+
+	client, err := c.jimmAPIFunc()
+	if err != nil {
+		return errors.E(fmt.Errorf("could not create JIMM client: %v", err))
+	}
+	defer client.Close()
 
 	params := apiparams.RemoveGroupRequest{
 		Name: c.name,
 	}
 
-	client := api.NewClient(apiCaller)
 	err = client.RemoveGroup(&params)
 	if err != nil {
 		return errors.E(err)
@@ -291,11 +319,26 @@ func (c *removeGroupCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
+func (c *removeGroupCommand) newClient() (JIMMAPI, error) {
+	currentController, err := c.store.CurrentController()
+	if err != nil {
+		return nil, errors.E(fmt.Errorf("could not determine controller: %v", err))
+	}
+
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.NewClient(apiCaller), nil
+}
+
 // NewListGroupsCommand returns a command to list all groups.
 func NewListGroupsCommand() cmd.Command {
 	cmd := &listGroupsCommand{
 		store: jujuclient.NewFileClientStore(),
 	}
+	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -305,8 +348,9 @@ type listGroupsCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
-	dialOpts *jujuapi.DialOpts
+	store       jujuclient.ClientStore
+	dialOpts    *jujuapi.DialOpts
+	jimmAPIFunc func() (JIMMAPI, error)
 
 	limit  int
 	offset int
@@ -344,17 +388,15 @@ func (c *listGroupsCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listGroupsCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
-	if err != nil {
-		return errors.E(err, "could not determine controller")
+	if c.jimmAPIFunc == nil {
+		c.jimmAPIFunc = c.newClient
 	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	client, err := c.jimmAPIFunc()
 	if err != nil {
-		return err
+		return errors.E("could not create JIMM client: %v", err)
 	}
+	defer client.Close()
 
-	client := api.NewClient(apiCaller)
 	req := apiparams.ListGroupsRequest{Limit: c.limit, Offset: c.offset}
 	groups, err := client.ListGroups(&req)
 	if err != nil {
@@ -367,4 +409,18 @@ func (c *listGroupsCommand) Run(ctxt *cmd.Context) error {
 	}
 
 	return nil
+}
+
+func (c *listGroupsCommand) newClient() (JIMMAPI, error) {
+	currentController, err := c.store.CurrentController()
+	if err != nil {
+		return nil, errors.E(fmt.Errorf("could not determine controller: %v", err))
+	}
+
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.NewClient(apiCaller), nil
 }

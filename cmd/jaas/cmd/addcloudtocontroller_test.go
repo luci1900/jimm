@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/juju/api"
 	"github.com/juju/juju/cloud"
 	"github.com/juju/juju/rpc/params"
 
@@ -45,7 +44,7 @@ func TestAddCloudToControllerRun(t *testing.T) {
 		cloudByNameFunc: func(cloudName string) (*cloud.Cloud, error) {
 			return expectedCloud, nil
 		},
-		jimmAPIFunc: func(dialOpts *api.DialOpts) (JIMMAPI, error) {
+		jimmAPIFunc: func() (JIMMAPI, error) {
 			return cmdMocks.client, nil
 		},
 	}
@@ -106,7 +105,7 @@ clouds:
 	cmd := addCloudToControllerCommand{
 		cloudName:           "test-maas-cloud",
 		cloudDefinitionFile: cloudFile,
-		jimmAPIFunc: func(dialOpts *api.DialOpts) (JIMMAPI, error) {
+		jimmAPIFunc: func() (JIMMAPI, error) {
 			return cmdMocks.client, nil
 		},
 	}
