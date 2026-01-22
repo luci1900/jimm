@@ -23,8 +23,7 @@ type AccessResult = accessResult
 
 func NewListControllersCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &listControllersCommand{
-		store:    store,
-		dialOpts: cmdtest.TestDialOpts(lp),
+		store: store,
 	}
 
 	return modelcmd.WrapBase(cmd)
