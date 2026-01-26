@@ -1102,3 +1102,193 @@ func TestListMigrationTargets(t *testing.T) {
 		})
 	}
 }
+
+const testModelControllerInfoEnv = `clouds:
+- name: test-cloud
+  type: test
+  regions:
+  - name: test-cloud-region
+cloud-credentials:
+- name: cred-1
+  owner: alice@canonical.com
+  cloud: test-cloud
+controllers:
+- name: controller-1
+  uuid: 00000001-0000-0000-0000-000000000001
+  cloud: test-cloud
+  region: test-cloud-region
+- name: controller-2
+  uuid: 00000001-0000-0000-0000-000000000002
+  cloud: test-cloud
+  region: test-cloud-region
+models:
+- name: model-1
+  uuid: 00000002-0000-0000-0000-000000000001
+  controller: controller-1
+  cloud: test-cloud
+  region: test-cloud-region
+  cloud-credential: cred-1
+  owner: alice@canonical.com
+  life: alive
+  users:
+  - user: alice@canonical.com
+    access: admin
+- name: model-2
+  uuid: 00000002-0000-0000-0000-000000000002
+  controller: controller-2
+  cloud: test-cloud
+  region: test-cloud-region
+  cloud-credential: cred-1
+  owner: bob@canonical.com
+  life: alive
+  users:
+  - user: bob@canonical.com
+    access: admin
+users:
+- username: alice@canonical.com
+  controller-access: superuser
+- username: bob@canonical.com
+  controller-access: login
+`
+
+func TestModelControllerInfo(t *testing.T) {
+	c := qt.New(t)
+
+	ctx := context.Background()
+
+	j := newTestJujuManager(c, nil)
+
+	env := jimmtest.ParseEnvironment(c, testModelControllerInfoEnv)
+	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
+
+	tests := []struct {
+		about         string
+		user          dbmodel.Identity
+		jimmAdmin     bool
+		useModelTag   bool
+		modelTag      string
+		ownerName     string
+		modelName     string
+		expectedInfo  *params.ModelControllerInfo
+		expectedError string
+	}{{
+		about:       "jimm admin can get model controller info by model uuid",
+		user:        env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:   true,
+		useModelTag: true,
+		modelTag:    "00000002-0000-0000-0000-000000000001",
+		expectedInfo: &params.ModelControllerInfo{
+			ModelName:      "model-1",
+			ModelUUID:      "00000002-0000-0000-0000-000000000001",
+			ControllerName: "controller-1",
+			ControllerUUID: "00000001-0000-0000-0000-000000000001",
+		},
+	}, {
+		about:       "jimm admin can get model controller info for different controller by model uuid",
+		user:        env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:   true,
+		useModelTag: true,
+		modelTag:    "00000002-0000-0000-0000-000000000002",
+		expectedInfo: &params.ModelControllerInfo{
+			ModelName:      "model-2",
+			ModelUUID:      "00000002-0000-0000-0000-000000000002",
+			ControllerName: "controller-2",
+			ControllerUUID: "00000001-0000-0000-0000-000000000002",
+		},
+	}, {
+		about:         "non-admin user cannot get model controller info by model uuid",
+		user:          env.User("bob@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:     false,
+		useModelTag:   true,
+		modelTag:      "00000002-0000-0000-0000-000000000001",
+		expectedError: "unauthorized",
+	}, {
+		about:         "jimm admin fails for non-existent model by model uuid",
+		user:          env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:     true,
+		useModelTag:   true,
+		modelTag:      "00000002-0000-0000-0000-000000000999",
+		expectedError: "model not found",
+	}, {
+		about:       "jimm admin can get model controller info by owner and name",
+		user:        env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:   true,
+		useModelTag: false,
+		ownerName:   "alice@canonical.com",
+		modelName:   "model-1",
+		expectedInfo: &params.ModelControllerInfo{
+			ModelName:      "model-1",
+			ModelUUID:      "00000002-0000-0000-0000-000000000001",
+			ControllerName: "controller-1",
+			ControllerUUID: "00000001-0000-0000-0000-000000000001",
+		},
+	}, {
+		about:       "jimm admin can get model controller info for different model by owner and name",
+		user:        env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:   true,
+		useModelTag: false,
+		ownerName:   "bob@canonical.com",
+		modelName:   "model-2",
+		expectedInfo: &params.ModelControllerInfo{
+			ModelName:      "model-2",
+			ModelUUID:      "00000002-0000-0000-0000-000000000002",
+			ControllerName: "controller-2",
+			ControllerUUID: "00000001-0000-0000-0000-000000000002",
+		},
+	}, {
+		about:         "non-admin user cannot get model controller info by owner and name",
+		user:          env.User("bob@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:     false,
+		useModelTag:   false,
+		ownerName:     "alice@canonical.com",
+		modelName:     "model-1",
+		expectedError: "unauthorized",
+	}, {
+		about:         "jimm admin fails for non-existent model by owner and name",
+		user:          env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:     true,
+		useModelTag:   false,
+		ownerName:     "alice@canonical.com",
+		modelName:     "non-existent-model",
+		expectedError: "model not found",
+	}, {
+		about:         "jimm admin fails when neither model uuid nor owner/name provided",
+		user:          env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:     true,
+		useModelTag:   false,
+		ownerName:     "",
+		modelName:     "",
+		expectedError: "either model uuid or both model name and owner must be provided",
+	}, {
+		about:         "jimm admin fails when only owner name provided",
+		user:          env.User("alice@canonical.com").DBObject(c, j.Database),
+		jimmAdmin:     true,
+		useModelTag:   false,
+		ownerName:     "alice@canonical.com",
+		modelName:     "",
+		expectedError: "either model uuid or both model name and owner must be provided",
+	}}
+
+	for _, test := range tests {
+		c.Run(test.about, func(c *qt.C) {
+			user := openfga.NewUser(&test.user, j.OpenFGAClient)
+			user.JimmAdmin = test.jimmAdmin
+
+			var info *params.ModelControllerInfo
+			var err error
+			if test.useModelTag {
+				info, err = j.ModelControllerInfo(ctx, user, juju.WithModelUUID(test.modelTag))
+			} else {
+				info, err = j.ModelControllerInfo(ctx, user, juju.WithOwnerAndModelName(test.ownerName, test.modelName))
+			}
+
+			if test.expectedError != "" {
+				c.Assert(err, qt.ErrorMatches, test.expectedError)
+				c.Assert(info, qt.IsNil)
+			} else {
+				c.Assert(err, qt.IsNil)
+				c.Assert(info, qt.DeepEquals, test.expectedInfo)
+			}
+		})
+	}
+}

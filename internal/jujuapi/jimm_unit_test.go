@@ -428,3 +428,140 @@ func TestAuditLogAPIParamsConversion(t *testing.T) {
 		}
 	}
 }
+
+func (s *jimmUnitTestSuite) TestModelControllerInfo(c *gc.C) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		about          string
+		admin          bool
+		modelQualifier string
+		jujuManager    func(*gc.C) jimm.JujuManager
+		expectedInfo   apiparams.ModelControllerInfo
+		expectedError  string
+	}{{
+		about:          "non-admin user with model uuid",
+		admin:          false,
+		modelQualifier: "12345678-1234-1234-1234-123456789abc",
+		jujuManager: func(c *gc.C) jimm.JujuManager {
+			return &mocks.JujuManager{}
+		},
+		expectedError: "unauthorized",
+	}, {
+		about:          "invalid model uuid",
+		admin:          true,
+		modelQualifier: "invalid-model-uuid",
+		jujuManager: func(c *gc.C) jimm.JujuManager {
+			return &mocks.JujuManager{}
+		},
+		expectedError: `invalid model UUID: invalid UUID length: 18`,
+	}, {
+		about:          "model not found with model tag",
+		admin:          true,
+		modelQualifier: "12345678-1234-1234-1234-123456789abc",
+		jujuManager: func(c *gc.C) jimm.JujuManager {
+			return &mocks.JujuManager{
+				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
+					return nil, errors.E("model not found")
+				},
+			}
+		},
+		expectedError: "model not found",
+	}, {
+		about:          "success with model tag",
+		admin:          true,
+		modelQualifier: "12345678-1234-1234-1234-123456789abc",
+		jujuManager: func(c *gc.C) jimm.JujuManager {
+			return &mocks.JujuManager{
+				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
+					c.Assert(user.JimmAdmin, gc.Equals, true)
+					return &apiparams.ModelControllerInfo{
+						ModelName:      "test-model",
+						ModelUUID:      "12345678-1234-1234-1234-123456789abc",
+						ControllerName: "test-controller",
+						ControllerUUID: "87654321-4321-4321-4321-cba987654321",
+					}, nil
+				},
+			}
+		},
+		expectedInfo: apiparams.ModelControllerInfo{
+			ModelName:      "test-model",
+			ModelUUID:      "12345678-1234-1234-1234-123456789abc",
+			ControllerName: "test-controller",
+			ControllerUUID: "87654321-4321-4321-4321-cba987654321",
+		},
+	}, {
+		about:          "success with owner and model name",
+		admin:          true,
+		modelQualifier: "alice@canonical.com/test-model",
+		jujuManager: func(c *gc.C) jimm.JujuManager {
+			return &mocks.JujuManager{
+				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
+					c.Assert(user.JimmAdmin, gc.Equals, true)
+					return &apiparams.ModelControllerInfo{
+						ModelName:      "test-model",
+						ModelUUID:      "12345678-1234-1234-1234-123456789abc",
+						ControllerName: "test-controller",
+						ControllerUUID: "87654321-4321-4321-4321-cba987654321",
+					}, nil
+				},
+			}
+		},
+		expectedInfo: apiparams.ModelControllerInfo{
+			ModelName:      "test-model",
+			ModelUUID:      "12345678-1234-1234-1234-123456789abc",
+			ControllerName: "test-controller",
+			ControllerUUID: "87654321-4321-4321-4321-cba987654321",
+		},
+	}, {
+		about:          "error with a partial model qualifier (only owner provided)",
+		admin:          true,
+		modelQualifier: "alice@canonical.com/",
+		jujuManager:    func(c *gc.C) jimm.JujuManager { return &mocks.JujuManager{} },
+		expectedError:  `invalid model UUID: invalid UUID length: 20`,
+	}, {
+		about:          "error with a partial model qualifier (only model name provided)",
+		admin:          true,
+		modelQualifier: "/test-model",
+		jujuManager:    func(c *gc.C) jimm.JujuManager { return &mocks.JujuManager{} },
+		expectedError:  `invalid model UUID: invalid UUID length: 11`,
+	}, {
+		about:          "non-admin user with owner and model name",
+		admin:          false,
+		modelQualifier: "alice@canonical.com/test-model",
+		jujuManager:    func(c *gc.C) jimm.JujuManager { return &mocks.JujuManager{} },
+		expectedError:  "unauthorized",
+	}, {
+		about:          "model not found with owner and model name",
+		admin:          true,
+		modelQualifier: "bob@canonical.com/non-existent",
+		jujuManager: func(c *gc.C) jimm.JujuManager {
+			return &mocks.JujuManager{
+				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
+					return nil, errors.E("model not found")
+				},
+			}
+		},
+		expectedError: "model not found",
+	}}
+
+	for _, test := range testCases {
+		c.Log(test.about)
+		jimm := &jimmtest.JIMM{
+			JujuManager_: func() jimm.JujuManager {
+				return test.jujuManager(c)
+			},
+		}
+		root := newTestControllerRoot(jimm, "alice@canonical.com", test.admin)
+
+		req := apiparams.ModelControllerInfoRequest{ModelQualifier: test.modelQualifier}
+		info, err := root.ModelControllerInfo(ctx, req)
+
+		if test.expectedError != "" {
+			c.Assert(err, gc.ErrorMatches, test.expectedError)
+		} else {
+			c.Assert(err, gc.IsNil)
+			c.Assert(info, gc.DeepEquals, test.expectedInfo)
+		}
+	}
+}

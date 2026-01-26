@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"io"
-	"testing"
 
 	qt "github.com/frankban/quicktest"
 	jujucmd "github.com/juju/cmd/v3"
@@ -22,21 +21,21 @@ type cmdMocks struct {
 	store  *mocks.MockClientStore
 }
 
-func setupCmdMocks(t *testing.T) *cmdMocks {
-	t.Helper()
-	ctrl := gomock.NewController(t)
+func setupCmdMocks(c *qt.C) *cmdMocks {
+	c.Helper()
+	ctrl := gomock.NewController(c)
 	h := &cmdMocks{
 		client: mocks.NewMockJIMMAPI(ctrl),
 		store:  mocks.NewMockClientStore(ctrl),
 	}
-	t.Cleanup(ctrl.Finish)
+	c.Cleanup(ctrl.Finish)
 	return h
 }
 
-func newTestContext(t *testing.T) *jujucmd.Context {
+func newTestContext(c *qt.C) *jujucmd.Context {
 	return &jujucmd.Context{
-		Context: t.Context(),
-		Dir:     t.TempDir(),
+		Context: c.Context(),
+		Dir:     c.TempDir(),
 		Stdin:   &bytes.Buffer{},
 		Stdout:  &bytes.Buffer{},
 		Stderr:  &bytes.Buffer{},

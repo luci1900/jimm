@@ -15,7 +15,7 @@ import (
 
 func TestCrossModelQueryRun(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	expectedReq := &apiparams.CrossModelQueryRequest{
 		Type:  "jq",
@@ -41,7 +41,7 @@ func TestCrossModelQueryRun(t *testing.T) {
 
 	initCommand(c, command, ".applications")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
@@ -64,7 +64,7 @@ func TestCrossModelQueryRunClientError(t *testing.T) {
 
 	initCommand(c, command, ".applications")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, "could not create JIMM client: boom")
 }

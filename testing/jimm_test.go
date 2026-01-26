@@ -5,6 +5,7 @@ package testing
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"slices"
 	"time"
 
@@ -1176,4 +1177,29 @@ func (s *jimmSuite) TestCreateModelOnTargetController(c *gc.C) {
 	ct, err := names.ParseCloudTag(cloudTag)
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(mi.CloudTag, gc.Equals, names.NewCloudTag(ct.Id()).String())
+}
+
+func (s *jimmSuite) TestModelControllerInfo(c *gc.C) {
+	conn := s.Open(c, nil, "alice", nil)
+	defer conn.Close()
+
+	client := api.NewClient(conn)
+
+	modelControllerInfo, err := client.ModelControllerInfo(s.Model.UUID.String)
+	c.Assert(err, gc.IsNil)
+	c.Assert(modelControllerInfo, gc.DeepEquals, &apiparams.ModelControllerInfo{
+		ModelName:      s.Model.Name,
+		ModelUUID:      s.Model.UUID.String,
+		ControllerName: s.Model.Controller.Name,
+		ControllerUUID: s.Model.Controller.UUID,
+	})
+
+	modelControllerInfo, err = client.ModelControllerInfo(fmt.Sprintf("%s/%s", s.Model.OwnerIdentityName, s.Model.Name))
+	c.Assert(err, gc.IsNil)
+	c.Assert(modelControllerInfo, gc.DeepEquals, &apiparams.ModelControllerInfo{
+		ModelName:      s.Model.Name,
+		ModelUUID:      s.Model.UUID.String,
+		ControllerName: s.Model.Controller.Name,
+		ControllerUUID: s.Model.Controller.UUID,
+	})
 }

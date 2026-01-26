@@ -62,7 +62,7 @@ func TestArgParsing(t *testing.T) {
 func TestRunDetached(t *testing.T) {
 	c := qt.New(t)
 
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	s.client.EXPECT().StartDestroyControllerJob(gomock.Any()).DoAndReturn(func(bsp *params.DestroyControllerRequest) (*params.StartJobResponse, error) {
 		expected := &params.DestroyControllerRequest{
@@ -85,7 +85,7 @@ func TestRunDetached(t *testing.T) {
 
 	initCommand(c, command, "controller-name", "--detach", "--no-prompt")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
@@ -93,7 +93,7 @@ func TestRunDetached(t *testing.T) {
 func TestWatchLogs(t *testing.T) {
 	c := qt.New(t)
 
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	s.client.EXPECT().StartDestroyControllerJob(gomock.Any()).Return(&params.StartJobResponse{
 		JobID: "test-job-id",
@@ -115,7 +115,7 @@ func TestWatchLogs(t *testing.T) {
 
 	initCommand(c, command, "controller-name", "--no-prompt")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 

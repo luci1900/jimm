@@ -15,7 +15,7 @@ import (
 
 func TestListControllersSuperuser(t *testing.T) {
 	c := qt.New(t)
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	expectedControllers := []params.ControllerInfo{
 		{
@@ -62,7 +62,7 @@ func TestListControllersSuperuser(t *testing.T) {
 
 	initCommand(c, command)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
@@ -76,7 +76,7 @@ func TestListControllersSuperuser(t *testing.T) {
 
 func TestListControllersEmpty(t *testing.T) {
 	c := qt.New(t)
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().ListControllers().Return([]params.ControllerInfo{}, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
@@ -90,7 +90,7 @@ func TestListControllersEmpty(t *testing.T) {
 
 	initCommand(c, command)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)

@@ -14,7 +14,7 @@ import (
 
 func TestJobStop(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	jobId := "test-job-id"
 	s.client.EXPECT().StopJob(gomock.Any()).Return(nil)
@@ -27,7 +27,7 @@ func TestJobStop(t *testing.T) {
 
 	initCommand(c, command, jobId)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
@@ -37,7 +37,7 @@ func TestJobStop(t *testing.T) {
 
 func TestJobStopError(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	jobId := "test-job-id"
 	s.client.EXPECT().StopJob(gomock.Any()).Return(errors.New("an error"))
@@ -51,7 +51,7 @@ func TestJobStopError(t *testing.T) {
 
 	initCommand(c, command, jobId)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, "failed to stop job: an error")
 }

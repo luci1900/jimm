@@ -16,7 +16,7 @@ import (
 
 func TestAddGroup(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	// Setup expectations
 	expectedGroup := params.Group{
@@ -39,7 +39,7 @@ func TestAddGroup(t *testing.T) {
 	command.SetClientStore(s.store)
 	initCommand(c, command, "test-group")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
@@ -52,7 +52,7 @@ func TestAddGroup(t *testing.T) {
 
 func TestAddGroupAPIError(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	expectedErr := errors.New("failed to connect")
 
@@ -65,14 +65,14 @@ func TestAddGroupAPIError(t *testing.T) {
 	command.SetClientStore(s.store)
 	initCommand(c, command, "test-group")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNotNil)
 }
 
 func TestRenameGroup(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	// Setup expectations
 	s.client.EXPECT().RenameGroup(gomock.Any()).DoAndReturn(func(rgr *params.RenameGroupRequest) error {
@@ -93,14 +93,14 @@ func TestRenameGroup(t *testing.T) {
 	command.SetClientStore(s.store)
 	initCommand(c, command, "old-group", "new-group")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestRemoveGroup(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	// Setup expectations
 	s.client.EXPECT().RemoveGroup(gomock.Any()).DoAndReturn(func(rgr *params.RemoveGroupRequest) error {
@@ -117,7 +117,7 @@ func TestRemoveGroup(t *testing.T) {
 	}
 
 	initCommand(c, command, "test-group")
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	ctx.Stdin = bytes.NewBufferString("y\n")
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
@@ -125,7 +125,7 @@ func TestRemoveGroup(t *testing.T) {
 
 func TestRemoveGroupForce(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	// Setup expectations
 	s.client.EXPECT().RemoveGroup(gomock.Any()).DoAndReturn(func(rgr *params.RemoveGroupRequest) error {
@@ -143,14 +143,14 @@ func TestRemoveGroupForce(t *testing.T) {
 
 	initCommand(c, command, "test-group", "--force")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestListGroups(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	// Setup expectations
 	s.client.EXPECT().ListGroups(gomock.Any()).Return([]params.Group{
@@ -167,7 +167,7 @@ func TestListGroups(t *testing.T) {
 	command.SetClientStore(s.store)
 	initCommand(c, command)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }

@@ -15,7 +15,7 @@ import (
 func TestGrantAuditLogAccessRun_Success(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
 		GrantAuditLogAccess(&apiparams.AuditLogAccessRequest{UserTag: "user-bob@canonical.com"}).
@@ -31,14 +31,14 @@ func TestGrantAuditLogAccessRun_Success(t *testing.T) {
 		},
 	}
 
-	err := command.Run(newTestContext(t))
+	err := command.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
 }
 
 func TestGrantAuditLogAccessRun_APIError(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
 		GrantAuditLogAccess(gomock.Any()).
@@ -54,7 +54,7 @@ func TestGrantAuditLogAccessRun_APIError(t *testing.T) {
 		},
 	}
 
-	err := command.Run(newTestContext(t))
+	err := command.Run(newTestContext(c))
 	c.Assert(err, qt.Not(qt.IsNil))
 }
 

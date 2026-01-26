@@ -1283,6 +1283,41 @@ Sets controller deprecated status.
 Sets the deprecated status of a controller.
 
 
+(command-jaas-show-model)=
+# jaas show-model
+
+## Summary
+Displays information about a model and its controller
+
+## Usage
+```jaas show-model [options] <model>```
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | tabular | Specify output format (json&#x7c;tabular&#x7c;yaml) |
+| `-o`, `--output` |  | Specify an output file |
+
+## Examples
+
+    jaas show-model 2cb433a6-04eb-4ec4-9567-90426d20a004
+    jaas show-model alice@canonical.com/my-model
+    jaas show-model alice@canonical.com/my-model --format json
+    jaas show-model alice@canonical.com/my-model --format yaml
+
+
+## Details
+
+Displays information about which controller the specified model is running on.
+
+The model can be specified using either:
+  - Model UUID (e.g., "2cb433a6-04eb-4ec4-9567-90426d20a004")
+  - Owner and model name (e.g., "alice@canonical.com/my-model")
+
+The output includes the model name, model UUID, controller name, and controller UUID.
+
+
 (command-jaas-unregister-controller)=
 # jaas unregister-controller
 

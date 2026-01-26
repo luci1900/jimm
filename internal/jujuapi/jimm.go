@@ -72,6 +72,7 @@ func init() {
 		startDestroyControllerJob := rpc.Method(r.StartDestroyControllerJob)
 		upgradeToMethod := rpc.Method(r.UpgradeTo)
 		listUserCloudsMethod := rpc.Method(r.ListUserClouds)
+		modelControllerInfoMethod := rpc.Method(r.ModelControllerInfo)
 
 		// JIMM Generic RPC
 		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
@@ -85,6 +86,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "ListControllers", listControllersMethod)
 		r.AddMethod("JIMM", 4, "ListUserClouds", listUserCloudsMethod)
 		r.AddMethod("JIMM", 4, "MigrateModel", migrateModel)
+		r.AddMethod("JIMM", 4, "ModelControllerInfo", modelControllerInfoMethod)
 		r.AddMethod("JIMM", 4, "PurgeLogs", purgeLogsMethod)
 		r.AddMethod("JIMM", 4, "RemoveCloudFromController", removeCloudFromControllerMethod)
 		r.AddMethod("JIMM", 4, "RemoveController", removeControllerMethod)
@@ -772,4 +774,33 @@ func (r *controllerRoot) ListUserClouds(ctx context.Context, req apiparams.ListU
 		return res, errors.E(err)
 	}
 	return res, nil
+}
+
+// ModelControllerInfo returns controller information about a model.
+// The model can be specified either by model UUID,
+// or by the combination of ownerName and modelName parameters.
+func (r *controllerRoot) ModelControllerInfo(ctx context.Context, req apiparams.ModelControllerInfoRequest) (apiparams.ModelControllerInfo, error) {
+	if !r.user.JimmAdmin {
+		return apiparams.ModelControllerInfo{}, errors.E(errors.CodeUnauthorized, "unauthorized")
+	}
+
+	var qualifier juju.ModelControllerInfoQualifier
+
+	tokens := strings.SplitN(req.ModelQualifier, "/", 2)
+	if len(tokens) == 2 && tokens[0] != "" && tokens[1] != "" {
+		qualifier = juju.WithOwnerAndModelName(tokens[0], tokens[1])
+	} else {
+		modelUUID, err := uuid.Parse(req.ModelQualifier)
+		if err != nil {
+			return apiparams.ModelControllerInfo{}, errors.E(fmt.Errorf("invalid model UUID: %w", err), errors.CodeBadRequest)
+		}
+		qualifier = juju.WithModelUUID(modelUUID.String())
+	}
+
+	response, err := r.jimm.JujuManager().ModelControllerInfo(ctx, r.user, qualifier)
+	if err != nil {
+		return apiparams.ModelControllerInfo{}, errors.E(err)
+	}
+
+	return *response, nil
 }
