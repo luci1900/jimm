@@ -20,7 +20,7 @@ import (
 func TestListAuditEventsRun_Success(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	expected := apiparams.AuditEvents{Events: []apiparams.AuditEvent{{MessageId: 1}}}
 
@@ -43,7 +43,7 @@ func TestListAuditEventsRun_Success(t *testing.T) {
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
@@ -54,7 +54,7 @@ func TestListAuditEventsRun_Success(t *testing.T) {
 func TestListAuditEventsRun_APICallFails(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
 		FindAuditEvents(gomock.Any()).
@@ -72,7 +72,7 @@ func TestListAuditEventsRun_APICallFails(t *testing.T) {
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
 
-	err := command.Run(newTestContext(t))
+	err := command.Run(newTestContext(c))
 	c.Assert(err, qt.ErrorMatches, ".*nope.*")
 }
 
@@ -87,7 +87,7 @@ func TestListAuditEventsInit_RejectsArgs(t *testing.T) {
 func TestListAuditEventsRun_FlagsArePassedToAPICorrectly(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
 		FindAuditEvents(gomock.Any()).
@@ -127,14 +127,14 @@ func TestListAuditEventsRun_FlagsArePassedToAPICorrectly(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	err = command.Run(newTestContext(t))
+	err = command.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
 }
 
 func TestListAuditEventsRun_TabularFormat(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	ts := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -170,7 +170,7 @@ func TestListAuditEventsRun_TabularFormat(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err = command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 

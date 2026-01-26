@@ -241,6 +241,7 @@ type JujuManager interface {
 	ImportModel(ctx context.Context, user *openfga.User, controllerName string, modelTag names.ModelTag, newOwner string) error
 	ModelDefaultsForCloud(ctx context.Context, user *dbmodel.Identity, cloudTag names.CloudTag) (jujuparams.ModelDefaultsResult, error)
 	ModelInfo(ctx context.Context, u *openfga.User, mt names.ModelTag) (*jujuparams.ModelInfo, error)
+	ModelControllerInfo(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*params.ModelControllerInfo, error)
 	ListModelSummaries(ctx context.Context, user *openfga.User, maskingControllerUUID string) (jujuparams.ModelSummaryResults, error)
 	ModelStatus(ctx context.Context, u *openfga.User, mt names.ModelTag) (*jujuparams.ModelStatus, error)
 	QueryModelsJq(ctx context.Context, models []string, jqQuery string) (params.CrossModelQueryResponse, error)

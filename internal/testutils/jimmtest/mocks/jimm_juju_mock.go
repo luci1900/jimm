@@ -19,6 +19,7 @@ import (
 	jimmcreds "github.com/canonical/jimm/v3/internal/jimm/credentials"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/openfga"
+	"github.com/canonical/jimm/v3/pkg/api/params"
 )
 
 // JujuManager is a default implementation of the jimm.JujuManager interface.
@@ -30,8 +31,8 @@ type JujuManager struct {
 	AddAuditLogEntry_                  func(ale *dbmodel.AuditLogEntry)
 	AddCloudToController_              func(ctx context.Context, user *openfga.User, controllerName string, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
 	AddHostedCloud_                    func(ctx context.Context, user *openfga.User, tag names.CloudTag, cloud jujucloud.Cloud, force bool) error
-	CopyCredential_                    func(ctx context.Context, originalUser *openfga.User, newUser *openfga.User, cred names.CloudCredentialTag) (names.CloudCredentialTag, []jujuparams.UpdateCredentialModelResult, error)
 	CleanupPartialModelMigrations_     func(ctx context.Context) error
+	CopyCredential_                    func(ctx context.Context, originalUser *openfga.User, newUser *openfga.User, cred names.CloudCredentialTag) (names.CloudCredentialTag, []jujuparams.UpdateCredentialModelResult, error)
 	DestroyOffer_                      func(ctx context.Context, user *openfga.User, offerURL string, force bool) error
 	FindApplicationOffers_             func(ctx context.Context, user *openfga.User, filters ...jujuparams.OfferFilter) ([]jujuparams.ApplicationOfferAdminDetailsV5, error)
 	FindAuditEvents_                   func(ctx context.Context, user *openfga.User, filter db.AuditLogFilter) ([]dbmodel.AuditLogEntry, error)
@@ -44,22 +45,23 @@ type JujuManager struct {
 	GetCloudCredential_                func(ctx context.Context, user *openfga.User, tag names.CloudCredentialTag) (*dbmodel.CloudCredential, error)
 	GetCloudCredentialAttributes_      func(ctx context.Context, u *openfga.User, cred *dbmodel.CloudCredential, hidden bool) (attrs map[string]string, redacted []string, err error)
 	GetCredentialStore_                func() jimmcreds.CredentialStore
+	GrantOfferAccessOnController_      func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
 	InitiateInternalMigration_         func(ctx context.Context, user *openfga.User, modelNameOrUUID string, targetController string) (jujuparams.InitiateMigrationResult, error)
 	InitiateMigration_                 func(ctx context.Context, user *openfga.User, spec jujuparams.MigrationSpec) (jujuparams.InitiateMigrationResult, error)
 	ListApplicationOffers_             func(ctx context.Context, user *openfga.User, filters ...jujuparams.OfferFilter) ([]jujuparams.ApplicationOfferAdminDetailsV5, error)
+	ListModels_                        func(ctx context.Context, user *openfga.User) ([]base.UserModel, error)
 	ListResources_                     func(ctx context.Context, user *openfga.User, filter pagination.LimitOffsetPagination, namePrefixFilter, typeFilter string) ([]db.Resource, error)
+	ModelControllerInfo_               func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*params.ModelControllerInfo, error)
 	Offer_                             func(ctx context.Context, user *openfga.User, offer juju.AddApplicationOfferParams) error
+	PrepareModelMigration_             func(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, userMapping map[string]string) (string, error)
 	PurgeLogs_                         func(ctx context.Context, user *openfga.User, before time.Time) (int64, error)
 	RemoveCloud_                       func(ctx context.Context, u *openfga.User, ct names.CloudTag) error
 	RemoveCloudFromController_         func(ctx context.Context, u *openfga.User, controllerName string, ct names.CloudTag) error
 	RevokeCloudCredential_             func(ctx context.Context, user *dbmodel.Identity, tag names.CloudCredentialTag) error
+	RevokeOfferAccessOnController_     func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
 	UpdateApplicationOffer_            func(ctx context.Context, controller *dbmodel.Controller, offerUUID string, removed bool) error
 	UpdateCloud_                       func(ctx context.Context, u *openfga.User, ct names.CloudTag, cloud jujucloud.Cloud) error
 	UpdateCloudCredential_             func(ctx context.Context, u *openfga.User, args juju.UpdateCloudCredentialArgs) ([]jujuparams.UpdateCredentialModelResult, error)
-	ListModels_                        func(ctx context.Context, user *openfga.User) ([]base.UserModel, error)
-	GrantOfferAccessOnController_      func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
-	RevokeOfferAccessOnController_     func(ctx context.Context, user *openfga.User, ut names.UserTag, offerURL string, access jujuparams.OfferAccessPermission) error
-	PrepareModelMigration_             func(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string, userMapping map[string]string) (string, error)
 	// These mocks can be removed soon once the jujuManager interface is updated.
 	UpdateMetrics_ func(ctx context.Context)
 	PollModels_    func(ctx context.Context) error
@@ -282,4 +284,11 @@ func (j *JujuManager) CleanupPartialModelMigrations(ctx context.Context) error {
 		return nil
 	}
 	return j.CleanupPartialModelMigrations_(ctx)
+}
+
+func (j *JujuManager) ModelControllerInfo(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*params.ModelControllerInfo, error) {
+	if j.ModelControllerInfo_ == nil {
+		return nil, errors.E(errors.CodeNotImplemented)
+	}
+	return j.ModelControllerInfo_(ctx, user, qualifier)
 }

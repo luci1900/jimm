@@ -18,7 +18,7 @@ import (
 func TestMigrateInternalModelCommand_BuildsRequestAndWritesOutput(t *testing.T) {
 	c := qt.New(t)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
 		MigrateModel(gomock.Any()).
@@ -48,7 +48,7 @@ func TestMigrateInternalModelCommand_BuildsRequestAndWritesOutput(t *testing.T) 
 	err := cmdtesting.InitCommand(command, []string{"controller-1", "model-uuid-1", "owner/model-2"})
 	c.Assert(err, qt.IsNil)
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err = command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 

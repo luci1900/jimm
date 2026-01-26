@@ -20,7 +20,7 @@ func TestAddCloudToControllerRun(t *testing.T) {
 
 	force := false
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	expectedCloud := &cloud.Cloud{
 		Name:            "test-hosted-cloud",
@@ -49,7 +49,7 @@ func TestAddCloudToControllerRun(t *testing.T) {
 		},
 	}
 
-	err := cmd.Run(newTestContext(t))
+	err := cmd.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
 }
 
@@ -79,7 +79,7 @@ clouds:
 
 	c.Cleanup(cleanup)
 
-	cmdMocks := setupCmdMocks(t)
+	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().Close().Times(1)
 
@@ -110,6 +110,6 @@ clouds:
 		},
 	}
 
-	err := cmd.Run(newTestContext(t))
+	err := cmd.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
 }

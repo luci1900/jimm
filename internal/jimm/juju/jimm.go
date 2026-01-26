@@ -21,6 +21,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/credentials"
 	"github.com/canonical/jimm/v3/internal/openfga"
+	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
 var (
@@ -329,7 +330,6 @@ func (j *JujuManager) PrepareModelMigration(
 // model could be migrated to. This includes controllers that support the model's
 // cloud region and version, but excludes the controller the model is already on.
 func (j *JujuManager) ListMigrationTargets(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error) {
-
 	if !user.JimmAdmin {
 		return nil, errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
@@ -364,4 +364,54 @@ func (j *JujuManager) ListMigrationTargets(ctx context.Context, user *openfga.Us
 	}
 
 	return controllers, nil
+}
+
+// ModelControllerInfoQualifier specifies a qualifier for ModelControllerInfo.
+type ModelControllerInfoQualifier func(*dbmodel.Model)
+
+// WithModelUUID specifies the model by its UUID.
+func WithModelUUID(uuid string) ModelControllerInfoQualifier {
+	return func(o *dbmodel.Model) {
+		o.UUID = sql.NullString{
+			String: uuid,
+			Valid:  true,
+		}
+	}
+}
+
+// WithOwnerAndModelName specifies the model by owner and model name.
+func WithOwnerAndModelName(ownerName, modelName string) ModelControllerInfoQualifier {
+	return func(o *dbmodel.Model) {
+		o.OwnerIdentityName = ownerName
+		o.Name = modelName
+	}
+}
+
+// ModelControllerInfo returns information about a model.
+// The model can be specified using functional options:
+// - WithModelUUID(uuid) to specify by model UUID
+// - WithOwnerAndModelName(owner, name) to specify by owner and model name
+func (j *JujuManager) ModelControllerInfo(ctx context.Context, user *openfga.User, qualifier ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
+	if !user.JimmAdmin {
+		return nil, errors.E(errors.CodeUnauthorized, "unauthorized")
+	}
+
+	var model dbmodel.Model
+	qualifier(&model)
+
+	if !model.UUID.Valid && (model.OwnerIdentityName == "" || model.Name == "") {
+		return nil, errors.E("either model uuid or both model name and owner must be provided", errors.CodeBadRequest)
+	}
+
+	err := j.Database.GetModel(ctx, &model)
+	if err != nil {
+		return nil, errors.E(err)
+	}
+
+	return &apiparams.ModelControllerInfo{
+		ModelName:      model.Name,
+		ModelUUID:      model.UUID.String,
+		ControllerName: model.Controller.Name,
+		ControllerUUID: model.Controller.UUID,
+	}, nil
 }

@@ -326,6 +326,17 @@ func (c *Client) ListUserClouds(req *params.ListUserCloudsRequest) (map[names.Cl
 	return clouds, err
 }
 
+// ModelControllerInfo returns information about a model and the controller hosting it.
+// The model parameter can be:
+//   - A model tag (e.g., "model-2cb433a6-04eb-4ec4-9567-90426d20a004")
+//   - Owner and model name (e.g., "alice@canonical.com/my-model")
+func (c *Client) ModelControllerInfo(modelQualifier string) (*params.ModelControllerInfo, error) {
+	req := params.ModelControllerInfoRequest{ModelQualifier: modelQualifier}
+	var resp params.ModelControllerInfo
+	err := c.caller.APICall("JIMM", 4, "", "ModelControllerInfo", req, &resp)
+	return &resp, err
+}
+
 func cloudFromParams(cloudName string, p jujuparams.Cloud) jujucloud.Cloud {
 	authTypes := make([]jujucloud.AuthType, len(p.AuthTypes))
 	for i, authType := range p.AuthTypes {

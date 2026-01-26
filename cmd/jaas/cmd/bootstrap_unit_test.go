@@ -80,7 +80,7 @@ func TestBootstrapArgParsing(t *testing.T) {
 
 func TestBootstrapRunDetached(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	cloudName := "aws"
 
@@ -143,14 +143,14 @@ func TestBootstrapRunDetached(t *testing.T) {
 	command.config = configOpts
 	command.detach = true
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err = command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapWatchLogs(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(&jujucloud.CloudCredential{
 		AuthCredentials: map[string]jujucloud.Credential{
@@ -178,14 +178,14 @@ func TestBootstrapWatchLogs(t *testing.T) {
 	command.SetFlags(f)
 	command.cloud = "aws"
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapFailsToGetCredential(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(nil, errors.New("credential not found"))
 
@@ -202,14 +202,14 @@ func TestBootstrapFailsToGetCredential(t *testing.T) {
 	command.region = "region"
 	command.controllerVersion = "controller-version"
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `failed to get credential for cloud "aws": credential not found`)
 }
 
 func TestBootstrapMultipleCredentials(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(&jujucloud.CloudCredential{
 		AuthCredentials: map[string]jujucloud.Credential{
@@ -231,7 +231,7 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 	command.region = "region"
 	command.controllerVersion = "controller-version"
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `multiple credentials found for cloud "aws", please set a default or specify one using --credential`)
 
@@ -255,7 +255,7 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 
 func TestBootstrapWithDefaultCredential(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	cloudName := "aws"
 
@@ -284,14 +284,14 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 	command.controllerVersion = "controller-version"
 	command.detach = true
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	cloudName := "aws"
 
@@ -318,7 +318,7 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	command.detach = true
 	command.credentialName = "cred-3" // Use a different credential than the default.
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `no credential found with name "cred-3"`)
 }

@@ -857,6 +857,45 @@ func (c *MockJIMMAPIMigrateModelCall) DoAndReturn(f func(*params.MigrateModelReq
 	return c
 }
 
+// ModelControllerInfo mocks base method.
+func (m *MockJIMMAPI) ModelControllerInfo(model string) (*params.ModelControllerInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ModelControllerInfo", model)
+	ret0, _ := ret[0].(*params.ModelControllerInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ModelControllerInfo indicates an expected call of ModelControllerInfo.
+func (mr *MockJIMMAPIMockRecorder) ModelControllerInfo(model any) *MockJIMMAPIModelControllerInfoCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelControllerInfo", reflect.TypeOf((*MockJIMMAPI)(nil).ModelControllerInfo), model)
+	return &MockJIMMAPIModelControllerInfoCall{Call: call}
+}
+
+// MockJIMMAPIModelControllerInfoCall wrap *gomock.Call
+type MockJIMMAPIModelControllerInfoCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockJIMMAPIModelControllerInfoCall) Return(arg0 *params.ModelControllerInfo, arg1 error) *MockJIMMAPIModelControllerInfoCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockJIMMAPIModelControllerInfoCall) Do(f func(string) (*params.ModelControllerInfo, error)) *MockJIMMAPIModelControllerInfoCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockJIMMAPIModelControllerInfoCall) DoAndReturn(f func(string) (*params.ModelControllerInfo, error)) *MockJIMMAPIModelControllerInfoCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // PrepareModelMigration mocks base method.
 func (m *MockJIMMAPI) PrepareModelMigration(req *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error) {
 	m.ctrl.T.Helper()

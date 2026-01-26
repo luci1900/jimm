@@ -669,3 +669,24 @@ type ListUserCloudsRequest struct {
 	// UserTag is the tag of the user for which we are listing clouds.
 	UserTag string `json:"user"`
 }
+
+// ModelControllerInfoRequest is the request for ModelControllerInfo.
+// The Model field can be:
+//   - Model UUID (e.g., "2cb433a6-04eb-4ec4-9567-90426d20a004")
+//   - Owner and model name (e.g., "alice@canonical.com/my-model")
+type ModelControllerInfoRequest struct {
+	// ModelQualifier is the model qualifier string.
+	ModelQualifier string `json:"model"`
+}
+
+// ModelControllerInfo holds information about a model.
+type ModelControllerInfo struct {
+	// ModelName is the name of the model.
+	ModelName string `json:"model-name" yaml:"model-name"`
+	// ModelUUID is the UUID of the model.
+	ModelUUID string `json:"model-uuid" yaml:"model-uuid"`
+	// ControllerName is the name of the controller hosting the model.
+	ControllerName string `json:"controller-name" yaml:"controller-name"`
+	// ControllerUUID is the UUID of the controller hosting the model.
+	ControllerUUID string `json:"controller-uuid" yaml:"controller-uuid"`
+}

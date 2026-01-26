@@ -56,7 +56,7 @@ func TestListMigrationTargetsValidation(t *testing.T) {
 
 func TestListMigrationTargets(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(t)
+	s := setupCmdMocks(c)
 
 	s.client.EXPECT().ListMigrationTargets(gomock.Any()).DoAndReturn(func(lmtr *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
 		c.Check(lmtr.ModelTag, qt.Equals, "model-e14aff09-e951-413b-833d-60b1a27bd604")
@@ -79,7 +79,7 @@ func TestListMigrationTargets(t *testing.T) {
 
 	initCommand(c, command, "e14aff09-e951-413b-833d-60b1a27bd604")
 
-	ctx := newTestContext(t)
+	ctx := newTestContext(c)
 	err := command.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
