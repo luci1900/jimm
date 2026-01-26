@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to build and run JAAS documentation locally using make install and make run for development and contribution."
+---
+
 JAAS Documentation
 ==================
 

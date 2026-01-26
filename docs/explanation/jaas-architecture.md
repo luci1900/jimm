@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Understand JAAS architecture with JIMM, ReBAC authorization, OpenFGA, PostgreSQL database, and Vault secure storage components."
+---
+
 (jaas-architecture)=
 # Architecture
 

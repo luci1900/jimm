@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS users including user tags, domain identification, external users, and group and role memberships."
+---
+
 (user)=
 # User
 > See first: {external+juju:ref}`Juju | User <user>`

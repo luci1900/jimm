@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn JAAS supported Juju versions for deployment, CLI usage, and controller compatibility with minimum version requirements and LTS support."
+---
+
 (jaas-supported-juju-versions)=
 # Supported Juju versions
 

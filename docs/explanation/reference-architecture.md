@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "JAAS reference architecture covering automation, OAuth2/OIDC authentication, ReBAC authorization, Juju CLI, and Terraform Provider integration."
+---
+
 (reference-architecture)=
 # Reference architecture
 ## Introduction

@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Understand JAAS security scope including secure communication, TLS encryption, access control, authentication, and identity provider integration."
+---
+
 (jaas-security-scope)=
 # Security scope
 

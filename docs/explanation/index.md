@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Understand JAAS concepts including reference architecture, authentication, authorization, ReBAC with OpenFGA, and security overview."
+---
+
 (explanation)=
 # Explanation
 

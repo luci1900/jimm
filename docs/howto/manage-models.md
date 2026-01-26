@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to create, deploy, and manage Juju models in JAAS with controller placement, access control, and model lifecycle operations."
+---
+
 (manage-models)=
 # Manage models
 

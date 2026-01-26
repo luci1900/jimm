@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "How-to guides for JAAS operations including deployment management, controllers, clouds, models, users, groups, roles, and permissions."
+---
+
 (howtos)=
 # How-to guides
 

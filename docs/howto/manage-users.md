@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to set up new users in JAAS, configure DNS addresses, manage login credentials, and control user access to resources."
+---
+
 (manage-users)=
 # Manage users
 > See first: {ref}`user`

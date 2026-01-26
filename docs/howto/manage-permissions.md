@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to add, revoke, and check permissions in JAAS for users, groups, roles, and resources including controllers, clouds, and models."
+---
+
 (manage-permissions)=
 # Manage permissions
 > See first: {external+juju:ref}`Juju | Juju access levels <user-access-levels>`

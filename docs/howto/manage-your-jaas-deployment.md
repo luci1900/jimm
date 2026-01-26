@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete guide to deploying and managing JAAS with JIMM controller, OpenFGA, PostgreSQL, Vault on Kubernetes with authentication configuration."
+---
+
 (manage-your-jaas-deployment)=
 # Manage your JAAS deployment
 

@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to filter, query, and analyze JIMM audit logs tracking all system requests and responses with configurable retention periods."
+---
+
 (audit-logs)=
 # Audit logs
 

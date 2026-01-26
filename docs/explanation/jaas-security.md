@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Comprehensive JAAS security overview covering cloud credentials, Vault storage, TLS communication, asymmetric cryptography, and data protection."
+---
+
 (jaas-security-overview)=
 # Security overview
 

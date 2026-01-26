@@ -1,8 +1,14 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS groups including group tags, member permissions, and managing collections of users."
+---
+
 (group)=
 # Group
 > See also: {ref}`manage-groups`
 
-In JAAS, a group is a collection of users, service accounts, and/or groups.
+In JAAS, a group is a collection of users and/or groups.
 
 A group is referenced by name (which is internally matched to a unique ID).
 

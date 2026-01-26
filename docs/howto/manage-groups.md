@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to create, rename, and manage groups in JAAS to organize users and control access to models, clouds, and controllers."
+---
+
 (manage-groups)=
 # Manage groups
 > Who: JIMM controller admin
