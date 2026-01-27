@@ -8,7 +8,7 @@ package jujuapi
 //
 // It is generated from runtime registration (see SupportedFacades).
 var SupportedFacadeVersions = map[string][]int{
-	"ApplicationOffers":   []int{4},
+	"ApplicationOffers":   []int{5},
 	"Cloud":               []int{7},
 	"Controller":          []int{11},
 	"JIMM":                []int{4},

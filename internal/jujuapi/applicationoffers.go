@@ -28,15 +28,15 @@ func init() {
 		findOffersMethod := rpc.Method(r.FindApplicationOffers)
 		applicationOffersMethod := rpc.Method(r.ApplicationOffers)
 
-		r.AddMethod("ApplicationOffers", 4, "Offer", offerMethod)
-		r.AddMethod("ApplicationOffers", 4, "GetConsumeDetails", getConsumeDetailsMethod)
-		r.AddMethod("ApplicationOffers", 4, "ListApplicationOffers", listOffersMethod)
-		r.AddMethod("ApplicationOffers", 4, "ModifyOfferAccess", modifyOfferAccessMethod)
-		r.AddMethod("ApplicationOffers", 4, "DestroyOffers", destroyOffersMethod)
-		r.AddMethod("ApplicationOffers", 4, "FindApplicationOffers", findOffersMethod)
-		r.AddMethod("ApplicationOffers", 4, "ApplicationOffers", applicationOffersMethod)
+		r.AddMethod("ApplicationOffers", 5, "Offer", offerMethod)
+		r.AddMethod("ApplicationOffers", 5, "GetConsumeDetails", getConsumeDetailsMethod)
+		r.AddMethod("ApplicationOffers", 5, "ListApplicationOffers", listOffersMethod)
+		r.AddMethod("ApplicationOffers", 5, "ModifyOfferAccess", modifyOfferAccessMethod)
+		r.AddMethod("ApplicationOffers", 5, "DestroyOffers", destroyOffersMethod)
+		r.AddMethod("ApplicationOffers", 5, "FindApplicationOffers", findOffersMethod)
+		r.AddMethod("ApplicationOffers", 5, "ApplicationOffers", applicationOffersMethod)
 
-		return []int{4}
+		return []int{5}
 	}
 }
 
@@ -76,7 +76,7 @@ func (r *controllerRoot) offer(ctx context.Context, args jujuparams.AddApplicati
 }
 
 // GetConsumeDetails implements the GetConsumeDetails procedure of the
-// ApplicationOffers facade (version 3).
+// ApplicationOffers facade.
 func (r *controllerRoot) GetConsumeDetails(ctx context.Context, args jujuparams.ConsumeOfferDetailsArg) (jujuparams.ConsumeOfferDetailsResults, error) {
 	results := jujuparams.ConsumeOfferDetailsResults{
 		Results: make([]jujuparams.ConsumeOfferDetailsResult, len(args.OfferURLs.OfferURLs)),
