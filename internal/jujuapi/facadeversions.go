@@ -12,7 +12,7 @@ var SupportedFacadeVersions = map[string][]int{
 	"Cloud":               []int{7},
 	"Controller":          []int{12},
 	"JIMM":                []int{4},
-	"MigrationTarget":     []int{4},
+	"MigrationTarget":     []int{6},
 	"ModelConfig":         []int{3},
 	"ModelManager":        []int{10},
 	"ModelSummaryWatcher": []int{1},
