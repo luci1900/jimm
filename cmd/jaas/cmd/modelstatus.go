@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
 	jujuapi "github.com/juju/juju/api"
@@ -21,7 +23,7 @@ const (
 Displays full model status.
 `
 	modelStatusCommandExample = `
-    juju model-status 2cb433a6-04eb-4ec4-9567-90426d20a004 
+    juju model-status 2cb433a6-04eb-4ec4-9567-90426d20a004
     juju model-status 2cb433a6-04eb-4ec4-9567-90426d20a004 --format yaml
 `
 )
@@ -44,6 +46,8 @@ type modelStatusCommand struct {
 	store     jujuclient.ClientStore
 	dialOpts  *jujuapi.DialOpts
 	modelUUID string
+
+	jimmAPIFunc func() (JIMMAPI, error)
 }
 
 func (c *modelStatusCommand) Info() *cmd.Info {
@@ -79,18 +83,17 @@ func (c *modelStatusCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *modelStatusCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
-	if err != nil {
-		return errors.E(err, "could not determine controller")
+	if c.jimmAPIFunc == nil {
+		c.jimmAPIFunc = c.newClient
 	}
 
-	modelTag := names.NewModelTag(c.modelUUID)
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	client, err := c.jimmAPIFunc()
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 
-	client := api.NewClient(apiCaller)
+	modelTag := names.NewModelTag(c.modelUUID)
 	status, err := client.FullModelStatus(&apiparams.FullModelStatusRequest{
 		ModelTag: modelTag.String(),
 	})
@@ -103,4 +106,18 @@ func (c *modelStatusCommand) Run(ctxt *cmd.Context) error {
 		return errors.E(err)
 	}
 	return nil
+}
+
+func (c *modelStatusCommand) newClient() (JIMMAPI, error) {
+	currentController, err := c.store.CurrentController()
+	if err != nil {
+		return nil, fmt.Errorf("could not determine controller: %w", err)
+	}
+
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.NewClient(apiCaller), nil
 }
