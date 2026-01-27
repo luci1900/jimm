@@ -27,27 +27,25 @@ func init() {
 		controllerVersionMethod := rpc.Method(r.ControllerVersion)
 		getControllerAccessMethod := rpc.Method(r.GetControllerAccess)
 		identityProviderURLMethod := rpc.Method(r.IdentityProviderURL)
-		modelConfigMethod := rpc.Method(r.ModelConfig)
 		modelStatusMethod := rpc.Method(r.ModelStatus)
 		mongoVersionMethod := rpc.Method(r.MongoVersion)
 		watchModelSummariesMethod := rpc.Method(r.WatchModelSummaries)
 		watchAllModelSummariesMethod := rpc.Method(r.WatchAllModelSummaries)
 		initiateMigrationMethod := rpc.Method(r.InitiateMigration)
 
-		r.AddMethod("Controller", 11, "AllModels", allModelsMethod)
-		r.AddMethod("Controller", 11, "ConfigSet", configSetMethod)
-		r.AddMethod("Controller", 11, "ControllerConfig", controllerConfigMethod)
-		r.AddMethod("Controller", 11, "ControllerVersion", controllerVersionMethod)
-		r.AddMethod("Controller", 11, "GetControllerAccess", getControllerAccessMethod)
-		r.AddMethod("Controller", 11, "IdentityProviderURL", identityProviderURLMethod)
-		r.AddMethod("Controller", 11, "ModelConfig", modelConfigMethod)
-		r.AddMethod("Controller", 11, "ModelStatus", modelStatusMethod)
-		r.AddMethod("Controller", 11, "MongoVersion", mongoVersionMethod)
-		r.AddMethod("Controller", 11, "WatchModelSummaries", watchModelSummariesMethod)
-		r.AddMethod("Controller", 11, "WatchAllModelSummaries", watchAllModelSummariesMethod)
-		r.AddMethod("Controller", 11, "InitiateMigration", initiateMigrationMethod)
+		r.AddMethod("Controller", 12, "AllModels", allModelsMethod)
+		r.AddMethod("Controller", 12, "ConfigSet", configSetMethod)
+		r.AddMethod("Controller", 12, "ControllerConfig", controllerConfigMethod)
+		r.AddMethod("Controller", 12, "ControllerVersion", controllerVersionMethod)
+		r.AddMethod("Controller", 12, "GetControllerAccess", getControllerAccessMethod)
+		r.AddMethod("Controller", 12, "IdentityProviderURL", identityProviderURLMethod)
+		r.AddMethod("Controller", 12, "ModelStatus", modelStatusMethod)
+		r.AddMethod("Controller", 12, "MongoVersion", mongoVersionMethod)
+		r.AddMethod("Controller", 12, "WatchModelSummaries", watchModelSummariesMethod)
+		r.AddMethod("Controller", 12, "WatchAllModelSummaries", watchAllModelSummariesMethod)
+		r.AddMethod("Controller", 12, "InitiateMigration", initiateMigrationMethod)
 
-		return []int{11}
+		return []int{12}
 	}
 }
 
@@ -232,20 +230,6 @@ func (r *controllerRoot) ControllerConfig(ctx context.Context) (jujuparams.Contr
 	return jujuparams.ControllerConfigResult{
 		Config: cfg,
 	}, nil
-}
-
-// ModelConfig returns implements the controller facade's ModelConfig
-// method.
-// Before:
-//
-//	If the user is a controller superuser then this returns a
-//	not-supported error, otherwise it returns permission denied.
-//
-// Now:
-//
-//	This method returns a not-supported error.
-func (r *controllerRoot) ModelConfig() (jujuparams.ModelConfigResults, error) {
-	return jujuparams.ModelConfigResults{}, errors.E(errors.CodeNotSupported)
 }
 
 // GetControllerAccess returns the access level on the controller for
