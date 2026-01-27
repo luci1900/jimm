@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
 	jujuapi "github.com/juju/juju/api"
@@ -10,7 +12,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -28,9 +29,8 @@ Deregisters a controller from JIMM.
 
 // NewUnregisterControllerCommand returns a command to unregister a controller.
 func NewUnregisterControllerCommand() cmd.Command {
-	cmd := &unregisterControllerCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &unregisterControllerCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -40,7 +40,6 @@ type unregisterControllerCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 	params   apiparams.RemoveControllerRequest
 }
@@ -68,35 +67,35 @@ func (c *unregisterControllerCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *unregisterControllerCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return errors.E("controller name not specified")
+		return fmt.Errorf("controller name not specified")
 	}
 	c.params.Name = args[0]
 	if len(args) > 1 {
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	}
 	return nil
 }
 
 // Run implements Command.Run.
 func (c *unregisterControllerCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
 	client := api.NewClient(apiCaller)
 	info, err := client.RemoveController(&c.params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	err = c.out.Write(ctxt, info)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }

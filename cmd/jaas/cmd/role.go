@@ -14,7 +14,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -53,9 +52,8 @@ Lists all roles.
 
 // NewAddRoleCommand returns a command to add a role.
 func NewAddRoleCommand() cmd.Command {
-	cmd := &addRoleCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &addRoleCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -65,7 +63,6 @@ type addRoleCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	name string
@@ -94,23 +91,23 @@ func (c *addRoleCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *addRoleCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return errors.E("role name not specified")
+		return fmt.Errorf("role name not specified")
 	}
 	c.name, args = args[0], args[1:]
 	if len(args) > 0 {
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	}
 	return nil
 }
 
 // Run implements Command.Run.
 func (c *addRoleCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -120,21 +117,20 @@ func (c *addRoleCommand) Run(ctxt *cmd.Context) error {
 		Name: c.name,
 	})
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	err = c.out.Write(ctxt, resp)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
 
 // NewRenameRoleCommand returns a command to rename a role.
 func NewRenameRoleCommand() cmd.Command {
-	cmd := &renameRoleCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &renameRoleCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -143,7 +139,6 @@ func NewRenameRoleCommand() cmd.Command {
 type renameRoleCommand struct {
 	modelcmd.ControllerCommandBase
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	name    string
@@ -164,23 +159,23 @@ func (c *renameRoleCommand) Info() *cmd.Info {
 // Init implements the cmd.Command interface.
 func (c *renameRoleCommand) Init(args []string) error {
 	if len(args) < 2 {
-		return errors.E("role name not specified")
+		return fmt.Errorf("role name not specified")
 	}
 	c.name, c.newName, args = args[0], args[1], args[2:]
 	if len(args) > 0 {
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	}
 	return nil
 }
 
 // Run implements Command.Run.
 func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -193,7 +188,7 @@ func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
 	client := api.NewClient(apiCaller)
 	err = client.RenameRole(&params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	return nil
@@ -201,9 +196,8 @@ func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
 
 // NewRemoveRoleCommand returns a command to Remove a role.
 func NewRemoveRoleCommand() cmd.Command {
-	cmd := &removeRoleCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &removeRoleCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -213,7 +207,6 @@ type removeRoleCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	name  string
@@ -234,11 +227,11 @@ func (c *removeRoleCommand) Info() *cmd.Info {
 // Init implements the cmd.Command interface.
 func (c *removeRoleCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return errors.E("role name not specified")
+		return fmt.Errorf("role name not specified")
 	}
 	c.name, args = args[0], args[1:]
 	if len(args) > 0 {
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	}
 	return nil
 }
@@ -254,9 +247,9 @@ func (c *removeRoleCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
 	if !c.force {
@@ -268,7 +261,7 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 		}
 		text, err := reader.ReadString('\n')
 		if err != nil {
-			return errors.E(err, "Failed to read from input.")
+			return fmt.Errorf("failed to read from input: %w", err)
 		}
 		text = strings.ReplaceAll(text, "\n", "")
 		if text != "y" && text != "Y" {
@@ -276,7 +269,7 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -288,7 +281,7 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 	client := api.NewClient(apiCaller)
 	err = client.RemoveRole(&params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	return nil
@@ -296,9 +289,8 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 
 // NewListRolesCommand returns a command to list all roles.
 func NewListRolesCommand() cmd.Command {
-	cmd := &listRolesCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &listRolesCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -308,7 +300,6 @@ type listRolesCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	limit  int
@@ -329,7 +320,7 @@ func (c *listRolesCommand) Info() *cmd.Info {
 // Init implements the cmd.Command interface.
 func (c *listRolesCommand) Init(args []string) error {
 	if len(args) > 1 {
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	}
 	return nil
 }
@@ -347,12 +338,12 @@ func (c *listRolesCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listRolesCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -361,12 +352,12 @@ func (c *listRolesCommand) Run(ctxt *cmd.Context) error {
 	req := apiparams.ListRolesRequest{Limit: c.limit, Offset: c.offset}
 	roles, err := client.ListRoles(&req)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	err = c.out.Write(ctxt, roles)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	return nil

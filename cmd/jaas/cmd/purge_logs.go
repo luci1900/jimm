@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/juju/cmd/v3"
@@ -12,7 +13,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -32,16 +32,14 @@ The provided date must be formatted as an ISO8601 date string.
 
 // NewPurgeLogsCommand returns a command to purge logs.
 func NewPurgeLogsCommand() cmd.Command {
-	cmd := &purgeLogsCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &purgeLogsCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	return modelcmd.WrapBase(cmd)
 }
 
 // purgeLogsCommand purges logs.
 type purgeLogsCommand struct {
 	modelcmd.ControllerCommandBase
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 	out      cmd.Output
 
@@ -63,13 +61,13 @@ func (c *purgeLogsCommand) Info() *cmd.Info {
 // the date.
 func (c *purgeLogsCommand) Init(args []string) error {
 	if len(args) != 1 {
-		return errors.E("expected one argument (ISO8601 date)")
+		return fmt.Errorf("expected one argument (ISO8601 date)")
 	}
 	// validate date
 	var err error
 	c.date, err = parseDate(args[0])
 	if err != nil {
-		return errors.E("invalid date. Expected ISO8601 date")
+		return fmt.Errorf("invalid date. Expected ISO8601 date")
 	}
 	return nil
 }
@@ -86,12 +84,12 @@ func (c *purgeLogsCommand) SetFlags(f *gnuflag.FlagSet) {
 // Run implements Command.Run. It purges logs from the database before the given
 // date.
 func (c *purgeLogsCommand) Run(ctx *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -101,11 +99,11 @@ func (c *purgeLogsCommand) Run(ctx *cmd.Context) error {
 		Date: c.date,
 	})
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	err = c.out.Write(ctx, response)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
@@ -133,5 +131,5 @@ func parseDate(date string) (time.Time, error) {
 	}
 
 	// If none of the layouts match, the date is not in the correct format
-	return time.Time{}, errors.E("invalid date. Expected ISO8601 date")
+	return time.Time{}, fmt.Errorf("invalid date. Expected ISO8601 date")
 }

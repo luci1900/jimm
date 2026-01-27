@@ -12,6 +12,7 @@ import (
 	"github.com/juju/gnuflag"
 	jujucloud "github.com/juju/juju/cloud"
 	"github.com/juju/juju/cmd/juju/common"
+	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient/jujuclienttesting"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"go.uber.org/mock/gomock"
@@ -122,11 +123,11 @@ func TestBootstrapRunDetached(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &bootstrapCommand{
-		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 	}
+	command.SetClientStore(s.store)
 
 	configOpts := common.ConfigFlag{}
 	err := configOpts.Set("bootstrap-timeout=60")
@@ -144,7 +145,8 @@ func TestBootstrapRunDetached(t *testing.T) {
 	command.detach = true
 
 	ctx := newTestContext(c)
-	err = command.Run(ctx)
+	mcmd := modelcmd.WrapBase(command)
+	err = mcmd.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -169,17 +171,18 @@ func TestBootstrapWatchLogs(t *testing.T) {
 	}, nil)
 
 	command := &bootstrapCommand{
-		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 	}
+	command.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	command.SetFlags(f)
 	command.cloud = "aws"
 
 	ctx := newTestContext(c)
-	err := command.Run(ctx)
+	mcmd := modelcmd.WrapBase(command)
+	err := mcmd.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -190,11 +193,11 @@ func TestBootstrapFailsToGetCredential(t *testing.T) {
 	s.store.EXPECT().CredentialForCloud("aws").Return(nil, errors.New("credential not found"))
 
 	command := &bootstrapCommand{
-		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 	}
+	command.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
@@ -203,7 +206,8 @@ func TestBootstrapFailsToGetCredential(t *testing.T) {
 	command.controllerVersion = "controller-version"
 
 	ctx := newTestContext(c)
-	err := command.Run(ctx)
+	mcmd := modelcmd.WrapBase(command)
+	err := mcmd.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `failed to get credential for cloud "aws": credential not found`)
 }
 
@@ -219,11 +223,11 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 	}, nil).Times(2)
 
 	command := &bootstrapCommand{
-		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 	}
+	command.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
@@ -232,7 +236,8 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 	command.controllerVersion = "controller-version"
 
 	ctx := newTestContext(c)
-	err := command.Run(ctx)
+	mcmd := modelcmd.WrapBase(command)
+	err := mcmd.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `multiple credentials found for cloud "aws", please set a default or specify one using --credential`)
 
 	// Now specify a credential and verify the command works.
@@ -249,7 +254,7 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 		Watermark: 2,
 	}, nil)
 
-	err = command.Run(ctx)
+	err = mcmd.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -271,11 +276,11 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &bootstrapCommand{
-		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 	}
+	command.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
@@ -285,7 +290,8 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 	command.detach = true
 
 	ctx := newTestContext(c)
-	err := command.Run(ctx)
+	mcmd := modelcmd.WrapBase(command)
+	err := mcmd.Run(ctx)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -304,11 +310,11 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	}, nil)
 
 	command := &bootstrapCommand{
-		store: s.store,
 		bootstrapAPIFunc: func() (JIMMAPI, error) {
 			return s.client, nil
 		},
 	}
+	command.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	command.SetFlags(f)
 	command.controllerName = "controller-name"
@@ -319,6 +325,7 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	command.credentialName = "cred-3" // Use a different credential than the default.
 
 	ctx := newTestContext(c)
-	err := command.Run(ctx)
+	mcmd := modelcmd.WrapBase(command)
+	err := mcmd.Run(ctx)
 	c.Assert(err, qt.ErrorMatches, `no credential found with name "cred-3"`)
 }

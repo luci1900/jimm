@@ -52,7 +52,6 @@ type destroyControllerCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store                    jujuclient.ClientStore
 	destroyControllerAPIFunc func() (JIMMAPI, error)
 
 	controllerName string
@@ -65,9 +64,8 @@ type destroyControllerCommand struct {
 // NewDestroyControllerStartCommand returns a command to start a job
 // that will destroy a Juju controller.
 func NewDestroyControllerStartCommand() cmd.Command {
-	cmd := &destroyControllerCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &destroyControllerCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.destroyControllerAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -171,12 +169,12 @@ Should you cancel this process, you can track the progress via job-status with t
 }
 
 func (c *destroyControllerCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %v", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -90,7 +90,7 @@ func (s *roleSuite) TestRemoveRoleWithoutFlag(c *gc.C) {
 	bClient := s.SetupCLIAccess(c, "alice")
 
 	_, err := cmdtesting.RunCommand(c, cmd.NewRemoveRoleCommandForTesting(s.ClientStore(), bClient), "test-role")
-	c.Assert(err.Error(), gc.Matches, "Failed to read from input.")
+	c.Assert(err.Error(), gc.Matches, "failed to read from input: EOF")
 }
 
 func (s *roleSuite) TestRemoveRole(c *gc.C) {

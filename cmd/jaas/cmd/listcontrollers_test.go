@@ -54,11 +54,11 @@ func TestListControllersSuperuser(t *testing.T) {
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
 	command := &listControllersCommand{
-		store: cmdMocks.store,
 		jimmAPIFunc: func() (JIMMAPI, error) {
 			return cmdMocks.client, nil
 		},
 	}
+	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command)
 
@@ -82,11 +82,11 @@ func TestListControllersEmpty(t *testing.T) {
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
 	command := &listControllersCommand{
-		store: cmdMocks.store,
 		jimmAPIFunc: func() (JIMMAPI, error) {
 			return cmdMocks.client, nil
 		},
 	}
+	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command)
 
