@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn about the ReBAC Admin REST API for querying and manipulating relationships in JAAS authorization model with OpenAPI specification."
+---
+
 (jaas-rebac-admin-backend)=
 # ReBAC admin backend
 

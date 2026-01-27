@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS model entities including model tags, permissions like reader, writer, and administrator access levels."
+---
+
 (model)=
 # Model
 > See first: {external+juju:ref}`Juju | Model <model>`

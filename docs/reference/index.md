@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS including technical documentation, APIs, security, JAAS plugin commands, and entity specifications."
+---
+
 (reference)=
 # Reference
 

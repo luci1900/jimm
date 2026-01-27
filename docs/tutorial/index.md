@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to deploy JIMM (the Juju Intelligent Model Manager) on MicroK8s with enterprise authentication and centralized Juju management."
+---
+
 (tutorial)=
 # Get started with JAAS
 
@@ -18,7 +24,7 @@ For this tutorial we will set up an isolated environment using [Multipass](https
 sudo snap install multipass --channel latest/stable
 ```
 
-To create a `jaas-workshop` Multipass instance we'll use throughout this tutorial run: 
+To create a `jaas-workshop` Multipass instance we'll use throughout this tutorial run:
 ```text
 multipass launch 24.04 \
   --name jaas-workshop  \
@@ -142,7 +148,7 @@ At the end of this tutorial you'll need to log in via a web browser. Given that 
 
 Locate the IP of your Multipass instance by running `multipass list` on your host machine, if you have multiple IPs pick **the first one**. You can do this by running on your host machine (in a different terminal window, not when shelled into the `jaas-workshop` VM):
 ```text
-multipass list --format json | yq  '.list | .[] | select(.name == "jaas-workshop") | .ipv4[0]' 
+multipass list --format json | yq  '.list | .[] | select(.name == "jaas-workshop") | .ipv4[0]'
 ```
 
 Then we configure the `traefik-public` in the `core` model:
@@ -363,7 +369,7 @@ Microk8s is a Juju built-in cloud and as such cannot be used to bootstrap contro
 microk8s config | juju add-k8s workshop-k8s --cluster-name microk8s-cluster --client
 ```
 
-To manually add a Juju controller we first need to bootstrap it. 
+To manually add a Juju controller we first need to bootstrap it.
 ```text
 juju bootstrap workshop-k8s controller-workshop-1 --config login-token-refresh-url=http://jimm-endpoints.jimm.svc.cluster.local:8080/.well-known/jwks.json
 ```
@@ -395,7 +401,7 @@ service_account=$(juju run hydra/0 create-oauth-client --quiet --format yaml red
 ```
 And then:
 ```text
-export TF_VAR_client_id=$(echo "$service_account" | yq '.["hydra/0"].results."client-id"') 
+export TF_VAR_client_id=$(echo "$service_account" | yq '.["hydra/0"].results."client-id"')
 export TF_VAR_client_secret=$(echo "$service_account" | yq '.["hydra/0"].results."client-secret"')
 export TF_VAR_client_key_data=$(microk8s config | yq '.users[0].user."client-key-data"')
 export TF_VAR_client_certificate_data=$(microk8s config | yq '.users[0].user."client-certificate-data"')
@@ -439,7 +445,7 @@ variable "client_secret" {
 
 provider "juju" {
     controller_addresses="$metallb_ip:443/jimm-jimm"
-    
+
     client_id=var.client_id
     client_secret=var.client_secret
 }
@@ -460,7 +466,7 @@ resource "juju_credential" "credential" {
 resource "juju_model" "workshop_model_1" {
   name = "workshop-model-1"
 
-  credential = juju_credential.credential.name 
+  credential = juju_credential.credential.name
 
   cloud {
     name = "workshop-k8s"
@@ -619,7 +625,7 @@ juju status
 ```
 
 If everything is configured correctly, `juju status` should report the applications deployed earlier (e.g. Wordpress and MySQL).
- 
+
 ### Cross-model queries
 
 When you manage many models, it’s often useful to run queries *across all models* without switching into each one.
@@ -679,7 +685,7 @@ variable "client_secret" {
 
 provider "juju" {
     controller_addresses="$metallb_ip:443/jimm-jimm"
-    
+
     client_id=var.client_id
     client_secret=var.client_secret
 }
@@ -700,7 +706,7 @@ resource "juju_credential" "credential" {
 resource "juju_model" "workshop_model_2" {
   name = "workshop-model-2"
 
-  credential = juju_credential.credential.name 
+  credential = juju_credential.credential.name
 
   cloud {
     name = "workshop-k8s"
@@ -827,7 +833,7 @@ Try `curl` the server again the certificate issue should be resolved.
 
 If JIMM is not responding to requests, run the following commands to check the logs.
 ```text
-microk8s kubectl logs jimm-0 -n jimm -c jimm -f 
+microk8s kubectl logs jimm-0 -n jimm -c jimm -f
 ```
 
 This will present the server logs and debug further.

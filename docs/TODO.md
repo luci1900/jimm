@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Track missing and incomplete JAAS documentation including dashboard deployment, limitations, observability, and CLI extension coverage."
+---
+
 # Description
 
 The following document describes missing JAAS documentation as well as any docs that need to be modernized.

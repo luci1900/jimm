@@ -26,7 +26,7 @@ Add cloud to specific controller in jimm
 
 Adds the specified cloud to a specific controller on JIMM.
 
-One can specify a cloud definition via a yaml file passed with the --cloud 
+One can specify a cloud definition via a yaml file passed with the --cloud
 flag. If the flag is missing, the command will assume the cloud definition
 is already known and will error otherwise.
 
@@ -80,7 +80,7 @@ Adds a model to a specific controller.
 ## Examples
 
     juju [jaas] add-model mymodel mycloud --target-controller jaas-controller-1
-    juju [jaas] add-model mymodel us-east-1 --target-controller jaas-controller-1 
+    juju [jaas] add-model mymodel us-east-1 --target-controller jaas-controller-1
 	juju [jaas] add-model mymodel aws/us-east-1 --target-controller jaas-controller-2 --credential mycred
     juju [jaas] add-model mymodel --target-controller jaas-controller-3 --config key=value
 
@@ -215,7 +215,7 @@ Add role to jimm.
 
 ## Examples
 
-    juju add-role myrole 
+    juju add-role myrole
 
 
 ## Details
@@ -253,10 +253,10 @@ Bootstrap a Juju controller via JIMM
 
 Requests the JIMM server to bootstrap a Juju controller.
 The controller will be created asychronously on the specificed
-cloud and region. 
+cloud and region.
 
 By default the command will wait for the bootstrap job to complete
-while printing the job logs. Note that the logs will not follow the 
+while printing the job logs. Note that the logs will not follow the
 --output flag and will always be printed to stdout. This can allow
 you to send the initial output with the job ID to a file, while the
 logs are streamed to stdout.
@@ -346,7 +346,7 @@ Lists all controllers known to JIMM.
 
 ## Examples
 
-    juju controllers 
+    juju controllers
     juju controllers --format json
 
 
@@ -386,7 +386,7 @@ Requests the JIMM server to destroy a Juju controller.
 The controller will be destroyed asynchronously.
 
 By default the command will wait for the destroy-controller job to complete
-while printing the job logs. Note that the logs will not follow the 
+while printing the job logs. Note that the logs will not follow the
 --output flag and will always be printed to stdout. This can allow
 you to send the initial output with the job ID to a file, while the
 logs are streamed to stdout.
@@ -402,7 +402,7 @@ Note that JIMM will internally do the following:
 - unregister the controller from JIMM
 
 Destroying controllers on k8s clouds will only work on uju 3.6.10 or newer.
-As a workaround, you can first unregister the controller and then destroy 
+As a workaround, you can first unregister the controller and then destroy
 it separately.
 
 
@@ -427,7 +427,7 @@ Generate the documentation for all commands
 ## Examples
 
     juju documentation
-    juju documentation --split 
+    juju documentation --split
     juju documentation --split --no-index --out /tmp/docs
 
 To render markdown documentation using a list of existing
@@ -470,7 +470,7 @@ Grants access to audit logs.
 
 ## Examples
 
-    juju grant-audit-log <username> 
+    juju grant-audit-log <username>
 
 
 ## Details
@@ -520,9 +520,9 @@ Import a model to jimm
 Imports a model running on a controller into JIMM's state.
 
 When importing, it is necessary for JIMM to contain a set of cloud credentials
-that represent a user's access to the incoming model's cloud. 
+that represent a user's access to the incoming model's cloud.
 
-The --owner command is necessary when importing a model created by a 
+The --owner command is necessary when importing a model created by a
 local user and it will switch the model owner to the desired external user.
 
 
@@ -543,7 +543,7 @@ Displays logs for a job
 
 ## Examples
 
-    juju job-status 2cb433a6-04eb-4ec4-9567-90426d20a004 
+    juju job-status 2cb433a6-04eb-4ec4-9567-90426d20a004
 
 
 ## Details
@@ -567,7 +567,7 @@ Stop a job
 
 ## Examples
 
-    juju job-stop 2cb433a6-04eb-4ec4-9567-90426d20a004 
+    juju job-stop 2cb433a6-04eb-4ec4-9567-90426d20a004
 
 
 ## Details
@@ -716,7 +716,7 @@ List permissions where the target object and relation match
 
 ## Details
 
-List permissions known to JIMM. Using the "target", "relation" and "object" flags, 
+List permissions known to JIMM. Using the "target", "relation" and "object" flags,
 only those permissions matching the filter will be returned.
 
 
@@ -782,9 +782,9 @@ and migrate it to JIMM. During this process JIMM will modify the details of the 
 to remove any local users with access to the model and replace the model owner with
 an external user i.e. from alice -&gt; alice@canonical.com.
 
-In order to determine the new model owner and to handle any existing application-offers 
+In order to determine the new model owner and to handle any existing application-offers
 that have already been consumed with local users, you must specify a user mapping file
-with the --user-mapping flag. This should point to a yaml file with a mapping of local 
+with the --user-mapping flag. This should point to a yaml file with a mapping of local
 users to external users.
 For example:
 
@@ -795,10 +795,10 @@ bob: bob@canonical.com
 '''
 
 The mapping must contain entries for all users that have access to the model and any offers
-hosted within that model. 
+hosted within that model.
 You can use the "juju show-model &lt;model-name&gt;" command to see the users that have access to
 the model.
-You can also use the "juju list-offers" command alongside "juju show-offer &lt;offer-name&gt;" 
+You can also use the "juju list-offers" command alongside "juju show-offer &lt;offer-name&gt;"
 to see the users that have access to each offer.
 
 Any users that you do not wish to be mapped must still be included with a null value or empty
@@ -816,9 +816,9 @@ Revoking access from "alice@canonical.com" will result in the relation encounter
 
 It may not be possible to know all users that have have consumed offers from a model, but using
 "juju show-offer &lt;offer-name&gt; --format yaml" you can see all users that have access to the
-offer. This list should help determine which users to map in the user mapping file. 
+offer. This list should help determine which users to map in the user mapping file.
 
-Any tools/scripts that refer to models by their full name (owner/name) will need to be 
+Any tools/scripts that refer to models by their full name (owner/name) will need to be
 updated after migration to use the new external username or refer to models by their UUID.
 
 
@@ -851,7 +851,7 @@ migrate models to another controller within JAAS
 The migrate-internal command migrates a model(s) between two controllers
 in your JAAS system. This performs a model migration, but is named
 "migrate-internal" to avoid confusion with the "migrate" command which migrates
-a model to JAAS. 
+a model to JAAS.
 
 You may specify a model name (of the form owner/name) or model UUID.
 
@@ -875,7 +875,7 @@ Displays full model status
 
 ## Examples
 
-    juju model-status 2cb433a6-04eb-4ec4-9567-90426d20a004 
+    juju model-status 2cb433a6-04eb-4ec4-9567-90426d20a004
     juju model-status 2cb433a6-04eb-4ec4-9567-90426d20a004 --format yaml
 
 
@@ -904,7 +904,7 @@ purge audit logs from the database before the given date
 
     juju purge-audit-logs 2021-02-03
     juju purge-audit-logs 2021-02-03T00
-    juju purge-audit-logs 2021-02-03T15:04:05Z	
+    juju purge-audit-logs 2021-02-03T15:04:05Z
 
 
 ## Details
@@ -938,7 +938,7 @@ Query model statuses
 ## Details
 
 Queries all models available to the current user performing the
-query against each model status individually, returning the 
+query against each model status individually, returning the
 collated query responses for each model.
 
 The query runs against the output of "juju status --format json",
@@ -990,7 +990,7 @@ Use the --local flag if the server is not configured with a public address or to
 ignore the controller's public-hostname and use the custom CA of the controller.
 
 A yaml formatted file can also be used as input for cases where the controller
-is not available on the client. Using the --file will validate that the provided 
+is not available on the client. Using the --file will validate that the provided
 controller name matches the name in the yaml file.
 Using --file will ignore other flags like --public-address and --local.
 
@@ -1337,7 +1337,7 @@ Remove controller from jimm
 
 ## Examples
 
-    juju unregister-controller mycontroller 
+    juju unregister-controller mycontroller
     juju unregister-controller mycontroller --force
 
 

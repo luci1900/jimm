@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete guide to the JAAS plugin CLI tool for Juju including installation via Snap and extended functionality for JAAS systems."
+---
+
 (jaas-plugin)=
 # `jaas` plugin
 

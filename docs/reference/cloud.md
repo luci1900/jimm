@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS cloud entities including cloud tags, permissions like administrator and can_addmodel, and access control."
+---
+
 (cloud)=
 # Cloud
 > See first: {external+juju:ref}`Juju | Cloud <cloud>`

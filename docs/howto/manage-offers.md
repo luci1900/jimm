@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to manage application offers in JAAS and control user access with reader, consumer, and administrator permissions."
+---
+
 (manage-offers)=
 # Manage offers
 > See also: {ref}`offer`

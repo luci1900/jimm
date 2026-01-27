@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to manage clouds in JAAS, including controlling user access with permissions and configuring cloud administrators."
+---
+
 (manage-clouds)=
 # Manage clouds
 > See first: {ref}`cloud`

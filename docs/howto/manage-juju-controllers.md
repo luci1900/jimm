@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to add, remove, and manage Juju controllers in JAAS for centralized model management across multiple controllers."
+---
+
 (manage-juju-controllers)=
 # Manage Juju controllers
 > Who: JIMM controller admin

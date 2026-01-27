@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Understand JAAS authentication with OAuth 2.0 and OIDC, external identity providers, and how it differs from Juju local users."
+---
+
 (jaas-authentication)=
 # Authentication
 

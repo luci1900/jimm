@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Learn how to create, rename, and manage roles in JAAS to grant users collections of permissions across resources and environments."
+---
+
 (manage-roles)=
 # Manage roles
 > Who: JIMM controller admin

@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS roles including role tags, assignee permissions, and managing entity capabilities in JIMM controllers."
+---
+
 (role)=
 # Role
 

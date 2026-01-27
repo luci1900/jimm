@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Understand JAAS authorization with Relationship-Based Access Control (ReBAC) for flexible user permissions on controllers, models, and resources."
+---
+
 (jaas-authorization)=
 # Authorization
 

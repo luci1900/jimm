@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS application offers including offer tags, permissions like administrator, consumer, and reader access."
+---
+
 (offer)=
 # Offer
 > See first: {external+juju:ref}`Juju | Offer <offer>`

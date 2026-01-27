@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Complete reference for JAAS controller entities including controller tags, permissions like administrator and audit-log-viewer."
+---
+
 (controller)=
 # Controller
 
