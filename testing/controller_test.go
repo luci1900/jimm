@@ -103,7 +103,7 @@ func (s *controllerSuite) TestIdentityProviderURL(c *gc.C) {
 	defer conn.Close()
 
 	var result jujuparams.StringResult
-	err := conn.APICall("Controller", 11, "", "IdentityProviderURL", nil, &result)
+	err := conn.APICall("Controller", 12, "", "IdentityProviderURL", nil, &result)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(result.Result, gc.Matches, ``)
 }
@@ -113,7 +113,7 @@ func (s *controllerSuite) TestControllerVersion(c *gc.C) {
 	defer conn.Close()
 
 	var result jujuparams.ControllerVersionResults
-	err := conn.APICall("Controller", 11, "", "ControllerVersion", nil, &result)
+	err := conn.APICall("Controller", 12, "", "ControllerVersion", nil, &result)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(result, jc.DeepEquals, jujuparams.ControllerVersionResults{
 		Version:   "3.6.13",
@@ -206,7 +206,7 @@ func (s *watcherSuite) TestWatchModelSummaries(c *gc.C) {
 	defer conn.Close()
 
 	var watcherID jujuparams.SummaryWatcherID
-	err := conn.APICall("Controller", 11, "", "WatchModelSummaries", nil, &watcherID)
+	err := conn.APICall("Controller", 12, "", "WatchModelSummaries", nil, &watcherID)
 	c.Assert(err, jc.ErrorIsNil)
 
 	var summaries jujuparams.SummaryWatcherNextResults
@@ -260,7 +260,7 @@ func (s *watcherSuite) TestWatchAllModelSummaries(c *gc.C) {
 	defer conn.Close()
 
 	var watcherID jujuparams.SummaryWatcherID
-	err := conn.APICall("Controller", 11, "", "WatchAllModelSummaries", nil, &watcherID)
+	err := conn.APICall("Controller", 12, "", "WatchAllModelSummaries", nil, &watcherID)
 	c.Assert(err, jc.ErrorIsNil)
 
 	var summaries jujuparams.SummaryWatcherNextResults
