@@ -13,7 +13,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -30,9 +29,8 @@ Displays full model status.
 
 // NewModelStatusCommand returns a command to display full model status.
 func NewModelStatusCommand() cmd.Command {
-	cmd := &modelStatusCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &modelStatusCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -43,7 +41,6 @@ type modelStatusCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store     jujuclient.ClientStore
 	dialOpts  *jujuapi.DialOpts
 	modelUUID string
 
@@ -72,11 +69,11 @@ func (c *modelStatusCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *modelStatusCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return errors.E("missing model uuid")
+		return fmt.Errorf("missing model uuid")
 	}
 	c.modelUUID, args = args[0], args[1:]
 	if len(args) > 0 {
-		return errors.E("unknown arguments")
+		return fmt.Errorf("unknown arguments")
 	}
 	return nil
 }
@@ -98,23 +95,23 @@ func (c *modelStatusCommand) Run(ctxt *cmd.Context) error {
 		ModelTag: modelTag.String(),
 	})
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	err = c.out.Write(ctxt, status)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
 
 func (c *modelStatusCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

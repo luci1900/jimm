@@ -52,9 +52,8 @@ This can be used later as input to register-controller.
 
 // NewRegisterControllerCommand returns a command to register a controller.
 func NewRegisterControllerCommand() cmd.Command {
-	cmd := &registerControllerCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &registerControllerCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -64,7 +63,6 @@ type registerControllerCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store          jujuclient.ClientStore
 	dialOpts       *jujuapi.DialOpts
 	file           cmd.FileVar
 	local          bool
@@ -128,12 +126,12 @@ func (c *registerControllerCommand) Run(ctxt *cmd.Context) error {
 		return c.out.Write(ctxt, params)
 	}
 
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return errors.Annotate(err, "could not determine controller")
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -164,12 +162,12 @@ func (c *registerControllerCommand) getControllerDetails(ctxt *cmd.Context) ([]b
 		return c.file.Read(ctxt)
 	}
 
-	controller, err := c.store.ControllerByName(c.controllerName)
+	controller, err := c.ClientStore().ControllerByName(c.controllerName)
 	if err != nil {
 		return nil, errors.Mask(err)
 	}
 
-	accountDetails, err := c.store.AccountDetails(c.controllerName)
+	accountDetails, err := c.ClientStore().AccountDetails(c.controllerName)
 	if err != nil {
 		return nil, errors.Mask(err)
 	}

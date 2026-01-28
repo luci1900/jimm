@@ -16,7 +16,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -160,9 +159,8 @@ List permissions where the target object and relation match
 
 // NewAddPermissionCommand returns a command to grant access.
 func NewAddPermissionCommand() cmd.Command {
-	cmd := &addPermission{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &addPermission{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -172,7 +170,6 @@ type addPermission struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	object       string
@@ -200,7 +197,7 @@ func (c *addPermission) Init(args []string) error {
 	}
 	err := verifyTupleArguments(args)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	c.object, c.relation, c.targetObject = args[0], args[1], args[2]
 	return nil
@@ -218,12 +215,12 @@ func (c *addPermission) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *addPermission) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -245,7 +242,7 @@ func (c *addPermission) Run(ctxt *cmd.Context) error {
 	client := api.NewClient(apiCaller)
 	err = client.AddRelation(&params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	return nil
@@ -253,9 +250,8 @@ func (c *addPermission) Run(ctxt *cmd.Context) error {
 
 // NewRemovePermissionCommand returns a command to remove access.
 func NewRemovePermissionCommand() cmd.Command {
-	cmd := &removePermissionCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &removePermissionCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -265,7 +261,6 @@ type removePermissionCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	object       string
@@ -293,7 +288,7 @@ func (c *removePermissionCommand) Init(args []string) error {
 	}
 	err := verifyTupleArguments(args)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	c.object, c.relation, c.targetObject = args[0], args[1], args[2]
 	return nil
@@ -311,12 +306,12 @@ func (c *removePermissionCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -338,7 +333,7 @@ func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
 	client := api.NewClient(apiCaller)
 	err = client.RemoveRelation(&params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	return nil
@@ -348,7 +343,6 @@ func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
 type checkPermissionCommand struct {
 	modelcmd.ControllerCommandBase
 	out      cmd.Output
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	tuple apiparams.RelationshipTuple
@@ -374,9 +368,8 @@ func (ar *accessResult) setMessage() *accessResult {
 
 // NewCheckPermissionCommand
 func NewCheckPermissionCommand() cmd.Command {
-	cmd := &checkPermissionCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &checkPermissionCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -406,7 +399,7 @@ func (c *checkPermissionCommand) SetFlags(f *gnuflag.FlagSet) {
 func (c *checkPermissionCommand) Init(args []string) error {
 	err := verifyTupleArguments(args)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	c.tuple = apiparams.RelationshipTuple{
 		Object:       args[0],
@@ -419,23 +412,23 @@ func (c *checkPermissionCommand) Init(args []string) error {
 func formatCheckRelationString(writer io.Writer, value interface{}) error {
 	accessResult, ok := value.(accessResult)
 	if !ok {
-		return errors.E("failed to parse access result")
+		return fmt.Errorf("failed to parse access result")
 	}
 	_, err := writer.Write([]byte((&accessResult).setMessage().Msg))
 	if err != nil {
-		return errors.E("failed to write access result", err)
+		return fmt.Errorf("failed to write access result: %w", err)
 	}
 	return nil
 }
 
 // Run implements Command.Run.
 func (c *checkPermissionCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -477,13 +470,13 @@ func readTupleFile(filename string) ([]apiparams.RelationshipTuple, error) {
 func verifyTupleArguments(args []string) error {
 	switch len(args) {
 	default:
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	case 0:
-		return errors.E("object not specified")
+		return fmt.Errorf("object not specified")
 	case 1:
-		return errors.E("relation not specified")
+		return fmt.Errorf("relation not specified")
 	case 2:
-		return errors.E("target object not specified")
+		return fmt.Errorf("target object not specified")
 	case 3:
 	}
 	return nil
@@ -491,9 +484,8 @@ func verifyTupleArguments(args []string) error {
 
 // NewListPermissionsCommand returns a command to list permissions.
 func NewListPermissionsCommand() cmd.Command {
-	cmd := &listPermissionsCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &listPermissionsCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -503,7 +495,6 @@ type listPermissionsCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	tuple        apiparams.RelationshipTuple
@@ -524,7 +515,7 @@ func (c *listPermissionsCommand) Info() *cmd.Info {
 // Init implements the cmd.Command interface.
 func (c *listPermissionsCommand) Init(args []string) error {
 	if len(args) > 0 {
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	}
 	return nil
 }
@@ -545,12 +536,12 @@ func (c *listPermissionsCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listPermissionsCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -563,14 +554,14 @@ func (c *listPermissionsCommand) Run(ctxt *cmd.Context) error {
 	}
 	result, err := fetchRelations(client, params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	// Ensure continutation token is empty so that we don't print it.
 	result.ContinuationToken = ""
 	err = c.out.Write(ctxt, result)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	return nil
@@ -581,7 +572,7 @@ func fetchRelations(client *api.Client, params apiparams.ListRelationshipTuplesR
 	for {
 		response, err := client.ListRelationshipTuples(&params)
 		if err != nil {
-			return nil, errors.E(fmt.Sprintf("failed to fetch list of relationship tuples: %s", err.Error()))
+			return nil, fmt.Errorf("failed to fetch list of relationship tuples: %w", err)
 		}
 		tuples = append(tuples, response.Tuples...)
 
@@ -595,7 +586,7 @@ func fetchRelations(client *api.Client, params apiparams.ListRelationshipTuplesR
 func formatRelationsTabular(writer io.Writer, value interface{}) error {
 	resp, ok := value.(*apiparams.ListRelationshipTuplesResponse)
 	if !ok {
-		return errors.E(fmt.Sprintf("expected value of type %T, got %T", resp, value))
+		return fmt.Errorf("expected value of type %T, got %T", resp, value)
 	}
 
 	table := uitable.New()

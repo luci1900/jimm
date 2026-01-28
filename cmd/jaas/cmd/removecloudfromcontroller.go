@@ -13,7 +13,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -31,9 +30,8 @@ Removes the specified cloud from the specified controller in JIMM.
 // NewRemoveCloudFromControllerCommand returns a command to
 // remove a cloud from a specific controller in JIMM.
 func NewRemoveCloudFromControllerCommand() cmd.Command {
-	cmd := &removeCloudFromControllerCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &removeCloudFromControllerCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.removeCloudFromControllerAPIFunc = cmd.cloudAPI
 
 	return modelcmd.WrapBase(cmd)
@@ -52,7 +50,6 @@ type removeCloudFromControllerCommand struct {
 	targetControllerName string
 
 	removeCloudFromControllerAPIFunc func() (removeCloudFromControllerAPI, error)
-	store                            jujuclient.ClientStore
 	dialOpts                         *jujuapi.DialOpts
 }
 
@@ -83,18 +80,18 @@ func (c *removeCloudFromControllerCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *removeCloudFromControllerCommand) Init(args []string) error {
 	if len(args) < 2 {
-		return errors.E("missing arguments")
+		return fmt.Errorf("missing arguments")
 	}
 	if len(args) > 2 {
-		return errors.E("too many arguments")
+		return fmt.Errorf("too many arguments")
 	}
 	c.targetControllerName = args[0]
 	if ok := names.IsValidControllerName(c.targetControllerName); !ok {
-		return errors.E("invalid controller name %q", c.targetControllerName)
+		return fmt.Errorf("invalid controller name %q", c.targetControllerName)
 	}
 	c.cloudName = args[1]
 	if ok := names.IsValidCloud(c.cloudName); !ok {
-		return errors.E("invalid cloud name %q", c.cloudName)
+		return fmt.Errorf("invalid cloud name %q", c.cloudName)
 	}
 
 	return nil
@@ -104,7 +101,7 @@ func (c *removeCloudFromControllerCommand) Init(args []string) error {
 func (c *removeCloudFromControllerCommand) Run(ctxt *cmd.Context) error {
 	err := c.removeCloudFromController(ctxt)
 	if err != nil {
-		return errors.E(err, fmt.Sprintf("error removing cloud from controller: %v", err))
+		return fmt.Errorf("error removing cloud from controller: %w", err)
 	}
 
 	return nil
@@ -113,7 +110,7 @@ func (c *removeCloudFromControllerCommand) Run(ctxt *cmd.Context) error {
 func (c *removeCloudFromControllerCommand) removeCloudFromController(ctxt *cmd.Context) error {
 	client, err := c.removeCloudFromControllerAPIFunc()
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	params := &apiparams.RemoveCloudFromControllerRequest{
@@ -123,7 +120,7 @@ func (c *removeCloudFromControllerCommand) removeCloudFromController(ctxt *cmd.C
 
 	err = client.RemoveCloudFromController(params)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	ctxt.Infof("Cloud %q removed from controller %q.", c.cloudName, c.targetControllerName)
@@ -131,11 +128,11 @@ func (c *removeCloudFromControllerCommand) removeCloudFromController(ctxt *cmd.C
 }
 
 func (c *removeCloudFromControllerCommand) cloudAPI() (removeCloudFromControllerAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return nil, errors.E(err, "could not determine the current controller")
+		return nil, fmt.Errorf("could not determine the current controller: %w", err)
 	}
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return nil, err
 	}

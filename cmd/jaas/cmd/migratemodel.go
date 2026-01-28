@@ -90,9 +90,8 @@ type MigrateAPI interface {
 
 // NewMigrateModelCommand returns a command to migrate models.
 func NewMigrateModelCommand() cmd.Command {
-	cmd := &migrateModelCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &migrateModelCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jimmAPIFunc = cmd.newJIMMClient
 	cmd.jujuApiFunc = cmd.newJujuClient
 	cmd.everyoneUser = "everyone@external"
@@ -104,12 +103,12 @@ func NewMigrateModelCommand() cmd.Command {
 // a controller that isn't registered with JAAS.
 type migrateModelCommand struct {
 	modelcmd.ControllerCommandBase
+
 	out          cmd.Output
 	jimmAPIFunc  func() (JIMMAPI, error)
 	jujuApiFunc  func() (MigrateAPI, error)
 	everyoneUser string
 
-	store             jujuclient.ClientStore
 	dialOpts          *jujuapi.DialOpts
 	targetController  string
 	modelName         string
@@ -157,13 +156,13 @@ func (c *migrateModelCommand) Init(args []string) error {
 func (c *migrateModelCommand) Run(ctxt *cmd.Context) error {
 	// Validate that the current controller exists.
 	// This is the controller where the model currently resides.
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return fmt.Errorf("could not determine current controller: %w", err)
 	}
 
 	// Get the model info from the current controller.
-	modelInfo, err := c.store.ModelByName(currentController, c.modelName)
+	modelInfo, err := c.ClientStore().ModelByName(currentController, c.modelName)
 	if err != nil {
 		return fmt.Errorf("could not find model %q on controller %q: %v", c.modelName, currentController, err)
 	}
@@ -244,7 +243,7 @@ func (c *migrateModelCommand) parseUserMappingFile() (map[string]string, error) 
 
 // getMigrationSpec creates the migration spec that will be used to initiate the migration.
 func (c *migrateModelCommand) getMigrationSpec(token string, modelUUID string) (controllerapi.MigrationSpec, error) {
-	store := c.store
+	store := c.ClientStore()
 	accountDetails, err := store.AccountDetails(c.targetController)
 	if err != nil {
 		return controllerapi.MigrationSpec{}, fmt.Errorf("could not get account details for controller %q: %w", c.targetController, err)
@@ -327,12 +326,12 @@ func (c *migrateModelCommand) validateUserMapping(userMapping map[string]string,
 }
 
 func (c *migrateModelCommand) newJujuClient() (MigrateAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %v", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +371,7 @@ func (j jujuMigrateAPI) ListOffers(filters ...crossmodel.ApplicationOfferFilter)
 // newJIMMClient creates a new JIMM client for the migration command.
 // It assumes the target controller is a JIMM controller.
 func (c *migrateModelCommand) newJIMMClient() (JIMMAPI, error) {
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, c.targetController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), c.targetController, "", nil)
 	if err != nil {
 		return nil, err
 	}

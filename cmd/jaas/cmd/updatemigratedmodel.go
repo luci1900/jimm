@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/juju/cmd/v3"
 	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
@@ -10,7 +12,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -28,9 +29,8 @@ externally to a different JAAS controller.
 // NewUpdateMigratedModelCommand returns a command to update the controller
 // running a model.
 func NewUpdateMigratedModelCommand() cmd.Command {
-	cmd := &updateMigratedModelCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &updateMigratedModelCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -38,7 +38,6 @@ func NewUpdateMigratedModelCommand() cmd.Command {
 // updateMigratedModelCommand updates the controller running a model.
 type updateMigratedModelCommand struct {
 	modelcmd.ControllerCommandBase
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	req apiparams.UpdateMigratedModelRequest
@@ -59,17 +58,17 @@ func (c *updateMigratedModelCommand) Info() *cmd.Info {
 func (c *updateMigratedModelCommand) Init(args []string) error {
 	switch len(args) {
 	default:
-		return errors.E("too many args")
+		return fmt.Errorf("too many args")
 	case 0:
-		return errors.E("controller not specified")
+		return fmt.Errorf("controller not specified")
 	case 1:
-		return errors.E("model uuid not specified")
+		return fmt.Errorf("model uuid not specified")
 	case 2:
 	}
 
 	c.req.TargetController = args[0]
 	if !names.IsValidModel(args[1]) {
-		return errors.E("invalid model uuid")
+		return fmt.Errorf("invalid model uuid")
 	}
 	c.req.ModelTag = names.NewModelTag(args[1]).String()
 	return nil
@@ -77,19 +76,19 @@ func (c *updateMigratedModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *updateMigratedModelCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
 
 	client := api.NewClient(apiCaller)
 	if err := client.UpdateMigratedModel(&c.req); err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }

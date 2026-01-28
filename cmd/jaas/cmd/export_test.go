@@ -22,27 +22,26 @@ var (
 type AccessResult = accessResult
 
 func NewListControllersCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &listControllersCommand{
-		store: store,
-	}
+	cmd := &listControllersCommand{}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewModelStatusCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &modelStatusCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewRevokeAuditLogAccessCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &revokeAuditLogAccessCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -51,10 +50,10 @@ type RemoveCloudFromControllerAPI = removeCloudFromControllerAPI
 
 func NewRemoveCloudFromControllerCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider, removeCloudFromControllerAPIFunc func() (RemoveCloudFromControllerAPI, error)) cmd.Command {
 	cmd := &removeCloudFromControllerCommand{
-		store:                            store,
 		dialOpts:                         cmdtest.TestDialOpts(lp),
 		removeCloudFromControllerAPIFunc: removeCloudFromControllerAPIFunc,
 	}
+	cmd.SetClientStore(store)
 	if removeCloudFromControllerAPIFunc == nil {
 		cmd.removeCloudFromControllerAPIFunc = cmd.cloudAPI
 	}
@@ -64,135 +63,135 @@ func NewRemoveCloudFromControllerCommandForTesting(store jujuclient.ClientStore,
 
 func NewRegisterControllerCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &registerControllerCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewUnregisterControllerCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &unregisterControllerCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewSetControllerDeprecatedCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &setControllerDeprecatedCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewImportModelCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &importModelCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewUpdateMigratedModelCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &updateMigratedModelCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewAddRoleCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &addRoleCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewRenameRoleCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &renameRoleCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewRemoveRoleCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &removeRoleCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewListRolesCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &listRolesCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewAddGroupCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &addGroupCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewAddRelationCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &addPermission{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewRemovePermissionCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &removePermissionCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewListPermissionsCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &listPermissionsCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewCheckPermissionCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &checkPermissionCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewCrossModelQueryCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &crossModelQueryCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 	cmd.crossModelQueryAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -200,23 +199,25 @@ func NewCrossModelQueryCommandForTesting(store jujuclient.ClientStore, lp jujuap
 
 func NewPurgeLogsCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &purgeLogsCommand{
-		store:    store,
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
 
 	return modelcmd.WrapBase(cmd)
 }
 
 func NewMigrateModelCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) *migrateModelCommand {
-	return &migrateModelCommand{
-		store:    store,
+	cmd := &migrateModelCommand{
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
+	return cmd
 }
 
 func NewUpgradeToCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) *upgradeToCommand {
-	return &upgradeToCommand{
-		store:    store,
+	cmd := &upgradeToCommand{
 		dialOpts: cmdtest.TestDialOpts(lp),
 	}
+	cmd.SetClientStore(store)
+	return cmd
 }

@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
 	jujuapi "github.com/juju/juju/api"
@@ -12,7 +14,6 @@ import (
 	"github.com/juju/names/v5"
 	jujuversion "github.com/juju/version/v2"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -28,9 +29,8 @@ Upgrades a controller to a specified version.
 
 // NewUpgradeToCommand returns a command to upgrade a controller to a specified version.
 func NewUpgradeToCommand() cmd.Command {
-	cmd := &upgradeToCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &upgradeToCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -41,7 +41,6 @@ type upgradeToCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store       jujuclient.ClientStore
 	dialOpts    *jujuapi.DialOpts
 	version     string
 	modelUUID   string
@@ -70,22 +69,22 @@ func (c *upgradeToCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *upgradeToCommand) Init(args []string) error {
 	if len(args) < 2 {
-		return errors.E("missing required arguments: version and model UUID")
+		return fmt.Errorf("missing required arguments: version and model UUID")
 	}
 	if len(args) > 2 {
-		return errors.E("too many arguments")
+		return fmt.Errorf("too many arguments")
 	}
 	c.version = args[0]
 	c.modelUUID = args[1]
 
 	// Validate version format
 	if _, err := jujuversion.Parse(c.version); err != nil {
-		return errors.E("invalid version format: " + c.version)
+		return fmt.Errorf("invalid version format: %s", c.version)
 	}
 
 	// Validate model UUID format
 	if !names.IsValidModel(c.modelUUID) {
-		return errors.E("invalid model UUID: " + c.modelUUID)
+		return fmt.Errorf("invalid model UUID: %s", c.modelUUID)
 	}
 
 	return nil
@@ -95,7 +94,7 @@ func (c *upgradeToCommand) Init(args []string) error {
 func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
 	client, err := c.jimmAPIFunc()
 	if err != nil {
-		return errors.E(err, "failed to create JIMM client")
+		return fmt.Errorf("failed to create JIMM client: %w", err)
 	}
 	defer client.Close()
 
@@ -105,12 +104,12 @@ func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
 		ModelTag:                modelTag.String(),
 	})
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	if !resp.Success {
 		err = c.out.Write(ctxt, resp)
 		if err != nil {
-			return errors.E(err)
+			return err
 		}
 	}
 	return nil
@@ -118,12 +117,12 @@ func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
 
 // newClient creates a new JIMM API client.
 func (c *upgradeToCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return nil, errors.E(err, "could not determine controller")
+		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return nil, err
 	}
