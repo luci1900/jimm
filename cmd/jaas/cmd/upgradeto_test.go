@@ -60,8 +60,8 @@ func (s *upgradeToSuite) TestUpgradeTo(c *gc.C) {
 		jimmAPIFunc: func() (JIMMAPI, error) {
 			return s.jimmClient, nil
 		},
-		store: s.store,
 	}
+	upgradeToCmd.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	f.SetOutput(s.writer)
 	upgradeToCmd.SetFlags(f)
@@ -99,8 +99,8 @@ func (s *upgradeToSuite) TestUpgradeToWithFailureResponse(c *gc.C) {
 		jimmAPIFunc: func() (JIMMAPI, error) {
 			return s.jimmClient, nil
 		},
-		store: s.store,
 	}
+	upgradeToCmd.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	f.SetOutput(s.writer)
 	upgradeToCmd.SetFlags(f)
@@ -135,8 +135,8 @@ func (s *upgradeToSuite) TestUpgradeToWithError(c *gc.C) {
 		jimmAPIFunc: func() (JIMMAPI, error) {
 			return s.jimmClient, nil
 		},
-		store: s.store,
 	}
+	upgradeToCmd.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	f.SetOutput(s.writer)
 	upgradeToCmd.SetFlags(f)
@@ -194,8 +194,8 @@ func (s *upgradeToSuite) TestCommandWithPositionalArgs(c *gc.C) {
 		jimmAPIFunc: func() (JIMMAPI, error) {
 			return s.jimmClient, nil
 		},
-		store: s.store,
 	}
+	upgradeToCmd.SetClientStore(s.store)
 	f := gnuflag.NewFlagSet("test", gnuflag.ExitOnError)
 	f.SetOutput(s.writer)
 	upgradeToCmd.SetFlags(f)

@@ -11,7 +11,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -27,9 +26,8 @@ Stop a job.
 
 // NewJobStopCommand returns a command to stop a job.
 func NewJobStopCommand() cmd.Command {
-	cmd := &jobStopCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &jobStopCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jobAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -39,7 +37,6 @@ func NewJobStopCommand() cmd.Command {
 type jobStopCommand struct {
 	modelcmd.ControllerCommandBase
 
-	store      jujuclient.ClientStore
 	dialOpts   *jujuapi.DialOpts
 	jobId      string
 	jobAPIFunc func() (JIMMAPI, error)
@@ -59,11 +56,11 @@ func (c *jobStopCommand) Info() *cmd.Info {
 // Init implements the cmd.Command interface.
 func (c *jobStopCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return errors.E("missing job id")
+		return fmt.Errorf("missing job id")
 	}
 	c.jobId, args = args[0], args[1:]
 	if len(args) > 0 {
-		return errors.E("unknown arguments")
+		return fmt.Errorf("unknown arguments")
 	}
 
 	return nil
@@ -90,12 +87,12 @@ func (c *jobStopCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (s *jobStopCommand) newClient() (JIMMAPI, error) {
-	currentController, err := s.store.CurrentController()
+	currentController, err := s.ClientStore().CurrentController()
 	if err != nil {
-		return nil, errors.E(err, "could not determine controller")
+		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := s.NewAPIRootWithDialOpts(s.store, currentController, "", s.dialOpts)
+	apiCaller, err := s.NewAPIRootWithDialOpts(s.ClientStore(), currentController, "", s.dialOpts)
 	if err != nil {
 		return nil, err
 	}

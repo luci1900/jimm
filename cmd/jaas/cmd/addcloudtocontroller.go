@@ -17,7 +17,6 @@ import (
 	"github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	jimmjujuapi "github.com/canonical/jimm/v3/internal/jujuapi"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -42,8 +41,8 @@ is already known and will error otherwise.
 func NewAddCloudToControllerCommand() cmd.Command {
 	cmd := &addCloudToControllerCommand{
 		cloudByNameFunc: jujucmdcommon.CloudByName,
-		store:           jujuclient.NewFileClientStore(),
 	}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -68,7 +67,6 @@ type addCloudToControllerCommand struct {
 	// compatible with the cloud on which the controller is running.
 	force bool
 
-	store           jujuclient.ClientStore
 	dialOpts        *jujuapi.DialOpts
 	jimmAPIFunc     func() (JIMMAPI, error)
 	cloudByNameFunc func(string) (*cloud.Cloud, error)
@@ -100,18 +98,18 @@ func (c *addCloudToControllerCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *addCloudToControllerCommand) Init(args []string) error {
 	if len(args) < 2 {
-		return errors.E("missing arguments")
+		return fmt.Errorf("missing arguments")
 	}
 	if len(args) > 2 {
-		return errors.E("too many arguments")
+		return fmt.Errorf("too many arguments")
 	}
 	c.dstControllerName = args[0]
 	if ok := names.IsValidControllerName(c.dstControllerName); !ok {
-		return errors.E("invalid controller name %q", c.dstControllerName)
+		return fmt.Errorf("invalid controller name %q", c.dstControllerName)
 	}
 	c.cloudName = args[1]
 	if ok := names.IsValidCloud(c.cloudName); !ok {
-		return errors.E("invalid cloud name %q", c.cloudName)
+		return fmt.Errorf("invalid cloud name %q", c.cloudName)
 	}
 
 	return nil
@@ -124,14 +122,14 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 	if c.cloudDefinitionFile != "" {
 		newCloud, err = c.readCloudFromFile()
 		if err != nil {
-			return errors.E(err, fmt.Sprintf("error reading cloud from file: %v", err))
+			return fmt.Errorf("error reading cloud from file: %w", err)
 		}
 	} else {
 		// It's possible that the user wants to add an existing cloud to a controller,
 		// so let's see if we can find the cloud.
 		newCloud, err = c.cloudByNameFunc(c.cloudName)
 		if err != nil {
-			return errors.E("could not find existing cloud, please provide a cloud file")
+			return fmt.Errorf("could not find existing cloud, please provide a cloud file")
 		}
 	}
 
@@ -146,7 +144,7 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 
 	jimmAPI, err := c.jimmAPIFunc()
 	if err != nil {
-		return errors.E(err, "could not create JIMM API client")
+		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}
 	defer jimmAPI.Close()
 
@@ -158,7 +156,7 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 			Force: &c.force,
 		},
 	}); err != nil {
-		return errors.E(err)
+		return err
 	}
 	ctxt.Infof("Cloud %q added to controller %q.", c.cloudName, c.dstControllerName)
 
@@ -168,31 +166,31 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 func (c *addCloudToControllerCommand) readCloudFromFile() (*cloud.Cloud, error) {
 	cloudDefinitionData, err := os.ReadFile(c.cloudDefinitionFile)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 	specifiedClouds, err := cloud.ParseCloudMetadata(cloudDefinitionData)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 	if len(specifiedClouds) == 0 {
-		return nil, errors.E("no clouds found in parsed yaml, please validate yaml keys")
+		return nil, fmt.Errorf("no clouds found in parsed yaml, please validate yaml keys")
 	}
 	var ok bool
 	foundCloud, ok := specifiedClouds[c.cloudName]
 	if !ok {
-		return nil, errors.E(fmt.Sprintf("cloud %q not found in file %q", c.cloudName, c.cloudDefinitionFile))
+		return nil, fmt.Errorf("cloud %q not found in file %q", c.cloudName, c.cloudDefinitionFile)
 	}
 
 	return &foundCloud, nil
 }
 
 func (c *addCloudToControllerCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("could not determine controller: %v", err))
+		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return nil, err
 	}

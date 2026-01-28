@@ -82,7 +82,6 @@ type bootstrapCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store            jujuclient.ClientStore
 	bootstrapAPIFunc func() (JIMMAPI, error)
 
 	cloud             string
@@ -100,9 +99,8 @@ type bootstrapCommand struct {
 // NewBootstrapStartCommand returns a command to start a job
 // that will bootstrap a Juju controller.
 func NewBootstrapStartCommand() cmd.Command {
-	cmd := &bootstrapCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &bootstrapCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.bootstrapAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -161,7 +159,7 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		return fmt.Errorf("failed to get cloud %q: %w", c.cloud, err)
 	}
 
-	cloudCreds, err := c.store.CredentialForCloud(c.cloud)
+	cloudCreds, err := c.ClientStore().CredentialForCloud(c.cloud)
 	if err != nil {
 		return fmt.Errorf("failed to get credential for cloud %q: %w", c.cloud, err)
 	}
@@ -271,12 +269,12 @@ Should you cancel this process, you can track the progress via job-status with t
 }
 
 func (c *bootstrapCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %v", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

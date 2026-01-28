@@ -30,9 +30,8 @@ Grants a user access to read audit logs.
 // NewGrantAuditLogAccessCommand returns a command used to grant
 // users access to audit logs.
 func NewGrantAuditLogAccessCommand() cmd.Command {
-	cmd := &grantAuditLogAccessCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &grantAuditLogAccessCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -45,7 +44,6 @@ type grantAuditLogAccessCommand struct {
 
 	username string
 
-	store       jujuclient.ClientStore
 	jimmAPIFunc func() (JIMMAPI, error)
 }
 
@@ -104,12 +102,12 @@ func (c *grantAuditLogAccessCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (c *grantAuditLogAccessCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

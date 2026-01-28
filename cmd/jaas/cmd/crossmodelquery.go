@@ -42,7 +42,6 @@ type crossModelQueryCommand struct {
 	// queryType holds the type of query the user wishes to use.
 	queryType string
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 	file     cmd.FileVar
 
@@ -52,9 +51,8 @@ type crossModelQueryCommand struct {
 // NewCrossModelQueryCommand returns a command to query all of the models
 // available to the current user.
 func NewCrossModelQueryCommand() cmd.Command {
-	cmd := &crossModelQueryCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &crossModelQueryCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.crossModelQueryAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -120,12 +118,12 @@ func (c *crossModelQueryCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (c *crossModelQueryCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, errors.Annotate(err, "could not determine controller")
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return nil, err
 	}

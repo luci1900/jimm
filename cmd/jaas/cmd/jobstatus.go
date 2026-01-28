@@ -14,7 +14,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -33,9 +32,8 @@ const sleepBetweenGetLogs = 1 * time.Second
 
 // NewJobStatusCommand returns a command to display logs for a job.
 func NewJobStatusCommand() cmd.Command {
-	cmd := &jobStatusCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &jobStatusCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jobAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -45,7 +43,6 @@ func NewJobStatusCommand() cmd.Command {
 type jobStatusCommand struct {
 	modelcmd.ControllerCommandBase
 
-	store      jujuclient.ClientStore
 	dialOpts   *jujuapi.DialOpts
 	jobId      string
 	jobAPIFunc func() (JIMMAPI, error)
@@ -74,11 +71,11 @@ func (c *jobStatusCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *jobStatusCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return errors.E("missing job id")
+		return fmt.Errorf("missing job id")
 	}
 	c.jobId, args = args[0], args[1:]
 	if len(args) > 0 {
-		return errors.E("unknown arguments")
+		return fmt.Errorf("unknown arguments")
 	}
 
 	c.sleepBetweenGetLogs = sleepBetweenGetLogs
@@ -120,12 +117,12 @@ func (p logPoller) watchJobLogs() error {
 			Watermark: watermark,
 		})
 		if err != nil {
-			return errors.E(err, "failed to get job info")
+			return fmt.Errorf("failed to get job info: %w", err)
 		}
 		for _, log := range response.Logs {
 			_, err = p.out.Write([]byte(log + "\n"))
 			if err != nil {
-				return errors.E(err, "failed to write job log")
+				return fmt.Errorf("failed to write job log: %w", err)
 			}
 		}
 		watermark = response.Watermark
@@ -135,22 +132,22 @@ func (p logPoller) watchJobLogs() error {
 		case params.StatusSuccessful:
 			_, err = p.out.Write([]byte("Job completed successfully.\n"))
 			if err != nil {
-				return errors.E(err, "failed to write job success message")
+				return fmt.Errorf("failed to write job success message: %w", err)
 			}
 			return nil
 		case params.StatusFailed:
 			_, err = p.out.Write([]byte("Job failed: " + response.Error + "\n"))
 			if err != nil {
-				return errors.E(err, "failed to write job error")
+				return fmt.Errorf("failed to write job error: %w", err)
 			}
 			return nil
 		case params.StatusPending:
 			_, err := p.out.Write([]byte("Job is pending...\n"))
 			if err != nil {
-				return errors.E(err, "failed to write job pending message")
+				return fmt.Errorf("failed to write job pending message: %w", err)
 			}
 		default:
-			return errors.E("unknown job status: %s", response.Status)
+			return fmt.Errorf("unknown job status: %s", response.Status)
 		}
 		if !p.follow {
 			return nil
@@ -160,12 +157,12 @@ func (p logPoller) watchJobLogs() error {
 }
 
 func (s *jobStatusCommand) newClient() (JIMMAPI, error) {
-	currentController, err := s.store.CurrentController()
+	currentController, err := s.ClientStore().CurrentController()
 	if err != nil {
-		return nil, errors.E(err, "could not determine controller")
+		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := s.NewAPIRootWithDialOpts(s.store, currentController, "", s.dialOpts)
+	apiCaller, err := s.NewAPIRootWithDialOpts(s.ClientStore(), currentController, "", s.dialOpts)
 	if err != nil {
 		return nil, err
 	}

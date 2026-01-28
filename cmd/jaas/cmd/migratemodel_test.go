@@ -16,6 +16,7 @@ import (
 	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/gnuflag"
 	controllerapi "github.com/juju/juju/api/controller/controller"
+	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/core/crossmodel"
 	"github.com/juju/juju/core/permission"
 	jjclient "github.com/juju/juju/jujuclient"
@@ -34,7 +35,8 @@ func setupMigrateAPIMock(c *qt.C) *mocks.MockMigrateAPI {
 
 func TestMigrate(t *testing.T) {
 	c := qt.New(t)
-	s := setupCmdMocks(c)
+
+	mocks := setupCmdMocks(c)
 	migrateClient := setupMigrateAPIMock(c)
 
 	userMappingFile, err := os.CreateTemp(c.TempDir(), "")
@@ -50,8 +52,8 @@ bob: bob@canonical.com
 
 	testUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
 
-	s.store.EXPECT().CurrentController().Return("target-controller", nil)
-	s.store.EXPECT().ModelByName("target-controller", "owner/test-model").Return(&jjclient.ModelDetails{
+	mocks.store.EXPECT().CurrentController().Return("target-controller", nil)
+	mocks.store.EXPECT().ModelByName("target-controller", "owner/test-model").Return(&jjclient.ModelDetails{
 		ModelUUID: testUUID,
 	}, nil)
 
@@ -76,15 +78,15 @@ bob: bob@canonical.com
 		UserMapping:           map[string]string{"alice": "alice@canonical.com", "bob": "bob@canonical.com"},
 		ModelTag:              "model-" + testUUID,
 	}
-	s.client.EXPECT().PrepareModelMigration(prepareMigrateParams).Return(apiparams.PrepareModelMigrationResponse{
+	mocks.client.EXPECT().PrepareModelMigration(prepareMigrateParams).Return(apiparams.PrepareModelMigrationResponse{
 		Token: "migration-token",
 	}, nil)
-	s.client.EXPECT().Close().Return(nil)
+	mocks.client.EXPECT().Close().Return(nil)
 
-	s.store.EXPECT().AccountDetails("target-controller").Return(&jjclient.AccountDetails{
+	mocks.store.EXPECT().AccountDetails("target-controller").Return(&jjclient.AccountDetails{
 		User: "test-user",
 	}, nil)
-	s.store.EXPECT().ControllerByName("target-controller").Return(&jjclient.ControllerDetails{
+	mocks.store.EXPECT().ControllerByName("target-controller").Return(&jjclient.ControllerDetails{
 		ControllerUUID: "target-controller-uuid",
 		APIEndpoints:   []string{"endpoint1"},
 		CACert:         "test-ca-cert",
@@ -104,13 +106,13 @@ bob: bob@canonical.com
 
 	migrateCmd := &migrateModelCommand{
 		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
+			return mocks.client, nil
 		},
 		jujuApiFunc: func() (MigrateAPI, error) {
 			return migrateClient, nil
 		},
-		store: s.store,
 	}
+	migrateCmd.SetClientStore(mocks.store)
 
 	initCommand(c, migrateCmd, "owner/test-model",
 		"target-controller",
@@ -119,7 +121,9 @@ bob: bob@canonical.com
 	)
 
 	ctx := newTestContext(c)
-	err = migrateCmd.Run(ctx)
+
+	mcmd := modelcmd.WrapBase(migrateCmd)
+	err = mcmd.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
 	res := cmdtesting.Stdout(ctx)

@@ -33,9 +33,8 @@ Returns audit log events.
 // NewListAuditEventsCommand returns a command to list audit events matching
 // specified criteria.
 func NewListAuditEventsCommand() cmd.Command {
-	cmd := &listAuditEventsCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &listAuditEventsCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -49,7 +48,6 @@ type listAuditEventsCommand struct {
 
 	args apiparams.FindAuditEventsRequest
 
-	store       jujuclient.ClientStore
 	jimmAPIFunc func() (JIMMAPI, error)
 }
 
@@ -115,12 +113,12 @@ func (c *listAuditEventsCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (c *listAuditEventsCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

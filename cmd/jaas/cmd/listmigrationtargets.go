@@ -37,7 +37,6 @@ type listMigrationTargetsCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store                       jujuclient.ClientStore
 	listMigrationTargetsAPIFunc func() (JIMMAPI, error)
 
 	modelTag string
@@ -46,9 +45,8 @@ type listMigrationTargetsCommand struct {
 // NewListMigrationTargetsCommand returns a command to list
 // valid migration targets for an internal model migration.
 func NewListMigrationTargetsCommand() cmd.Command {
-	cmd := &listMigrationTargetsCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &listMigrationTargetsCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.listMigrationTargetsAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -113,12 +111,12 @@ func (c *listMigrationTargetsCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (c *listMigrationTargetsCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %v", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
 	jujuapi "github.com/juju/juju/api"
@@ -10,7 +12,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -27,9 +28,8 @@ Sets the deprecated status of a controller.
 // NewSetControllerDeprecatedCommand returns a command used to grant
 // users access to audit logs.
 func NewSetControllerDeprecatedCommand() cmd.Command {
-	cmd := &setControllerDeprecatedCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
+	cmd := &setControllerDeprecatedCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -40,7 +40,6 @@ type setControllerDeprecatedCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store    jujuclient.ClientStore
 	dialOpts *jujuapi.DialOpts
 
 	controllerName string
@@ -68,23 +67,23 @@ func (c *setControllerDeprecatedCommand) SetFlags(f *gnuflag.FlagSet) {
 // Init implements the cmd.Command interface.
 func (c *setControllerDeprecatedCommand) Init(args []string) error {
 	if len(args) == 0 {
-		return errors.E("missing controller name")
+		return fmt.Errorf("missing controller name")
 	}
 	c.controllerName, args = args[0], args[1:]
 	if len(args) > 0 {
-		return errors.E("unknown arguments")
+		return fmt.Errorf("unknown arguments")
 	}
 	return nil
 }
 
 // Run implements Command.Run.
 func (c *setControllerDeprecatedCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
-		return errors.E(err, "could not determine controller")
+		return fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
 	if err != nil {
 		return err
 	}
@@ -96,12 +95,12 @@ func (c *setControllerDeprecatedCommand) Run(ctxt *cmd.Context) error {
 		Deprecated: true,
 	})
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	err = c.out.Write(ctxt, info)
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }

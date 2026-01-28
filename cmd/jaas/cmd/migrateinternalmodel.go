@@ -36,10 +36,8 @@ You may specify a model name (of the form owner/name) or model UUID.
 
 // NewMigrateInternalModelCommand returns a command to migrate internal models.
 func NewMigrateInternalModelCommand() cmd.Command {
-	cmd := &migrateInternalModelCommand{
-		store: jujuclient.NewFileClientStore(),
-	}
-
+	cmd := &migrateInternalModelCommand{}
+	cmd.SetClientStore(jujuclient.NewFileClientStore())
 	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
@@ -50,7 +48,6 @@ type migrateInternalModelCommand struct {
 	modelcmd.ControllerCommandBase
 	out cmd.Output
 
-	store            jujuclient.ClientStore
 	targetController string
 	modelTargets     []string
 
@@ -122,12 +119,12 @@ func (c *migrateInternalModelCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (c *migrateInternalModelCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.store.CurrentController()
+	currentController, err := c.ClientStore().CurrentController()
 	if err != nil {
 		return nil, fmt.Errorf("could not determine controller: %w", err)
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.store, currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}
