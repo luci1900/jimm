@@ -396,7 +396,7 @@ func (s *modelE2EManagerSuite) TestCreateModel(c *gc.C) {
 	for i, test := range createModelTests {
 		c.Logf("test %d. %s", i, test.about)
 		var mi jujuparams.ModelInfo
-		err := conn.APICall("ModelManager", 9, "", "CreateModel", jujuparams.ModelCreateArgs{
+		err := conn.APICall("ModelManager", 10, "", "CreateModel", jujuparams.ModelCreateArgs{
 			Name:               test.name,
 			OwnerTag:           test.ownerTag,
 			Config:             test.config,
@@ -437,7 +437,7 @@ func (s *modelE2EManagerSuite) TestCreateDuplicateModelsFails(c *gc.C) {
 
 	modelName := petname.Generate(2, "-")
 	createModel := func(mi jujuparams.ModelInfo) error {
-		return conn.APICall("ModelManager", 9, "", "CreateModel", jujuparams.ModelCreateArgs{
+		return conn.APICall("ModelManager", 10, "", "CreateModel", jujuparams.ModelCreateArgs{
 			Name:               modelName,
 			OwnerTag:           names.NewUserTag("bob@canonical.com").String(),
 			CloudTag:           names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
@@ -593,7 +593,7 @@ func (s *modelE2EManagerSuite) TestModifyModelAccessErrors(c *gc.C) {
 				test.modifyModelAccess,
 			},
 		}
-		err := conn.APICall("ModelManager", 9, "", "ModifyModelAccess", req, &res)
+		err := conn.APICall("ModelManager", 10, "", "ModifyModelAccess", req, &res)
 		c.Assert(err, gc.Equals, nil)
 		c.Assert(res.Results, gc.HasLen, 1)
 		c.Assert(res.Results[0].Error, gc.ErrorMatches, test.expectError)
@@ -609,7 +609,7 @@ func (s *modelE2EManagerSuite) TestDestroyModel(c *gc.C) {
 
 	modelName := petname.Generate(2, "-")
 	var mi jujuparams.ModelInfo
-	err := conn.APICall("ModelManager", 9, "", "CreateModel", jujuparams.ModelCreateArgs{
+	err := conn.APICall("ModelManager", 10, "", "CreateModel", jujuparams.ModelCreateArgs{
 		Name:               modelName,
 		OwnerTag:           names.NewUserTag("bob@canonical.com").String(),
 		CloudTag:           names.NewCloudTag(jimmtest.TestE2ECloudName).String(),

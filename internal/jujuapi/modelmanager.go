@@ -38,22 +38,22 @@ func init() {
 		unsetModelDefaultsMethod := rpc.Method(r.UnsetModelDefaults)
 		modelDefaultsForCloudsMethod := rpc.Method(r.ModelDefaultsForClouds)
 
-		r.AddMethod("ModelManager", 9, "ChangeModelCredential", changeModelCredentialMethod)
-		r.AddMethod("ModelManager", 9, "CreateModel", createModelMethod)
-		r.AddMethod("ModelManager", 9, "DestroyModels", destroyModelsMethod)
-		r.AddMethod("ModelManager", 9, "DumpModels", dumpModelsMethod)
-		r.AddMethod("ModelManager", 9, "DumpModelsDB", dumpModelsDBMethod)
-		r.AddMethod("ModelManager", 9, "ListModelSummaries", listModelSummariesMethod)
-		r.AddMethod("ModelManager", 9, "ListModels", listModelsMethod)
-		r.AddMethod("ModelManager", 9, "ModelInfo", modelInfoMethod)
-		r.AddMethod("ModelManager", 9, "ModelStatus", modelStatusMethod)
-		r.AddMethod("ModelManager", 9, "ModifyModelAccess", modifyModelAccessMethod)
-		r.AddMethod("ModelManager", 9, "ValidateModelUpgrades", validateModelUpgradesMethod)
-		r.AddMethod("ModelManager", 9, "SetModelDefaults", setModelDefaultsMethod)
-		r.AddMethod("ModelManager", 9, "UnsetModelDefaults", unsetModelDefaultsMethod)
-		r.AddMethod("ModelManager", 9, "ModelDefaultsForClouds", modelDefaultsForCloudsMethod)
+		r.AddMethod("ModelManager", 10, "ChangeModelCredential", changeModelCredentialMethod)
+		r.AddMethod("ModelManager", 10, "CreateModel", createModelMethod)
+		r.AddMethod("ModelManager", 10, "DestroyModels", destroyModelsMethod)
+		r.AddMethod("ModelManager", 10, "DumpModels", dumpModelsMethod)
+		r.AddMethod("ModelManager", 10, "DumpModelsDB", dumpModelsDBMethod)
+		r.AddMethod("ModelManager", 10, "ListModelSummaries", listModelSummariesMethod)
+		r.AddMethod("ModelManager", 10, "ListModels", listModelsMethod)
+		r.AddMethod("ModelManager", 10, "ModelInfo", modelInfoMethod)
+		r.AddMethod("ModelManager", 10, "ModelStatus", modelStatusMethod)
+		r.AddMethod("ModelManager", 10, "ModifyModelAccess", modifyModelAccessMethod)
+		r.AddMethod("ModelManager", 10, "ValidateModelUpgrades", validateModelUpgradesMethod)
+		r.AddMethod("ModelManager", 10, "SetModelDefaults", setModelDefaultsMethod)
+		r.AddMethod("ModelManager", 10, "UnsetModelDefaults", unsetModelDefaultsMethod)
+		r.AddMethod("ModelManager", 10, "ModelDefaultsForClouds", modelDefaultsForCloudsMethod)
 
-		return []int{9}
+		return []int{10}
 	}
 }
 

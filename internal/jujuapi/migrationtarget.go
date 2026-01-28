@@ -41,16 +41,16 @@ func init() {
 		latestLogTime := rpc.Method(r.LatestLogTime)
 		abort := rpc.Method(r.Abort)
 
-		r.AddMethod("MigrationTarget", 4, "Prechecks", preChecks)
-		r.AddMethod("MigrationTarget", 4, "CACert", caCert)
-		r.AddMethod("MigrationTarget", 4, "Activate", activate)
-		r.AddMethod("MigrationTarget", 4, "AdoptResources", adoptResources)
-		r.AddMethod("MigrationTarget", 4, "Abort", abort)
-		r.AddMethod("MigrationTarget", 4, "CheckMachines", checkMachines)
-		r.AddMethod("MigrationTarget", 4, "Import", importMethod)
-		r.AddMethod("MigrationTarget", 4, "LatestLogTime", latestLogTime)
+		r.AddMethod("MigrationTarget", 6, "Prechecks", preChecks)
+		r.AddMethod("MigrationTarget", 6, "CACert", caCert)
+		r.AddMethod("MigrationTarget", 6, "Activate", activate)
+		r.AddMethod("MigrationTarget", 6, "AdoptResources", adoptResources)
+		r.AddMethod("MigrationTarget", 6, "Abort", abort)
+		r.AddMethod("MigrationTarget", 6, "CheckMachines", checkMachines)
+		r.AddMethod("MigrationTarget", 6, "Import", importMethod)
+		r.AddMethod("MigrationTarget", 6, "LatestLogTime", latestLogTime)
 
-		return []int{4}
+		return []int{6}
 	}
 }
 
