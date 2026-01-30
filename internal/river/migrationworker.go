@@ -1,3 +1,5 @@
+// Copyright 2026 Canonical.
+
 package river
 
 import (
@@ -7,6 +9,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 )
 
 // newMigrationWorker creates a new upgradeMigrationWorker.
@@ -30,13 +33,34 @@ func newMigrationWorker(openfgaClient *openfga.OFGAClient, store Store, upgradeM
 
 // migrationWorkerArgs defines the arguments for the migrationWorker job.
 type migrationWorkerArgs struct {
-	Username             string `json:"username"`
-	UUID                 string `json:"uuid"`
+	Username string `json:"username"`
+	// UUID is the model UUID to migrate. We treat this as unique to prevent
+	// multiple concurrent migrations of the same model to many controllers.
+	UUID                 string `json:"uuid" river:"unique"`
 	TargetControllerName string `json:"target_controller_name"`
 }
 
 // Kind implements the [river.JobArgs] interface.
 func (migrationWorkerArgs) Kind() string { return "upgrade-migration" }
+
+// InsertOpts implements the [river.JobArgsWithInsertOpts] interface.
+//
+// A job is considered unique by it's model uuid argument, and if it hasn't reached a completed state.
+// Once it reaches completed, this job may be launched for the same model uuid again.
+func (migrationWorkerArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+			ByState: []rivertype.JobState{
+				rivertype.JobStateAvailable,
+				rivertype.JobStatePending,
+				rivertype.JobStateRunning,
+				rivertype.JobStateRetryable,
+				rivertype.JobStateScheduled,
+			},
+		},
+	}
+}
 
 type migrationWorker struct {
 	// An embedded WorkerDefaults sets up default methods to fulfill the rest of
