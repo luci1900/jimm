@@ -41,6 +41,7 @@ type setControllerDeprecatedCommand struct {
 	out cmd.Output
 
 	dialOpts *jujuapi.DialOpts
+	client   JIMMAPI
 
 	controllerName string
 }
@@ -78,17 +79,22 @@ func (c *setControllerDeprecatedCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *setControllerDeprecatedCommand) Run(ctxt *cmd.Context) error {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return fmt.Errorf("could not determine controller: %w", err)
-	}
+	var client JIMMAPI
+	if c.client != nil {
+		client = c.client
+	} else {
+		currentController, err := c.ClientStore().CurrentController()
+		if err != nil {
+			return fmt.Errorf("could not determine controller: %w", err)
+		}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
-	if err != nil {
-		return err
-	}
+		apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
+		if err != nil {
+			return err
+		}
 
-	client := api.NewClient(apiCaller)
+		client = api.NewClient(apiCaller)
+	}
 
 	info, err := client.SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
 		Name:       c.controllerName,
