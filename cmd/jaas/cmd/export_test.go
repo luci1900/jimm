@@ -55,42 +55,6 @@ func NewSetControllerDeprecatedCommandForTesting(store jujuclient.ClientStore, l
 	return modelcmd.WrapBase(cmd)
 }
 
-func NewAddRoleCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &addRoleCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
-func NewRenameRoleCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &renameRoleCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
-func NewRemoveRoleCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &removeRoleCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
-func NewListRolesCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &listRolesCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
 func NewAddGroupCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &addGroupCommand{
 		dialOpts: cmdtest.TestDialOpts(lp),
