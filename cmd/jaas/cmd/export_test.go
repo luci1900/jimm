@@ -100,42 +100,6 @@ func NewAddGroupCommandForTesting(store jujuclient.ClientStore, lp jujuapi.Login
 	return modelcmd.WrapBase(cmd)
 }
 
-func NewAddRelationCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &addPermission{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
-func NewRemovePermissionCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &removePermissionCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
-func NewListPermissionsCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &listPermissionsCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
-func NewCheckPermissionCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
-	cmd := &checkPermissionCommand{
-		dialOpts: cmdtest.TestDialOpts(lp),
-	}
-	cmd.SetClientStore(store)
-
-	return modelcmd.WrapBase(cmd)
-}
-
 func NewCrossModelQueryCommandForTesting(store jujuclient.ClientStore, lp jujuapi.LoginProvider) cmd.Command {
 	cmd := &crossModelQueryCommand{
 		dialOpts: cmdtest.TestDialOpts(lp),
