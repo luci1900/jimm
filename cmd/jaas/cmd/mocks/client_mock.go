@@ -159,6 +159,45 @@ func (c *MockJIMMAPIAddGroupCall) DoAndReturn(f func(*params.AddGroupRequest) (p
 	return c
 }
 
+// AddModelToController mocks base method.
+func (m *MockJIMMAPI) AddModelToController(req *params.AddModelToControllerRequest) (params0.ModelInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddModelToController", req)
+	ret0, _ := ret[0].(params0.ModelInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddModelToController indicates an expected call of AddModelToController.
+func (mr *MockJIMMAPIMockRecorder) AddModelToController(req any) *MockJIMMAPIAddModelToControllerCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddModelToController", reflect.TypeOf((*MockJIMMAPI)(nil).AddModelToController), req)
+	return &MockJIMMAPIAddModelToControllerCall{Call: call}
+}
+
+// MockJIMMAPIAddModelToControllerCall wrap *gomock.Call
+type MockJIMMAPIAddModelToControllerCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockJIMMAPIAddModelToControllerCall) Return(arg0 params0.ModelInfo, arg1 error) *MockJIMMAPIAddModelToControllerCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockJIMMAPIAddModelToControllerCall) Do(f func(*params.AddModelToControllerRequest) (params0.ModelInfo, error)) *MockJIMMAPIAddModelToControllerCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockJIMMAPIAddModelToControllerCall) DoAndReturn(f func(*params.AddModelToControllerRequest) (params0.ModelInfo, error)) *MockJIMMAPIAddModelToControllerCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // AddRelation mocks base method.
 func (m *MockJIMMAPI) AddRelation(req *params.AddRelationRequest) error {
 	m.ctrl.T.Helper()
@@ -814,6 +853,45 @@ func (c *MockJIMMAPIListRolesCall) Do(f func(*params.ListRolesRequest) ([]params
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockJIMMAPIListRolesCall) DoAndReturn(f func(*params.ListRolesRequest) ([]params.Role, error)) *MockJIMMAPIListRolesCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ListUserClouds mocks base method.
+func (m *MockJIMMAPI) ListUserClouds(req *params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUserClouds", req)
+	ret0, _ := ret[0].(map[names.CloudTag]cloud.Cloud)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUserClouds indicates an expected call of ListUserClouds.
+func (mr *MockJIMMAPIMockRecorder) ListUserClouds(req any) *MockJIMMAPIListUserCloudsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserClouds", reflect.TypeOf((*MockJIMMAPI)(nil).ListUserClouds), req)
+	return &MockJIMMAPIListUserCloudsCall{Call: call}
+}
+
+// MockJIMMAPIListUserCloudsCall wrap *gomock.Call
+type MockJIMMAPIListUserCloudsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockJIMMAPIListUserCloudsCall) Return(arg0 map[names.CloudTag]cloud.Cloud, arg1 error) *MockJIMMAPIListUserCloudsCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockJIMMAPIListUserCloudsCall) Do(f func(*params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error)) *MockJIMMAPIListUserCloudsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockJIMMAPIListUserCloudsCall) DoAndReturn(f func(*params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error)) *MockJIMMAPIListUserCloudsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

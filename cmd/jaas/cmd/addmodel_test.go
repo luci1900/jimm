@@ -24,7 +24,7 @@ import (
 
 type addModelSuite struct {
 	cloudClient *mocks.MockAddModelCloudAPI
-	jimmClient  *mocks.MockAddModelJIMMAPI
+	jimmClient  *mocks.MockJIMMAPI
 	store       *mocks.MockClientStore
 	writer      *mocks.MockWriter
 }
@@ -34,7 +34,7 @@ var _ = gc.Suite(&addModelSuite{})
 func (s *addModelSuite) SetupMocks(c *gc.C) *gomock.Controller {
 	ctrl := gomock.NewController(c)
 	s.cloudClient = mocks.NewMockAddModelCloudAPI(ctrl)
-	s.jimmClient = mocks.NewMockAddModelJIMMAPI(ctrl)
+	s.jimmClient = mocks.NewMockJIMMAPI(ctrl)
 	s.store = mocks.NewMockClientStore(ctrl)
 	s.writer = mocks.NewMockWriter(ctrl)
 
@@ -139,7 +139,7 @@ func (s *addModelSuite) TestAddModel(c *gc.C) {
 		}, nil)
 
 		command := &addModelCommand{
-			jimmAPIFunc: func(root api.Connection) AddModelJIMMAPI {
+			jimmAPIFunc: func(root api.Connection) JIMMAPI {
 				return s.jimmClient
 			},
 			cloudAPIFunc: func(root api.Connection) AddModelCloudAPI {

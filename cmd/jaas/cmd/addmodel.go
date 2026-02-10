@@ -30,11 +30,6 @@ import (
 	jimmapiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
-type AddModelJIMMAPI interface {
-	AddModelToController(req *jimmapiparams.AddModelToControllerRequest) (params.ModelInfo, error)
-	ListUserClouds(req *jimmapiparams.ListUserCloudsRequest) (map[names.CloudTag]jujucloud.Cloud, error)
-}
-
 type AddModelCloudAPI interface {
 	AddCredential(tag string, credential jujucloud.Credential) error
 	Cloud(names.CloudTag) (jujucloud.Cloud, error)
@@ -44,7 +39,7 @@ type AddModelCloudAPI interface {
 // NewAddModelCommand returns a command to add a model.
 func NewAddModelCommand() cmd.Command {
 	command := &addModelCommand{
-		jimmAPIFunc: func(root api.Connection) AddModelJIMMAPI {
+		jimmAPIFunc: func(root api.Connection) JIMMAPI {
 			return jimmapi.NewClient(root)
 		},
 		cloudAPIFunc: func(root api.Connection) AddModelCloudAPI {
@@ -58,12 +53,12 @@ func NewAddModelCommand() cmd.Command {
 // addModelCommand calls the API to add a new model.
 type addModelCommand struct {
 	modelcmd.ControllerCommandBase
-	jimmAPIFunc  func(api.Connection) AddModelJIMMAPI
+	jimmAPIFunc  func(api.Connection) JIMMAPI
 	cloudAPIFunc func(api.Connection) AddModelCloudAPI
 
 	modelOwner  string
 	apiRoot     api.Connection
-	jimmClient  AddModelJIMMAPI
+	jimmClient  JIMMAPI
 	cloudClient AddModelCloudAPI
 
 	Name             string
