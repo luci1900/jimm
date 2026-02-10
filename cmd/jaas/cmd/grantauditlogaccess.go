@@ -38,7 +38,7 @@ func NewGrantAuditLogAccessCommand() cmd.Command {
 // grantAuditLogAccessCommand displays full
 // model status.
 type grantAuditLogAccessCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	username string
 }

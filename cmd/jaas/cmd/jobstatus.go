@@ -38,7 +38,7 @@ func NewJobStatusCommand() cmd.Command {
 
 // jobStatusCommand displays logs for a job.
 type jobStatusCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	jobId string
 

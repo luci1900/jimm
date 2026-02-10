@@ -54,7 +54,7 @@ func NewAddGroupCommand() cmd.Command {
 
 // addGroupCommand adds a group.
 type addGroupCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	name string
@@ -124,7 +124,7 @@ func NewRenameGroupCommand() cmd.Command {
 
 // renameGroupCommand renames a group.
 type renameGroupCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	name    string
 	newName string
@@ -184,7 +184,7 @@ func NewRemoveGroupCommand() cmd.Command {
 
 // removeGroupCommand Removes a group.
 type removeGroupCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	name  string
@@ -270,7 +270,7 @@ func NewListGroupsCommand() cmd.Command {
 
 // listGroupsCommand Lists all groups.
 type listGroupsCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	limit  int

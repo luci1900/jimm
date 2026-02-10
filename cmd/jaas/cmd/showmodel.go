@@ -45,7 +45,7 @@ func NewShowModelCommand() cmd.Command {
 // showModelCommand displays information about
 // which controller the specified model is running on.
 type showModelCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	modelQualifier string

@@ -35,7 +35,7 @@ func NewUpdateMigratedModelCommand() cmd.Command {
 
 // updateMigratedModelCommand updates the controller running a model.
 type updateMigratedModelCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	req apiparams.UpdateMigratedModelRequest
 }

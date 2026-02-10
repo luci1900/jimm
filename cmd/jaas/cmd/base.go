@@ -3,38 +3,25 @@ package cmd
 import (
 	"fmt"
 
-	jujuapi "github.com/juju/juju/api"
 	"github.com/juju/juju/cmd/modelcmd"
 
 	"github.com/canonical/jimm/v3/pkg/api"
 )
 
-type JAASCommand interface {
-	modelcmd.ControllerCommand
-
-	SetJIMMAPI(JIMMAPI)
-	JIMMAPI() (JIMMAPI, error)
-}
-
-type JAASCommandBase struct {
+type jaasCommandBase struct {
 	modelcmd.ControllerCommandBase
 	jimmAPI JIMMAPI
-	dialOpts *jujuapi.DialOpts
 }
 
-func (c *JAASCommandBase) SetJIMMAPI(api JIMMAPI) {
+func (c *jaasCommandBase) SetJIMMAPI(api JIMMAPI) {
 	c.jimmAPI = api
 }
 
-func (c *JAASCommandBase) SetDialOpts(dialOpts *jujuapi.DialOpts) {
-	c.dialOpts = dialOpts
-}
-
-func (c *JAASCommandBase) JIMMAPI() (JIMMAPI, error) {
+func (c *jaasCommandBase) JIMMAPI() (JIMMAPI, error) {
 	return c.JIMMAPIWithController("")
 }
 
-func (c *JAASCommandBase) JIMMAPIWithController(controller string) (JIMMAPI, error) {
+func (c *jaasCommandBase) JIMMAPIWithController(controller string) (JIMMAPI, error) {
 	if c.jimmAPI != nil {
 		return c.jimmAPI, nil
 	}
@@ -48,7 +35,7 @@ func (c *JAASCommandBase) JIMMAPIWithController(controller string) (JIMMAPI, err
 		}
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
+	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
 	if err != nil {
 		return nil, err
 	}

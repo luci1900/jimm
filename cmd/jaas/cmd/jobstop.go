@@ -32,7 +32,7 @@ func NewJobStopCommand() cmd.Command {
 
 // jobStopCommand to stop a job.
 type jobStopCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	jobId string
 }

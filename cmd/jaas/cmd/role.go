@@ -58,7 +58,7 @@ func NewAddRoleCommand() cmd.Command {
 
 // addRoleCommand adds a role.
 type addRoleCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	name string
@@ -128,7 +128,7 @@ func NewRenameRoleCommand() cmd.Command {
 
 // renameRoleCommand renames a role.
 type renameRoleCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	name    string
 	newName string
@@ -188,7 +188,7 @@ func NewRemoveRoleCommand() cmd.Command {
 
 // removeRoleCommand Removes a role.
 type removeRoleCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	name  string
@@ -274,7 +274,7 @@ func NewListRolesCommand() cmd.Command {
 
 // listRolesCommand Lists all roles.
 type listRolesCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	limit  int

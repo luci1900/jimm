@@ -165,7 +165,7 @@ func NewAddPermissionCommand() cmd.Command {
 
 // addPermissionCommand adds permission.
 type addPermissionCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	object       string
@@ -249,7 +249,7 @@ func NewRemovePermissionCommand() cmd.Command {
 
 // removePermissionCommand revokes access.
 type removePermissionCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	object       string
@@ -325,7 +325,7 @@ func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
 
 // checkPermissionCommand holds the fields required to check for access.
 type checkPermissionCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	tuple apiparams.RelationshipTuple
@@ -470,7 +470,7 @@ func NewListPermissionsCommand() cmd.Command {
 
 // listPermissionsCommand lists permissions.
 type listPermissionsCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	tuple        apiparams.RelationshipTuple

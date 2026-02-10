@@ -33,7 +33,7 @@ criteria:
 )
 
 type listMigrationTargetsCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	modelTag string

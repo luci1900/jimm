@@ -36,7 +36,7 @@ func NewRemoveCloudFromControllerCommand() cmd.Command {
 
 // addControllerCommand adds a controller.
 type removeCloudFromControllerCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	// cloudName is the name of the cloud to remove.

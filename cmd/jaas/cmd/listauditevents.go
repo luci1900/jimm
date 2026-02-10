@@ -41,7 +41,7 @@ func NewListAuditEventsCommand() cmd.Command {
 // listAuditEventsCommand displays full
 // model status.
 type listAuditEventsCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	args apiparams.FindAuditEventsRequest

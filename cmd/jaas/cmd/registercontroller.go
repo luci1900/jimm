@@ -58,7 +58,7 @@ func NewRegisterControllerCommand() cmd.Command {
 
 // registerControllerCommand register a controller.
 type registerControllerCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	file           cmd.FileVar

@@ -101,7 +101,7 @@ func NewMigrateModelCommand() cmd.Command {
 // migrateModelCommand migrates a model to JAAS from
 // a controller that isn't registered with JAAS.
 type migrateModelCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	out          cmd.Output
 	jimmAPIFunc  func() (JIMMAPI, error)

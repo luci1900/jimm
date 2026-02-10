@@ -33,7 +33,7 @@ The queries expect a JQ query string.
 // crossModelQueryCommand queries all models available to the current
 // user.
 type crossModelQueryCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 	// query holds the query the user wishes to run against their models.
 	query string

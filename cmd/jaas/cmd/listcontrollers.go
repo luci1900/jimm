@@ -31,7 +31,7 @@ func NewListControllersCommand() cmd.Command {
 // listControllersCommand shows controller information
 // for all controllers known to JIMM.
 type listControllersCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 }
 

@@ -35,7 +35,7 @@ func NewSetControllerDeprecatedCommand() cmd.Command {
 // setControllerDeprecatedCommand displays full
 // model status.
 type setControllerDeprecatedCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	controllerName string

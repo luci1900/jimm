@@ -48,7 +48,7 @@ it separately.
 
 // destroyControllerCommand starts a destroy-controller job on the controller.
 type destroyControllerCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	controllerName string

@@ -47,7 +47,7 @@ func NewAddCloudToControllerCommand() cmd.Command {
 
 // addControllerCommand adds a controller.
 type addCloudToControllerCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	// cloudName is the name of the cloud to add.

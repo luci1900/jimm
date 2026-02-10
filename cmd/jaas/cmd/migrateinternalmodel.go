@@ -43,7 +43,7 @@ func NewMigrateInternalModelCommand() cmd.Command {
 
 // migrateInternalModelCommand migrates a model between controllers within JAAS.
 type migrateInternalModelCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	targetController string

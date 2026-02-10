@@ -36,7 +36,7 @@ func NewRevokeAuditLogAccessCommand() cmd.Command {
 // revokeAuditLogAccess displays full
 // model status.
 type revokeAuditLogAccessCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	username string
 }

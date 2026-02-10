@@ -35,7 +35,7 @@ func NewUnregisterControllerCommand() cmd.Command {
 
 // unregisterControllerCommand unregister a controller.
 type unregisterControllerCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	params apiparams.RemoveControllerRequest

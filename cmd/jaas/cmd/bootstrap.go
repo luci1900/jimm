@@ -78,7 +78,7 @@ Note that JIMM will internally do the following:
 
 // bootstrapCommand starts a bootstrap jobon the controller.
 type bootstrapCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	cloud             string

@@ -37,7 +37,7 @@ func NewPurgeLogsCommand() cmd.Command {
 
 // purgeLogsCommand purges logs.
 type purgeLogsCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	date time.Time

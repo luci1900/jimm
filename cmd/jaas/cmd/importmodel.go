@@ -42,7 +42,7 @@ func NewImportModelCommand() cmd.Command {
 
 // importModelCommand imports a model.
 type importModelCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 
 	req apiparams.ImportModelRequest
 }

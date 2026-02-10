@@ -35,7 +35,7 @@ func NewUpgradeToCommand() cmd.Command {
 
 // upgradeToCommand upgrades a controller to a specified version.
 type upgradeToCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	version   string

@@ -36,7 +36,7 @@ func NewModelStatusCommand() cmd.Command {
 // modelStatusCommand displays full
 // model status.
 type modelStatusCommand struct {
-	JAASCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	modelUUID string
