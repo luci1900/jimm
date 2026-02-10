@@ -79,7 +79,7 @@ func (c *jobStatusCommand) Init(args []string) error {
 
 // Run implements cmd.Command.Run interface.
 func (c *jobStatusCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %v", err)
 	}

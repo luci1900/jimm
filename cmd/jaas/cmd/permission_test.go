@@ -37,7 +37,7 @@ func TestAddRelation(t *testing.T) {
 
 	command := &addPermissionCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	initCommand(c, command, "user-alice@canonical.com", "member", "group-mygroup")
 
@@ -65,7 +65,7 @@ func TestAddRelationFromFile(t *testing.T) {
 
 	command := &addPermissionCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	tmpFile := makeTempFile(c, "add_permission_test.json", `[{
 	  "object": "user-alice@canonical.com",
@@ -99,7 +99,7 @@ func TestRemovePermission(t *testing.T) {
 
 	command := &removePermissionCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	initCommand(c, command, "user-alice@canonical.com", "member", "group-mygroup")
 
@@ -127,7 +127,7 @@ func TestRemoveRelationFromFile(t *testing.T) {
 
 	command := &removePermissionCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	tmpFile := makeTempFile(c, "add_permission_test.json", `[{
 	  "object": "user-alice@canonical.com",
@@ -161,7 +161,7 @@ func TestCheckPermission(t *testing.T) {
 
 	command := &checkPermissionCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	initCommand(c, command, "user-alice@canonical.com", "member", "group-mygroup")
 
@@ -191,7 +191,7 @@ func TestListPermissions(t *testing.T) {
 
 	command := &listPermissionsCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	initCommand(c, command, "--object", "user-alice@canonical.com", "--relation", "member", "--target", "group-mygroup", "--resolve")
 
@@ -228,7 +228,7 @@ func TestListPermissionsTabular(t *testing.T) {
 
 	command := &listPermissionsCommand{}
 	command.SetClientStore(cmdMocks.store)
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	initCommand(c, command, "--format", "tabular", "--object", "user-alice@canonical.com", "--relation", "member", "--target", "group-mygroup", "--resolve")
 

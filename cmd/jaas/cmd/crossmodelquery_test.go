@@ -35,7 +35,7 @@ func TestCrossModelQueryRun(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &crossModelQueryCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, ".applications")
 
@@ -59,7 +59,7 @@ func TestCrossModelQueryRunClientError(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &crossModelQueryCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, ".applications")
 

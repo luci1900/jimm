@@ -77,7 +77,7 @@ func TestRunDetached(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &destroyControllerCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command, "controller-name", "--detach", "--no-prompt")
@@ -104,7 +104,7 @@ func TestWatchLogs(t *testing.T) {
 	}, nil)
 
 	command := &destroyControllerCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command, "controller-name", "--no-prompt")

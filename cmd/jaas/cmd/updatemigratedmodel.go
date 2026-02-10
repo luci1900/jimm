@@ -73,7 +73,7 @@ func (c *updateMigratedModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *updateMigratedModelCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

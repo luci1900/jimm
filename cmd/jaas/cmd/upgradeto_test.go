@@ -34,7 +34,7 @@ func TestUpgradeTo(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	upgradeToCmd := &upgradeToCommand{}
-	upgradeToCmd.SetJIMMAPI(s.client)
+	upgradeToCmd.setJIMMAPI(s.client)
 	upgradeToCmd.SetClientStore(s.store)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 
@@ -62,7 +62,7 @@ func TestUpgradeToWithFailureResponse(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	upgradeToCmd := &upgradeToCommand{}
-	upgradeToCmd.SetJIMMAPI(s.client)
+	upgradeToCmd.setJIMMAPI(s.client)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 
 	ctx := newTestContext(c)
@@ -87,7 +87,7 @@ func TestUpgradeToWithError(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	upgradeToCmd := &upgradeToCommand{}
-	upgradeToCmd.SetJIMMAPI(s.client)
+	upgradeToCmd.setJIMMAPI(s.client)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 
 	ctx := newTestContext(c)
@@ -142,7 +142,7 @@ func TestUpgradeToWithPositionalArgs(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	upgradeToCmd := &upgradeToCommand{}
-	upgradeToCmd.SetJIMMAPI(s.client)
+	upgradeToCmd.setJIMMAPI(s.client)
 	upgradeToCmd.SetClientStore(s.store)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 

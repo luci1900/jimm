@@ -77,7 +77,7 @@ func (c *grantAuditLogAccessCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *grantAuditLogAccessCommand) Run(ctxt *cmd.Context) error {
-	api, err := c.JIMMAPI()
+	api, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

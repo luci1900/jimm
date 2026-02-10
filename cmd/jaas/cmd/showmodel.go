@@ -85,7 +85,7 @@ func (c *showModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *showModelCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

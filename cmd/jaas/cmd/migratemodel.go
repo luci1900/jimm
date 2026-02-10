@@ -369,5 +369,5 @@ func (j jujuMigrateAPI) ListOffers(filters ...crossmodel.ApplicationOfferFilter)
 // newJIMMClient creates a new JIMM client for the migration command.
 // It assumes the target controller is a JIMM controller.
 func (c *migrateModelCommand) newJIMMClient() (JIMMAPI, error) {
-	return c.JIMMAPIWithController(c.targetController)
+	return c.getJIMMAPIWithController(c.targetController)
 }

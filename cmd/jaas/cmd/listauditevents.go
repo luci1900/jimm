@@ -86,7 +86,7 @@ func (c *listAuditEventsCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *listAuditEventsCommand) Run(ctxt *cmd.Context) error {
-	api, err := c.JIMMAPI()
+	api, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

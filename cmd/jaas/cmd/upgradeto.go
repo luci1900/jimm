@@ -87,7 +87,7 @@ func (c *upgradeToCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %w", err)
 	}

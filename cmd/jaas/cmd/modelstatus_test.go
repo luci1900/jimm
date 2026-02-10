@@ -42,7 +42,7 @@ func TestModelStatusSuperuser(t *testing.T) {
 	s.client.EXPECT().Close()
 
 	statusCmd := &modelStatusCommand{}
-	statusCmd.SetJIMMAPI(s.client)
+	statusCmd.setJIMMAPI(s.client)
 	initCommand(c, statusCmd, "2cb433a6-04eb-4ec4-9567-90426d20a004")
 
 	ctx := newTestContext(c)

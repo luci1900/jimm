@@ -98,7 +98,7 @@ func (c *addRoleCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *addRoleCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (c *renameRoleCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -313,7 +313,7 @@ func (c *listRolesCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listRolesCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

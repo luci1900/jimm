@@ -165,7 +165,7 @@ func TestRegisterControllerRun_Success_FromFile(t *testing.T) {
 
 	inner := &registerControllerCommand{}
 	inner.SetClientStore(cmdMocks.store)
-	inner.SetJIMMAPI(cmdMocks.client)
+	inner.setJIMMAPI(cmdMocks.client)
 	command := modelcmd.WrapBase(inner)
 
 	payload := `uuid: deadbeef-1bad-500d-9000-4b1d0d06f00d

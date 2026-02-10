@@ -17,7 +17,7 @@ import (
 func runSetControllerDeprecatedCommand(c *qt.C, mocks *cmdMocks, args ...string) (string, error) {
 	setControllerDeprecatedCmd := setControllerDeprecatedCommand{}
 	setControllerDeprecatedCmd.SetClientStore(mocks.store)
-	setControllerDeprecatedCmd.SetJIMMAPI(mocks.client)
+	setControllerDeprecatedCmd.setJIMMAPI(mocks.client)
 
 	mocks.client.EXPECT().Close().Times(1)
 	ctx := newTestContext(c)

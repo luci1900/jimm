@@ -43,7 +43,7 @@ func (s *jobStatusSuite) TestJobStatus(c *gc.C) {
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -68,7 +68,7 @@ func (s *jobStatusSuite) TestJobStatus_Failed(c *gc.C) {
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -117,7 +117,7 @@ func (s *jobStatusSuite) TestJobStatus_Running(c *gc.C) {
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -144,7 +144,7 @@ func (s *jobStatusSuite) TestJobStatus_NoFollow(c *gc.C) {
 		sleepBetweenGetLogs: 0,
 		follow:              false,
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -174,7 +174,7 @@ func (s *jobStatusSuite) TestJobStatus_AfterCompletion(c *gc.C) {
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,

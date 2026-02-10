@@ -81,7 +81,7 @@ func (c *purgeLogsCommand) SetFlags(f *gnuflag.FlagSet) {
 // Run implements Command.Run. It purges logs from the database before the given
 // date.
 func (c *purgeLogsCommand) Run(ctx *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

@@ -74,7 +74,7 @@ func (c *setControllerDeprecatedCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *setControllerDeprecatedCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

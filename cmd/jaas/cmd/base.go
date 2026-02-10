@@ -3,9 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/juju/juju/cmd/modelcmd"
-
 	"github.com/canonical/jimm/v3/pkg/api"
+	"github.com/juju/juju/cmd/modelcmd"
 )
 
 type jaasCommandBase struct {
@@ -13,15 +12,15 @@ type jaasCommandBase struct {
 	jimmAPI JIMMAPI
 }
 
-func (c *jaasCommandBase) SetJIMMAPI(api JIMMAPI) {
+func (c *jaasCommandBase) setJIMMAPI(api JIMMAPI) {
 	c.jimmAPI = api
 }
 
-func (c *jaasCommandBase) JIMMAPI() (JIMMAPI, error) {
-	return c.JIMMAPIWithController("")
+func (c *jaasCommandBase) getJIMMAPI() (JIMMAPI, error) {
+	return c.getJIMMAPIWithController("")
 }
 
-func (c *jaasCommandBase) JIMMAPIWithController(controller string) (JIMMAPI, error) {
+func (c *jaasCommandBase) getJIMMAPIWithController(controller string) (JIMMAPI, error) {
 	if c.jimmAPI != nil {
 		return c.jimmAPI, nil
 	}

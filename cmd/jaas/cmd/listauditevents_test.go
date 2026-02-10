@@ -35,7 +35,7 @@ func TestListAuditEventsRun_Success(t *testing.T) {
 	cmdMocks.client.EXPECT().Close()
 
 	command := &listAuditEventsCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
@@ -61,7 +61,7 @@ func TestListAuditEventsRun_APICallFails(t *testing.T) {
 	cmdMocks.client.EXPECT().Close()
 
 	command := &listAuditEventsCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
@@ -101,7 +101,7 @@ func TestListAuditEventsRun_FlagsArePassedToAPICorrectly(t *testing.T) {
 	cmdMocks.client.EXPECT().Close()
 
 	command := &listAuditEventsCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
@@ -148,7 +148,7 @@ func TestListAuditEventsRun_TabularFormat(t *testing.T) {
 	cmdMocks.client.EXPECT().Close()
 
 	command := &listAuditEventsCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)

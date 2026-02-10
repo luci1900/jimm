@@ -99,7 +99,7 @@ func TestBootstrapWithPublicCloud(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -182,7 +182,7 @@ func TestBootstrapApiParams(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -217,7 +217,7 @@ func TestBootstrapRunDetached(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -256,7 +256,7 @@ func TestBootstrapWatchLogs(t *testing.T) {
 	}, nil)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -278,7 +278,7 @@ func TestBootstrapFailsToGetCredential(t *testing.T) {
 	s.store.EXPECT().CredentialForCloud("aws").Return(nil, errors.New("credential not found"))
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -305,7 +305,7 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 	}, nil).Times(2)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -360,7 +360,7 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -391,7 +391,7 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 	}, nil)
 
 	command := &bootstrapCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,

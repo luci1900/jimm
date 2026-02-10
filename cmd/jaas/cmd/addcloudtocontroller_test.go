@@ -45,7 +45,7 @@ func TestAddCloudToControllerRun(t *testing.T) {
 			return expectedCloud, nil
 		},
 	}
-	cmd.SetJIMMAPI(cmdMocks.client)
+	cmd.setJIMMAPI(cmdMocks.client)
 
 	err := cmd.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
@@ -104,7 +104,7 @@ clouds:
 		cloudName:           "test-maas-cloud",
 		cloudDefinitionFile: cloudFile,
 	}
-	cmd.SetJIMMAPI(cmdMocks.client)
+	cmd.setJIMMAPI(cmdMocks.client)
 
 	err := cmd.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)

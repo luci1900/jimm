@@ -85,7 +85,7 @@ func (c *crossModelQueryCommand) Info() *cmd.Info {
 
 // Run implements modelcmd.Command.
 func (c *crossModelQueryCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return errors.Annotate(err, "could not create JIMM client")
 	}

@@ -87,7 +87,7 @@ func (c *importModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *importModelCommand) Run(ctxt *cmd.Context) error {
-	jimmAPI, err := c.JIMMAPI()
+	jimmAPI, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}

@@ -16,7 +16,7 @@ import (
 func runRevokeAuditLogAccessCommand(c *qt.C, mocks *cmdMocks, args ...string) (string, error) {
 	revokeAuditLogAccessCmd := revokeAuditLogAccessCommand{}
 	revokeAuditLogAccessCmd.SetClientStore(mocks.store)
-	revokeAuditLogAccessCmd.SetJIMMAPI(mocks.client)
+	revokeAuditLogAccessCmd.setJIMMAPI(mocks.client)
 	mocks.client.EXPECT().Close().Times(1)
 
 	ctx := newTestContext(c)

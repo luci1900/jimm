@@ -94,7 +94,7 @@ func (c *addGroupCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *addGroupCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
@@ -155,7 +155,7 @@ func (c *renameGroupCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *renameGroupCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
@@ -242,7 +242,7 @@ func (c *removeGroupCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
@@ -309,7 +309,7 @@ func (c *listGroupsCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listGroupsCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}

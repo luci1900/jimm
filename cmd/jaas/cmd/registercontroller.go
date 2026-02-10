@@ -124,7 +124,7 @@ func (c *registerControllerCommand) Run(ctxt *cmd.Context) error {
 		return c.out.Write(ctxt, params)
 	}
 
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

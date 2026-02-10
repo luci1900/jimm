@@ -31,7 +31,7 @@ func TestAddGroup(t *testing.T) {
 	// Create command with mocked dependencies
 	command := &addGroupCommand{}
 	command.SetClientStore(s.store)
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	initCommand(c, command, "test-group")
 
 	ctx := newTestContext(c)
@@ -63,7 +63,7 @@ func TestRenameGroup(t *testing.T) {
 	}
 
 	command.SetClientStore(s.store)
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	initCommand(c, command, "old-group", "new-group")
 
 	ctx := newTestContext(c)
@@ -85,7 +85,7 @@ func TestRemoveGroup(t *testing.T) {
 	command := &removeGroupCommand{
 		name: "test-group",
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, "test-group")
 	ctx := newTestContext(c)
@@ -108,7 +108,7 @@ func TestRemoveGroupForce(t *testing.T) {
 	command := &removeGroupCommand{
 		name: "test-group",
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, "test-group", "--force")
 
@@ -129,7 +129,7 @@ func TestListGroups(t *testing.T) {
 
 	command := &listGroupsCommand{}
 	command.SetClientStore(s.store)
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 	initCommand(c, command)
 
 	ctx := newTestContext(c)

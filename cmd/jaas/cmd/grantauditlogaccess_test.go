@@ -27,7 +27,7 @@ func TestGrantAuditLogAccessRun_Success(t *testing.T) {
 	command := &grantAuditLogAccessCommand{
 		username: "bob@canonical.com",
 	}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	err := command.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
@@ -48,7 +48,7 @@ func TestGrantAuditLogAccessRun_APIError(t *testing.T) {
 	command := &grantAuditLogAccessCommand{
 		username: "bob@canonical.com",
 	}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	err := command.Run(newTestContext(c))
 	c.Assert(err, qt.Not(qt.IsNil))

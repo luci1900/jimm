@@ -20,7 +20,7 @@ func TestUpdateMigratedModel(t *testing.T) {
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
 	command := &updateMigratedModelCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "mycontroller", "2f54eaf8-0608-42e7-9f69-d85d6e1369b0")

@@ -16,7 +16,7 @@ func TestAddRole(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	command := &addRoleCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "myrole")
@@ -46,7 +46,7 @@ func TestRenameRole(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	command := &renameRoleCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "myrole", "yourrole")
@@ -70,7 +70,7 @@ func TestRemoveRole(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	command := &removeRoleCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "myrole", "-y")
@@ -94,7 +94,7 @@ func TestListRoles(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	command := &listRolesCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "--limit", "10", "--offset", "5")

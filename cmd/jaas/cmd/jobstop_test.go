@@ -20,7 +20,7 @@ func TestJobStop(t *testing.T) {
 	s.client.EXPECT().StopJob(gomock.Any()).Return(nil)
 
 	command := &jobStopCommand{}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, jobId)
 
@@ -42,7 +42,7 @@ func TestJobStopError(t *testing.T) {
 	command := &jobStopCommand{
 		jobId: jobId,
 	}
-	command.SetJIMMAPI(s.client)
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, jobId)
 

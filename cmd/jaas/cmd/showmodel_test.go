@@ -16,7 +16,7 @@ import (
 func runShowModelCommand(c *qt.C, mocks *cmdMocks, args ...string) (string, error) {
 	showCmd := showModelCommand{}
 	showCmd.SetClientStore(mocks.store)
-	showCmd.SetJIMMAPI(mocks.client)
+	showCmd.setJIMMAPI(mocks.client)
 
 	ctx := newTestContext(c)
 	err := initCommandWithError(&showCmd, args...)

@@ -23,7 +23,7 @@ func TestPurgeLogs(t *testing.T) {
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
 	command := &purgeLogsCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, datastring)
@@ -45,7 +45,7 @@ func TestInvalidISO8601Date(t *testing.T) {
 	datastring := "13/01/2021"
 
 	command := &purgeLogsCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	err := initCommandWithError(command, datastring)
@@ -66,7 +66,7 @@ func TestPurgeLogs_ValidFormats(t *testing.T) {
 	}
 	for _, layout := range layouts {
 		command := &purgeLogsCommand{}
-		command.SetJIMMAPI(cmdMocks.client)
+		command.setJIMMAPI(cmdMocks.client)
 		command.SetClientStore(cmdMocks.store)
 
 		err := initCommandWithError(command, layout)

@@ -98,7 +98,7 @@ func (c *removeCloudFromControllerCommand) Run(ctxt *cmd.Context) error {
 }
 
 func (c *removeCloudFromControllerCommand) removeCloudFromController(ctxt *cmd.Context) error {
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}

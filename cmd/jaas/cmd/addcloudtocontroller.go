@@ -133,7 +133,7 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 		newCloud.Regions = []cloud.Region{{Name: cloud.DefaultCloudRegion}}
 	}
 
-	jimmAPI, err := c.JIMMAPI()
+	jimmAPI, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}

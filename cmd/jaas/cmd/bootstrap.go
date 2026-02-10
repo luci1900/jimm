@@ -226,7 +226,7 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		Config: stringConfigValues,
 	}
 
-	client, err := c.JIMMAPI()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}

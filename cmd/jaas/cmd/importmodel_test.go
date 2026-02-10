@@ -65,7 +65,7 @@ func TestImportModelRun_PassesRequestToAPI(t *testing.T) {
 	cmdMocks.client.EXPECT().Close().Times(1)
 
 	command := &importModelCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	err := cmdtesting.InitCommand(command, []string{"controller-1", modelUUID, "--owner", "alice@canonical.com"})
 	c.Assert(err, qt.IsNil)
@@ -94,7 +94,7 @@ func TestImportModelRun_WithoutOwnerFlag(t *testing.T) {
 	cmdMocks.client.EXPECT().Close().Times(1)
 
 	command := &importModelCommand{}
-	command.SetJIMMAPI(cmdMocks.client)
+	command.setJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
