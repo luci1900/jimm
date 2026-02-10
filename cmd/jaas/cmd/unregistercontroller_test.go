@@ -37,11 +37,8 @@ func TestUnregisterControllerSuperuser(t *testing.T) {
 	}).Return(fakeCtrl, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
-	command := &unregisterControllerCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &unregisterControllerCommand{}
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "mycontroller", "--force")

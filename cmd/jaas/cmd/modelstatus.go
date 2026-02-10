@@ -7,13 +7,11 @@ import (
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -38,13 +36,10 @@ func NewModelStatusCommand() cmd.Command {
 // modelStatusCommand displays full
 // model status.
 type modelStatusCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 	out cmd.Output
 
-	dialOpts  *jujuapi.DialOpts
 	modelUUID string
-
-	jimmAPIFunc func() (JIMMAPI, error)
 }
 
 func (c *modelStatusCommand) Info() *cmd.Info {
@@ -80,11 +75,7 @@ func (c *modelStatusCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *modelStatusCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-
-	client, err := c.jimmAPIFunc()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -103,18 +94,4 @@ func (c *modelStatusCommand) Run(ctxt *cmd.Context) error {
 		return err
 	}
 	return nil
-}
-
-func (c *modelStatusCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

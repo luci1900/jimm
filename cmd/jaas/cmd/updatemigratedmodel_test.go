@@ -19,11 +19,8 @@ func TestUpdateMigratedModel(t *testing.T) {
 	}).Return(nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
-	command := &updateMigratedModelCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &updateMigratedModelCommand{}
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "mycontroller", "2f54eaf8-0608-42e7-9f69-d85d6e1369b0")

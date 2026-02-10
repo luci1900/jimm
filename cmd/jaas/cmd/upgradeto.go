@@ -7,14 +7,12 @@ import (
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 	jujuversion "github.com/juju/version/v2"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -31,20 +29,17 @@ Upgrades a controller to a specified version.
 func NewUpgradeToCommand() cmd.Command {
 	cmd := &upgradeToCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
 
 // upgradeToCommand upgrades a controller to a specified version.
 type upgradeToCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 	out cmd.Output
 
-	dialOpts    *jujuapi.DialOpts
-	version     string
-	modelUUID   string
-	jimmAPIFunc func() (JIMMAPI, error)
+	version   string
+	modelUUID string
 }
 
 func (c *upgradeToCommand) Info() *cmd.Info {
@@ -92,7 +87,7 @@ func (c *upgradeToCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.jimmAPIFunc()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %w", err)
 	}
@@ -113,19 +108,4 @@ func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 	return nil
-}
-
-// newClient creates a new JIMM API client.
-func (c *upgradeToCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

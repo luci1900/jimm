@@ -76,11 +76,8 @@ func TestRunDetached(t *testing.T) {
 	})
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &destroyControllerCommand{
-		destroyControllerAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &destroyControllerCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command, "controller-name", "--detach", "--no-prompt")
@@ -106,11 +103,8 @@ func TestWatchLogs(t *testing.T) {
 		Watermark: 2,
 	}, nil)
 
-	command := &destroyControllerCommand{
-		destroyControllerAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &destroyControllerCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command, "controller-name", "--no-prompt")

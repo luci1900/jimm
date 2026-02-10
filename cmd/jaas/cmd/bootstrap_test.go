@@ -98,11 +98,8 @@ func TestBootstrapWithPublicCloud(t *testing.T) {
 	})
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -184,11 +181,8 @@ func TestBootstrapApiParams(t *testing.T) {
 	})
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -222,11 +216,8 @@ func TestBootstrapRunDetached(t *testing.T) {
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -264,11 +255,8 @@ func TestBootstrapWatchLogs(t *testing.T) {
 		Watermark: 2,
 	}, nil)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -289,11 +277,8 @@ func TestBootstrapFailsToGetCredential(t *testing.T) {
 
 	s.store.EXPECT().CredentialForCloud("aws").Return(nil, errors.New("credential not found"))
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -319,11 +304,8 @@ func TestBootstrapMultipleCredentials(t *testing.T) {
 		},
 	}, nil).Times(2)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -377,11 +359,8 @@ func TestBootstrapWithDefaultCredential(t *testing.T) {
 	s.client.EXPECT().StartBootstrapJob(gomock.Any()).Return(&params.StartJobResponse{JobID: "test-job-id"}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,
@@ -411,11 +390,8 @@ func TestBootstrapSpecifiedCredentialWithDefault(t *testing.T) {
 		},
 	}, nil)
 
-	command := &bootstrapCommand{
-		bootstrapAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &bootstrapCommand{}
+	command.setJIMMAPI(s.client)
 	command.SetClientStore(s.store)
 
 	initCommand(c, command,

@@ -6,12 +6,10 @@ import (
 	"fmt"
 
 	"github.com/juju/cmd/v3"
-	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -28,18 +26,15 @@ Stop a job.
 func NewJobStopCommand() cmd.Command {
 	cmd := &jobStopCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.jobAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
 
 // jobStopCommand to stop a job.
 type jobStopCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 
-	dialOpts   *jujuapi.DialOpts
-	jobId      string
-	jobAPIFunc func() (JIMMAPI, error)
+	jobId string
 }
 
 // Info implements cmd.Info interface.
@@ -68,7 +63,7 @@ func (c *jobStopCommand) Init(args []string) error {
 
 // Run implements cmd.Command.Run interface.
 func (c *jobStopCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.jobAPIFunc()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %v", err)
 	}
@@ -84,18 +79,4 @@ func (c *jobStopCommand) Run(ctxt *cmd.Context) error {
 		return fmt.Errorf("failed to write output: %v", err)
 	}
 	return nil
-}
-
-func (s *jobStopCommand) newClient() (JIMMAPI, error) {
-	currentController, err := s.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := s.NewAPIRootWithDialOpts(s.ClientStore(), currentController, "", s.dialOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return jimmAPI.NewClient(apiCaller), nil
 }

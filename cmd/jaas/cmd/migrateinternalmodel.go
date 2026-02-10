@@ -12,7 +12,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -38,20 +37,17 @@ You may specify a model name (of the form owner/name) or model UUID.
 func NewMigrateInternalModelCommand() cmd.Command {
 	cmd := &migrateInternalModelCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
 
 // migrateInternalModelCommand migrates a model between controllers within JAAS.
 type migrateInternalModelCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 	out cmd.Output
 
 	targetController string
 	modelTargets     []string
-
-	jimmAPIFunc func() (JIMMAPI, error)
 }
 
 // Info implements Command.Info.
@@ -91,11 +87,7 @@ func (c *migrateInternalModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *migrateInternalModelCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-
-	jimmAPI, err := c.jimmAPIFunc()
+	jimmAPI, err := c.getJIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}
@@ -116,18 +108,4 @@ func (c *migrateInternalModelCommand) Run(ctxt *cmd.Context) error {
 		return fmt.Errorf("could not write output: %w", err)
 	}
 	return nil
-}
-
-func (c *migrateInternalModelCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

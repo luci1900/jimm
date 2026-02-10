@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -33,11 +34,8 @@ func TestCrossModelQueryRun(t *testing.T) {
 	s.client.EXPECT().CrossModelQuery(expectedReq).Return(expectedResp, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &crossModelQueryCommand{
-		crossModelQueryAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &crossModelQueryCommand{}
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, ".applications")
 
@@ -55,12 +53,13 @@ func TestCrossModelQueryRun(t *testing.T) {
 
 func TestCrossModelQueryRunClientError(t *testing.T) {
 	c := qt.New(t)
+	s := setupCmdMocks(c)
 
-	command := &crossModelQueryCommand{
-		crossModelQueryAPIFunc: func() (JIMMAPI, error) {
-			return nil, errors.New("boom")
-		},
-	}
+	s.client.EXPECT().CrossModelQuery(gomock.Any()).Return(nil, errors.New("could not create JIMM client: boom"))
+	s.client.EXPECT().Close().Return(nil)
+
+	command := &crossModelQueryCommand{}
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, ".applications")
 

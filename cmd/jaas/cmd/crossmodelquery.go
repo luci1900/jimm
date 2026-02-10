@@ -6,12 +6,10 @@ import (
 	"github.com/juju/cmd/v3"
 	"github.com/juju/errors"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -35,17 +33,14 @@ The queries expect a JQ query string.
 // crossModelQueryCommand queries all models available to the current
 // user.
 type crossModelQueryCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 	out cmd.Output
 	// query holds the query the user wishes to run against their models.
 	query string
 	// queryType holds the type of query the user wishes to use.
 	queryType string
 
-	dialOpts *jujuapi.DialOpts
-	file     cmd.FileVar
-
-	crossModelQueryAPIFunc func() (JIMMAPI, error)
+	file cmd.FileVar
 }
 
 // NewCrossModelQueryCommand returns a command to query all of the models
@@ -53,7 +48,6 @@ type crossModelQueryCommand struct {
 func NewCrossModelQueryCommand() cmd.Command {
 	cmd := &crossModelQueryCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.crossModelQueryAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -91,11 +85,7 @@ func (c *crossModelQueryCommand) Info() *cmd.Info {
 
 // Run implements modelcmd.Command.
 func (c *crossModelQueryCommand) Run(ctxt *cmd.Context) error {
-	if c.crossModelQueryAPIFunc == nil {
-		c.crossModelQueryAPIFunc = c.newClient
-	}
-
-	client, err := c.crossModelQueryAPIFunc()
+	client, err := c.getJIMMAPI()
 	if err != nil {
 		return errors.Annotate(err, "could not create JIMM client")
 	}
@@ -115,18 +105,4 @@ func (c *crossModelQueryCommand) Run(ctxt *cmd.Context) error {
 		return errors.Mask(err)
 	}
 	return nil
-}
-
-func (c *crossModelQueryCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, errors.Annotate(err, "could not determine controller")
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

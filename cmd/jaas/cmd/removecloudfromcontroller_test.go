@@ -25,11 +25,8 @@ func TestRemoveCloudFromController(t *testing.T) {
 		})
 	s.client.EXPECT().Close()
 
-	command := &removeCloudFromControllerCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &removeCloudFromControllerCommand{}
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, "controller-1", "test-cloud")
 	ctx := newTestContext(c)
@@ -55,11 +52,8 @@ func TestRemoveCloudFromControllerCloudNotFound(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	s.client.EXPECT().RemoveCloudFromController(gomock.Any()).Return(fmt.Errorf("cloud \"test-cloud\" not found"))
-	command := &removeCloudFromControllerCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &removeCloudFromControllerCommand{}
+	command.setJIMMAPI(s.client)
 	s.client.EXPECT().Close()
 
 	initCommand(c, command, "controller-1", "test-cloud")

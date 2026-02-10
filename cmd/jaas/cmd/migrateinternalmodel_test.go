@@ -36,11 +36,8 @@ func TestMigrateInternalModelCommand_BuildsRequestAndWritesOutput(t *testing.T) 
 		Times(1)
 	cmdMocks.client.EXPECT().Close().Times(1)
 
-	command := &migrateInternalModelCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &migrateInternalModelCommand{}
+	command.setJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)

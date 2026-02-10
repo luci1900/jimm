@@ -13,7 +13,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -32,7 +31,6 @@ Grants a user access to read audit logs.
 func NewGrantAuditLogAccessCommand() cmd.Command {
 	cmd := &grantAuditLogAccessCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -40,11 +38,9 @@ func NewGrantAuditLogAccessCommand() cmd.Command {
 // grantAuditLogAccessCommand displays full
 // model status.
 type grantAuditLogAccessCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 
 	username string
-
-	jimmAPIFunc func() (JIMMAPI, error)
 }
 
 func (c *grantAuditLogAccessCommand) Info() *cmd.Info {
@@ -81,11 +77,7 @@ func (c *grantAuditLogAccessCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *grantAuditLogAccessCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-
-	api, err := c.jimmAPIFunc()
+	api, err := c.getJIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -99,18 +91,4 @@ func (c *grantAuditLogAccessCommand) Run(ctxt *cmd.Context) error {
 	}
 
 	return nil
-}
-
-func (c *grantAuditLogAccessCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

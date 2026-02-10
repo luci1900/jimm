@@ -71,11 +71,8 @@ func TestListMigrationTargets(t *testing.T) {
 	})
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &listMigrationTargetsCommand{
-		listMigrationTargetsAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	command := &listMigrationTargetsCommand{}
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, "e14aff09-e951-413b-833d-60b1a27bd604")
 

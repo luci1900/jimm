@@ -53,11 +53,8 @@ func TestListControllersSuperuser(t *testing.T) {
 	cmdMocks.client.EXPECT().ListControllers().Return(expectedControllers, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
-	command := &listControllersCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listControllersCommand{}
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command)
@@ -81,11 +78,8 @@ func TestListControllersEmpty(t *testing.T) {
 	cmdMocks.client.EXPECT().ListControllers().Return([]params.ControllerInfo{}, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
-	command := &listControllersCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listControllersCommand{}
+	command.setJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command)

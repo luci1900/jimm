@@ -23,7 +23,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
-	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -102,14 +101,13 @@ func NewMigrateModelCommand() cmd.Command {
 // migrateModelCommand migrates a model to JAAS from
 // a controller that isn't registered with JAAS.
 type migrateModelCommand struct {
-	modelcmd.ControllerCommandBase
+	jaasCommandBase
 
 	out          cmd.Output
 	jimmAPIFunc  func() (JIMMAPI, error)
 	jujuApiFunc  func() (MigrateAPI, error)
 	everyoneUser string
 
-	dialOpts          *jujuapi.DialOpts
 	targetController  string
 	modelName         string
 	backingController string
@@ -371,10 +369,5 @@ func (j jujuMigrateAPI) ListOffers(filters ...crossmodel.ApplicationOfferFilter)
 // newJIMMClient creates a new JIMM client for the migration command.
 // It assumes the target controller is a JIMM controller.
 func (c *migrateModelCommand) newJIMMClient() (JIMMAPI, error) {
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), c.targetController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return jimmAPI.NewClient(apiCaller), nil
+	return c.getJIMMAPIWithController(c.targetController)
 }

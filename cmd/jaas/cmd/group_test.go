@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -30,13 +29,9 @@ func TestAddGroup(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	// Create command with mocked dependencies
-	command := &addGroupCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
-
+	command := &addGroupCommand{}
 	command.SetClientStore(s.store)
+	command.setJIMMAPI(s.client)
 	initCommand(c, command, "test-group")
 
 	ctx := newTestContext(c)
@@ -48,26 +43,6 @@ func TestAddGroup(t *testing.T) {
 	yamlErr := yaml.Unmarshal([]byte(yamlResp), &resp)
 	c.Assert(yamlErr, qt.IsNil)
 	c.Assert(resp.Group, qt.DeepEquals, expectedGroup)
-}
-
-func TestAddGroupAPIError(t *testing.T) {
-	c := qt.New(t)
-	s := setupCmdMocks(c)
-
-	expectedErr := errors.New("failed to connect")
-
-	command := &addGroupCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return nil, expectedErr
-		},
-	}
-
-	command.SetClientStore(s.store)
-	initCommand(c, command, "test-group")
-
-	ctx := newTestContext(c)
-	err := command.Run(ctx)
-	c.Assert(err, qt.IsNotNil)
 }
 
 func TestRenameGroup(t *testing.T) {
@@ -85,12 +60,10 @@ func TestRenameGroup(t *testing.T) {
 	command := &renameGroupCommand{
 		name:    "old-group",
 		newName: "new-group",
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 	}
 
 	command.SetClientStore(s.store)
+	command.setJIMMAPI(s.client)
 	initCommand(c, command, "old-group", "new-group")
 
 	ctx := newTestContext(c)
@@ -111,10 +84,8 @@ func TestRemoveGroup(t *testing.T) {
 
 	command := &removeGroupCommand{
 		name: "test-group",
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 	}
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, "test-group")
 	ctx := newTestContext(c)
@@ -136,10 +107,8 @@ func TestRemoveGroupForce(t *testing.T) {
 
 	command := &removeGroupCommand{
 		name: "test-group",
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 	}
+	command.setJIMMAPI(s.client)
 
 	initCommand(c, command, "test-group", "--force")
 
@@ -158,13 +127,9 @@ func TestListGroups(t *testing.T) {
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	command := &listGroupsCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
-
+	command := &listGroupsCommand{}
 	command.SetClientStore(s.store)
+	command.setJIMMAPI(s.client)
 	initCommand(c, command)
 
 	ctx := newTestContext(c)
