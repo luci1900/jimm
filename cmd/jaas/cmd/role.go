@@ -13,7 +13,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -119,20 +118,6 @@ func (c *addRoleCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
-func (c *addRoleCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
-}
-
 // NewRenameRoleCommand returns a command to rename a role.
 func NewRenameRoleCommand() cmd.Command {
 	cmd := &renameRoleCommand{}
@@ -191,20 +176,6 @@ func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
 	}
 
 	return nil
-}
-
-func (c *renameRoleCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }
 
 // NewRemoveRoleCommand returns a command to Remove a role.
@@ -291,20 +262,6 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 	}
 
 	return nil
-}
-
-func (c *removeRoleCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }
 
 // NewListRolesCommand returns a command to list all roles.
