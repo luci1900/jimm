@@ -15,7 +15,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -166,10 +165,8 @@ func NewAddPermissionCommand() cmd.Command {
 
 // addPermissionCommand adds permission.
 type addPermissionCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	jimmAPIFunc func() (JIMMAPI, error)
 
 	object       string
 	relation     string
@@ -214,10 +211,7 @@ func (c *addPermissionCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *addPermissionCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-	client, err := c.jimmAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -245,20 +239,6 @@ func (c *addPermissionCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
-func (c *addPermissionCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
-}
-
 // NewRemovePermissionCommand returns a command to remove access.
 func NewRemovePermissionCommand() cmd.Command {
 	cmd := &removePermissionCommand{}
@@ -269,10 +249,8 @@ func NewRemovePermissionCommand() cmd.Command {
 
 // removePermissionCommand revokes access.
 type removePermissionCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	jimmAPIFunc func() (JIMMAPI, error)
 
 	object       string
 	relation     string
@@ -317,10 +295,7 @@ func (c *removePermissionCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-	client, err := c.jimmAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -348,26 +323,10 @@ func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
-func (c *removePermissionCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
-}
-
 // checkPermissionCommand holds the fields required to check for access.
 type checkPermissionCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	jimmAPIFunc func() (JIMMAPI, error)
 
 	tuple apiparams.RelationshipTuple
 }
@@ -447,10 +406,7 @@ func formatCheckRelationString(writer io.Writer, value interface{}) error {
 
 // Run implements Command.Run.
 func (c *checkPermissionCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-	client, err := c.jimmAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -470,20 +426,6 @@ func (c *checkPermissionCommand) Run(ctxt *cmd.Context) error {
 		return err
 	}
 	return nil
-}
-
-func (c *checkPermissionCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }
 
 // readTupleFile reads a file with filename as provided by the user and attempts to
@@ -528,10 +470,8 @@ func NewListPermissionsCommand() cmd.Command {
 
 // listPermissionsCommand lists permissions.
 type listPermissionsCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	jimmAPIFunc func() (JIMMAPI, error)
 
 	tuple        apiparams.RelationshipTuple
 	resolveUUIDs bool
@@ -570,26 +510,9 @@ func (c *listPermissionsCommand) SetFlags(f *gnuflag.FlagSet) {
 	f.BoolVar(&c.resolveUUIDs, "resolve", true, "resolves UUIDs to human readable tags")
 }
 
-func (c *listPermissionsCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
-}
-
 // Run implements Command.Run.
 func (c *listPermissionsCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-	client, err := c.jimmAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return err
 	}
