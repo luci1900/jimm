@@ -44,10 +44,8 @@ func TestAddCloudToControllerRun(t *testing.T) {
 		cloudByNameFunc: func(cloudName string) (*cloud.Cloud, error) {
 			return expectedCloud, nil
 		},
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
 	}
+	cmd.SetJIMMAPI(cmdMocks.client)
 
 	err := cmd.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)
@@ -105,10 +103,8 @@ clouds:
 	cmd := addCloudToControllerCommand{
 		cloudName:           "test-maas-cloud",
 		cloudDefinitionFile: cloudFile,
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
 	}
+	cmd.SetJIMMAPI(cmdMocks.client)
 
 	err := cmd.Run(newTestContext(c))
 	c.Assert(err, qt.IsNil)

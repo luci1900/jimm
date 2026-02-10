@@ -8,13 +8,11 @@ import (
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/cmd/output"
 	"github.com/juju/juju/jujuclient"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -47,12 +45,10 @@ func NewShowModelCommand() cmd.Command {
 // showModelCommand displays information about
 // which controller the specified model is running on.
 type showModelCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
 
-	dialOpts       *jujuapi.DialOpts
 	modelQualifier string
-	client         JIMMAPI
 }
 
 func (c *showModelCommand) Info() *cmd.Info {
@@ -89,22 +85,11 @@ func (c *showModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *showModelCommand) Run(ctxt *cmd.Context) error {
-	var client JIMMAPI
-	if c.client != nil {
-		client = c.client
-	} else {
-		currentController, err := c.ClientStore().CurrentController()
-		if err != nil {
-			return fmt.Errorf("could not determine controller: %w", err)
-		}
-
-		apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
-		if err != nil {
-			return err
-		}
-
-		client = api.NewClient(apiCaller)
+	client, err := c.JIMMAPI()
+	if err != nil {
+		return err
 	}
+	defer client.Close()
 
 	info, err := client.ModelControllerInfo(c.modelQualifier)
 	if err != nil {

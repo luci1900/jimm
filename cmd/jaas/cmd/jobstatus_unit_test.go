@@ -39,13 +39,11 @@ func (s *jobStatusSuite) TestJobStatus(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("Job completed successfully.\n"))
 
 	command := &jobStatusCommand{
-		jobAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 		jobId:               "test-job-id",
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
+	command.SetJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -66,13 +64,11 @@ func (s *jobStatusSuite) TestJobStatus_Failed(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("Job failed: Job failed\n"))
 
 	command := &jobStatusCommand{
-		jobAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 		jobId:               "test-job-id",
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
+	command.SetJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -117,13 +113,11 @@ func (s *jobStatusSuite) TestJobStatus_Running(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("Job completed successfully.\n"))
 
 	command := &jobStatusCommand{
-		jobAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 		jobId:               "test-job-id",
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
+	command.SetJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -146,13 +140,11 @@ func (s *jobStatusSuite) TestJobStatus_NoFollow(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("log2\n"))
 
 	command := &jobStatusCommand{
-		jobAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 		jobId:               "test-job-id",
 		sleepBetweenGetLogs: 0,
 		follow:              false,
 	}
+	command.SetJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,
@@ -178,13 +170,11 @@ func (s *jobStatusSuite) TestJobStatus_AfterCompletion(c *gc.C) {
 	s.writer.EXPECT().Write([]byte("Job completed successfully.\n"))
 
 	command := &jobStatusCommand{
-		jobAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
 		jobId:               "test-job-id",
 		sleepBetweenGetLogs: 0,
 		follow:              true,
 	}
+	command.SetJIMMAPI(s.client)
 	ctx := &cmd.Context{
 		Context: context.Background(),
 		Stdout:  s.writer,

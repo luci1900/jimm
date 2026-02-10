@@ -15,11 +15,11 @@ import (
 )
 
 func runSetControllerDeprecatedCommand(c *qt.C, mocks *cmdMocks, args ...string) (string, error) {
-	setControllerDeprecatedCmd := setControllerDeprecatedCommand{
-		client: mocks.client,
-	}
+	setControllerDeprecatedCmd := setControllerDeprecatedCommand{}
 	setControllerDeprecatedCmd.SetClientStore(mocks.store)
+	setControllerDeprecatedCmd.SetJIMMAPI(mocks.client)
 
+	mocks.client.EXPECT().Close().Times(1)
 	ctx := newTestContext(c)
 	err := initCommandWithError(&setControllerDeprecatedCmd, args...)
 	if err != nil {

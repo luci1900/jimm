@@ -11,7 +11,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -36,11 +35,9 @@ func NewUpdateMigratedModelCommand() cmd.Command {
 
 // updateMigratedModelCommand updates the controller running a model.
 type updateMigratedModelCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 
 	req apiparams.UpdateMigratedModelRequest
-
-	jimmAPIFunc func() (JIMMAPI, error)
 }
 
 // Info implements the cmd.Command interface.
@@ -76,11 +73,7 @@ func (c *updateMigratedModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *updateMigratedModelCommand) Run(ctxt *cmd.Context) error {
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-
-	client, err := c.jimmAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -90,18 +83,4 @@ func (c *updateMigratedModelCommand) Run(ctxt *cmd.Context) error {
 		return err
 	}
 	return nil
-}
-
-func (c *updateMigratedModelCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

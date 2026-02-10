@@ -15,11 +15,8 @@ func TestAddRole(t *testing.T) {
 	c := qt.New(t)
 	cmdMocks := setupCmdMocks(c)
 
-	command := &addRoleCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &addRoleCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "myrole")
@@ -48,11 +45,8 @@ func TestRenameRole(t *testing.T) {
 	c := qt.New(t)
 	cmdMocks := setupCmdMocks(c)
 
-	command := &renameRoleCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &renameRoleCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "myrole", "yourrole")
@@ -75,11 +69,8 @@ func TestRemoveRole(t *testing.T) {
 	c := qt.New(t)
 	cmdMocks := setupCmdMocks(c)
 
-	command := &removeRoleCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &removeRoleCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "myrole", "-y")
@@ -102,11 +93,8 @@ func TestListRoles(t *testing.T) {
 	c := qt.New(t)
 	cmdMocks := setupCmdMocks(c)
 
-	command := &listRolesCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listRolesCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 	command.SetClientStore(cmdMocks.store)
 
 	initCommand(c, command, "--limit", "10", "--offset", "5")

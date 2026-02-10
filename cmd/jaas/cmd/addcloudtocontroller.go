@@ -8,7 +8,6 @@ import (
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	"github.com/juju/juju/cloud"
 	jujucmd "github.com/juju/juju/cmd"
 	jujucmdcommon "github.com/juju/juju/cmd/juju/common"
@@ -18,7 +17,6 @@ import (
 	"github.com/juju/names/v5"
 
 	jimmjujuapi "github.com/canonical/jimm/v3/internal/jujuapi"
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -43,14 +41,13 @@ func NewAddCloudToControllerCommand() cmd.Command {
 		cloudByNameFunc: jujucmdcommon.CloudByName,
 	}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.jimmAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
 
 // addControllerCommand adds a controller.
 type addCloudToControllerCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
 
 	// cloudName is the name of the cloud to add.
@@ -67,8 +64,6 @@ type addCloudToControllerCommand struct {
 	// compatible with the cloud on which the controller is running.
 	force bool
 
-	dialOpts        *jujuapi.DialOpts
-	jimmAPIFunc     func() (JIMMAPI, error)
 	cloudByNameFunc func(string) (*cloud.Cloud, error)
 }
 
@@ -138,11 +133,7 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 		newCloud.Regions = []cloud.Region{{Name: cloud.DefaultCloudRegion}}
 	}
 
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-
-	jimmAPI, err := c.jimmAPIFunc()
+	jimmAPI, err := c.JIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}
@@ -182,18 +173,4 @@ func (c *addCloudToControllerCommand) readCloudFromFile() (*cloud.Cloud, error) 
 	}
 
 	return &foundCloud, nil
-}
-
-func (c *addCloudToControllerCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", c.dialOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }

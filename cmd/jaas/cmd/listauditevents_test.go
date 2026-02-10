@@ -34,11 +34,8 @@ func TestListAuditEventsRun_Success(t *testing.T) {
 
 	cmdMocks.client.EXPECT().Close()
 
-	command := &listAuditEventsCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listAuditEventsCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
@@ -63,11 +60,8 @@ func TestListAuditEventsRun_APICallFails(t *testing.T) {
 
 	cmdMocks.client.EXPECT().Close()
 
-	command := &listAuditEventsCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listAuditEventsCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
@@ -106,11 +100,8 @@ func TestListAuditEventsRun_FlagsArePassedToAPICorrectly(t *testing.T) {
 
 	cmdMocks.client.EXPECT().Close()
 
-	command := &listAuditEventsCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listAuditEventsCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)
@@ -156,11 +147,8 @@ func TestListAuditEventsRun_TabularFormat(t *testing.T) {
 
 	cmdMocks.client.EXPECT().Close()
 
-	command := &listAuditEventsCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return cmdMocks.client, nil
-		},
-	}
+	command := &listAuditEventsCommand{}
+	command.SetJIMMAPI(cmdMocks.client)
 
 	fs := gnuflag.NewFlagSet("test", gnuflag.ContinueOnError)
 	command.SetFlags(fs)

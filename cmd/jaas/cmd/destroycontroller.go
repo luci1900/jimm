@@ -11,7 +11,6 @@ import (
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -49,10 +48,8 @@ it separately.
 
 // destroyControllerCommand starts a destroy-controller job on the controller.
 type destroyControllerCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	destroyControllerAPIFunc func() (JIMMAPI, error)
 
 	controllerName string
 
@@ -66,7 +63,6 @@ type destroyControllerCommand struct {
 func NewDestroyControllerStartCommand() cmd.Command {
 	cmd := &destroyControllerCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.destroyControllerAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -116,7 +112,7 @@ func (c *destroyControllerCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	client, err := c.destroyControllerAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}
@@ -166,18 +162,4 @@ Should you cancel this process, you can track the progress via job-status with t
 	}
 
 	return poller.watchJobLogs()
-}
-
-func (c *destroyControllerCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %v", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return jimmAPI.NewClient(apiCaller), nil
 }

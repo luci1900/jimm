@@ -12,7 +12,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
-	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -34,10 +33,8 @@ criteria:
 )
 
 type listMigrationTargetsCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	listMigrationTargetsAPIFunc func() (JIMMAPI, error)
 
 	modelTag string
 }
@@ -47,7 +44,6 @@ type listMigrationTargetsCommand struct {
 func NewListMigrationTargetsCommand() cmd.Command {
 	cmd := &listMigrationTargetsCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.listMigrationTargetsAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -91,7 +87,7 @@ func (c *listMigrationTargetsCommand) Run(ctxt *cmd.Context) error {
 		ModelTag: c.modelTag,
 	}
 
-	client, err := c.listMigrationTargetsAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}
@@ -108,18 +104,4 @@ func (c *listMigrationTargetsCommand) Run(ctxt *cmd.Context) error {
 	}
 
 	return nil
-}
-
-func (c *listMigrationTargetsCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %v", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return jimmAPI.NewClient(apiCaller), nil
 }

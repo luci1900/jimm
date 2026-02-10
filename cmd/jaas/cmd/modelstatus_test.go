@@ -41,11 +41,8 @@ func TestModelStatusSuperuser(t *testing.T) {
 		Return(fullStatus, nil)
 	s.client.EXPECT().Close()
 
-	statusCmd := &modelStatusCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	statusCmd := &modelStatusCommand{}
+	statusCmd.SetJIMMAPI(s.client)
 	initCommand(c, statusCmd, "2cb433a6-04eb-4ec4-9567-90426d20a004")
 
 	ctx := newTestContext(c)

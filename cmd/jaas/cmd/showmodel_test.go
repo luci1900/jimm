@@ -14,10 +14,9 @@ import (
 )
 
 func runShowModelCommand(c *qt.C, mocks *cmdMocks, args ...string) (string, error) {
-	showCmd := showModelCommand{
-		client: mocks.client,
-	}
+	showCmd := showModelCommand{}
 	showCmd.SetClientStore(mocks.store)
+	showCmd.SetJIMMAPI(mocks.client)
 
 	ctx := newTestContext(c)
 	err := initCommandWithError(&showCmd, args...)
@@ -44,8 +43,7 @@ func TestShowModelOutput(t *testing.T) {
 	}
 
 	mocks := setupCmdMocks(c)
-	mocks.store.EXPECT().CurrentController().Return("test-controller", nil).AnyTimes()
-	mocks.store.EXPECT().ControllerByName("test-controller").Return(nil, errors.New("not found")).AnyTimes()
+	mocks.client.EXPECT().Close().AnyTimes()
 	mocks.client.EXPECT().ModelControllerInfo("12345678-1234-1234-1234-123456789abc").Return(modelControllerInfo, nil).AnyTimes()
 
 	tests := []struct {
@@ -77,8 +75,7 @@ func TestShowModelError(t *testing.T) {
 	c := qt.New(t)
 
 	mocks := setupCmdMocks(c)
-	mocks.store.EXPECT().CurrentController().Return("test-controller", nil).AnyTimes()
-	mocks.store.EXPECT().ControllerByName("test-controller").Return(nil, errors.New("not found")).AnyTimes()
+	mocks.client.EXPECT().Close().AnyTimes()
 	mocks.client.EXPECT().ModelControllerInfo("12345678-1234-1234-1234-123456789abc").Return(nil, errors.New("not found")).AnyTimes()
 
 	_, err := runShowModelCommand(c, mocks, "12345678-1234-1234-1234-123456789abc")
@@ -89,8 +86,7 @@ func TestShowModelArgsError(t *testing.T) {
 	c := qt.New(t)
 
 	mocks := setupCmdMocks(c)
-	mocks.store.EXPECT().CurrentController().Return("test-controller", nil).AnyTimes()
-	mocks.store.EXPECT().ControllerByName("test-controller").Return(nil, errors.New("not found")).AnyTimes()
+	mocks.client.EXPECT().Close().AnyTimes()
 	mocks.client.EXPECT().ModelControllerInfo("12345678-1234-1234-1234-123456789abc").Return(nil, errors.New("not found")).AnyTimes()
 
 	_, err := runShowModelCommand(c, mocks)

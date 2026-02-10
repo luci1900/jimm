@@ -33,11 +33,8 @@ func TestUpgradeTo(t *testing.T) {
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	upgradeToCmd := &upgradeToCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	upgradeToCmd := &upgradeToCommand{}
+	upgradeToCmd.SetJIMMAPI(s.client)
 	upgradeToCmd.SetClientStore(s.store)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 
@@ -64,11 +61,8 @@ func TestUpgradeToWithFailureResponse(t *testing.T) {
 	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{}, errors.New(testErrorMessage))
 	s.client.EXPECT().Close().Return(nil)
 
-	upgradeToCmd := &upgradeToCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	upgradeToCmd := &upgradeToCommand{}
+	upgradeToCmd.SetJIMMAPI(s.client)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 
 	ctx := newTestContext(c)
@@ -92,11 +86,8 @@ func TestUpgradeToWithError(t *testing.T) {
 	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{}, errorToReturn)
 	s.client.EXPECT().Close().Return(nil)
 
-	upgradeToCmd := &upgradeToCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	upgradeToCmd := &upgradeToCommand{}
+	upgradeToCmd.SetJIMMAPI(s.client)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 
 	ctx := newTestContext(c)
@@ -150,11 +141,8 @@ func TestUpgradeToWithPositionalArgs(t *testing.T) {
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	upgradeToCmd := &upgradeToCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
-			return s.client, nil
-		},
-	}
+	upgradeToCmd := &upgradeToCommand{}
+	upgradeToCmd.SetJIMMAPI(s.client)
 	upgradeToCmd.SetClientStore(s.store)
 	initCommand(c, upgradeToCmd, testTargetVersion, testModelUUID)
 

@@ -16,7 +16,6 @@ import (
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 
-	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -79,10 +78,8 @@ Note that JIMM will internally do the following:
 
 // bootstrapCommand starts a bootstrap jobon the controller.
 type bootstrapCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
-
-	bootstrapAPIFunc func() (JIMMAPI, error)
 
 	cloud             string
 	region            string
@@ -101,7 +98,6 @@ type bootstrapCommand struct {
 func NewBootstrapStartCommand() cmd.Command {
 	cmd := &bootstrapCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.bootstrapAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
@@ -230,7 +226,7 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		Config: stringConfigValues,
 	}
 
-	client, err := c.bootstrapAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}
@@ -278,20 +274,6 @@ Should you cancel this process, you can track the progress via job-status with t
 	}
 
 	return poller.watchJobLogs()
-}
-
-func (c *bootstrapCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %v", err)
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return jimmAPI.NewClient(apiCaller), nil
 }
 
 // CloudToParams converts a jujucloud.Cloud to a jujuparams.Cloud.

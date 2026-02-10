@@ -9,12 +9,10 @@ import (
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
-	jujuapi "github.com/juju/juju/api"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/jujuclient"
 
-	jimmAPI "github.com/canonical/jimm/v3/pkg/api"
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -34,18 +32,15 @@ const sleepBetweenGetLogs = 1 * time.Second
 func NewJobStatusCommand() cmd.Command {
 	cmd := &jobStatusCommand{}
 	cmd.SetClientStore(jujuclient.NewFileClientStore())
-	cmd.jobAPIFunc = cmd.newClient
 
 	return modelcmd.WrapBase(cmd)
 }
 
 // jobStatusCommand displays logs for a job.
 type jobStatusCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 
-	dialOpts   *jujuapi.DialOpts
-	jobId      string
-	jobAPIFunc func() (JIMMAPI, error)
+	jobId string
 
 	sleepBetweenGetLogs time.Duration
 	follow              bool
@@ -84,7 +79,7 @@ func (c *jobStatusCommand) Init(args []string) error {
 
 // Run implements cmd.Command.Run interface.
 func (c *jobStatusCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.jobAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %v", err)
 	}
@@ -154,18 +149,4 @@ func (p logPoller) watchJobLogs() error {
 		}
 		time.Sleep(p.sleepBetweenGetLogs)
 	}
-}
-
-func (s *jobStatusCommand) newClient() (JIMMAPI, error) {
-	currentController, err := s.ClientStore().CurrentController()
-	if err != nil {
-		return nil, fmt.Errorf("could not determine controller: %w", err)
-	}
-
-	apiCaller, err := s.NewAPIRootWithDialOpts(s.ClientStore(), currentController, "", s.dialOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return jimmAPI.NewClient(apiCaller), nil
 }

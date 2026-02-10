@@ -13,7 +13,6 @@ import (
 	"github.com/juju/juju/jujuclient"
 	"sigs.k8s.io/yaml"
 
-	"github.com/canonical/jimm/v3/pkg/api"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -59,7 +58,7 @@ func NewRegisterControllerCommand() cmd.Command {
 
 // registerControllerCommand register a controller.
 type registerControllerCommand struct {
-	modelcmd.ControllerCommandBase
+	JAASCommandBase
 	out cmd.Output
 
 	file           cmd.FileVar
@@ -68,8 +67,6 @@ type registerControllerCommand struct {
 	controllerName string
 	publicAddress  string
 	dryRun         bool
-
-	jimmAPIFunc func() (JIMMAPI, error)
 }
 
 // Info implements the cmd.Command interface.
@@ -127,10 +124,7 @@ func (c *registerControllerCommand) Run(ctxt *cmd.Context) error {
 		return c.out.Write(ctxt, params)
 	}
 
-	if c.jimmAPIFunc == nil {
-		c.jimmAPIFunc = c.newClient
-	}
-	client, err := c.jimmAPIFunc()
+	client, err := c.JIMMAPI()
 	if err != nil {
 		return err
 	}
@@ -191,18 +185,4 @@ func (c *registerControllerCommand) getControllerDetails(ctxt *cmd.Context) ([]b
 		return nil, errors.Mask(err)
 	}
 	return data, nil
-}
-
-func (c *registerControllerCommand) newClient() (JIMMAPI, error) {
-	currentController, err := c.ClientStore().CurrentController()
-	if err != nil {
-		return nil, errors.Annotate(err, "could not determine controller")
-	}
-
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return api.NewClient(apiCaller), nil
 }
