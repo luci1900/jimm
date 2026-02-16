@@ -150,9 +150,6 @@ type API interface {
 	// Offer creates a new application-offer.
 	Offer(context.Context, crossmodel.OfferURL, jujuparams.AddApplicationOffer) error
 
-	// Ping tests the connection is working.
-	Ping(context.Context) error
-
 	// PreChecks runs pre-checks for a model migration.
 	Prechecks(model jujuparams.MigrationModelInfo) error
 

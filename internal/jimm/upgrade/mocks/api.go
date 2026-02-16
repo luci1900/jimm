@@ -1788,44 +1788,6 @@ func (c *MockAPIOfferCall) DoAndReturn(f func(context.Context, crossmodel.OfferU
 	return c
 }
 
-// Ping mocks base method.
-func (m *MockAPI) Ping(arg0 context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Ping indicates an expected call of Ping.
-func (mr *MockAPIMockRecorder) Ping(arg0 any) *MockAPIPingCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockAPI)(nil).Ping), arg0)
-	return &MockAPIPingCall{Call: call}
-}
-
-// MockAPIPingCall wrap *gomock.Call
-type MockAPIPingCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockAPIPingCall) Return(arg0 error) *MockAPIPingCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockAPIPingCall) Do(f func(context.Context) error) *MockAPIPingCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIPingCall) DoAndReturn(f func(context.Context) error) *MockAPIPingCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
 // Prechecks mocks base method.
 func (m *MockAPI) Prechecks(model params.MigrationModelInfo) error {
 	m.ctrl.T.Helper()
