@@ -2,7 +2,11 @@
 
 package jobs
 
-import "time"
+import (
+	"time"
+
+	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
+)
 
 // JobError represents an error that occurred during a job attempt.
 type JobError struct {
@@ -15,7 +19,7 @@ type JobError struct {
 // its status, kind, attempts, and any errors that occurred.
 type JobInfo struct {
 	ID             int64
-	Status         string
+	Status         apiparams.JobStatus
 	Kind           string
 	CurrentAttempt int
 	MaxAttempts    int

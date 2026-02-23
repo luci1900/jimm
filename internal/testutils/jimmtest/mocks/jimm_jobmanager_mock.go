@@ -1,0 +1,30 @@
+// Copyright 2026 Canonical.
+
+package mocks
+
+import (
+	"context"
+
+	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/jimm/jobs"
+	"github.com/canonical/jimm/v3/pkg/api/params"
+)
+
+type JobManager struct {
+	GetJobInfo_ func(ctx context.Context, jobID int64) (jobs.JobInfo, error)
+	ListJobs_   func(ctx context.Context, req params.ListJobsRequest) (params.ListJobsResponse, error)
+}
+
+func (j *JobManager) GetJobInfo(ctx context.Context, jobID int64) (jobs.JobInfo, error) {
+	if j.GetJobInfo_ == nil {
+		return jobs.JobInfo{}, errors.E(errors.CodeNotImplemented)
+	}
+	return j.GetJobInfo_(ctx, jobID)
+}
+
+func (j *JobManager) ListJobs(ctx context.Context, req params.ListJobsRequest) (params.ListJobsResponse, error) {
+	if j.ListJobs_ == nil {
+		return params.ListJobsResponse{}, errors.E(errors.CodeNotImplemented)
+	}
+	return j.ListJobs_(ctx, req)
+}

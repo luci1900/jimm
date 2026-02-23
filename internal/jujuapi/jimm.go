@@ -74,6 +74,7 @@ func init() {
 		listUserCloudsMethod := rpc.Method(r.ListUserClouds)
 		modelControllerInfoMethod := rpc.Method(r.ModelControllerInfo)
 		jobInfoMethod := rpc.Method(r.JobInfo)
+		listJobsMethod := rpc.Method(r.ListJobs)
 
 		// JIMM Generic RPC
 		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
@@ -126,6 +127,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "UpgradeTo", upgradeToMethod)
 		// Job management
 		r.AddMethod("JIMM", 4, "JobInfo", jobInfoMethod)
+		r.AddMethod("JIMM", 4, "ListJobs", listJobsMethod)
 
 		return []int{4}
 	}
@@ -829,4 +831,13 @@ func (r *controllerRoot) JobInfo(ctx context.Context, req apiparams.JobInfoReque
 	}
 
 	return toJobInfoParams(jobInfo), nil
+}
+
+// ListJobs returns the list of all jobs matching the given filter.
+func (r *controllerRoot) ListJobs(ctx context.Context, req apiparams.ListJobsRequest) (apiparams.ListJobsResponse, error) {
+	if !r.user.JimmAdmin {
+		return apiparams.ListJobsResponse{}, errors.E(errors.CodeUnauthorized, "unauthorized")
+	}
+
+	return r.jimm.JobManager().ListJobs(ctx, req)
 }

@@ -716,7 +716,7 @@ func (s *jimmUnitTestSuite) TestJobInfo(c *gc.C) {
 					return jobs.JobInfo{
 						ID:             1,
 						Kind:           "bootstrap",
-						Status:         "running",
+						Status:         apiparams.StatusRunning,
 						CurrentAttempt: 1,
 						MaxAttempts:    3,
 						FinishedAt:     &finishedTime,
@@ -740,7 +740,7 @@ func (s *jimmUnitTestSuite) TestJobInfo(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	c.Assert(resp.ID, gc.Equals, "1")
 	c.Assert(resp.Kind, gc.Equals, "bootstrap")
-	c.Assert(resp.Status, gc.Equals, "running")
+	c.Assert(resp.Status, gc.Equals, apiparams.StatusRunning)
 	c.Assert(resp.CurrentAttempt, gc.Equals, 1)
 	c.Assert(resp.MaxAttempts, gc.Equals, 3)
 	c.Assert(resp.FinishedAt, gc.Equals, finishedTime)
@@ -762,6 +762,75 @@ func (s *jimmUnitTestSuite) TestJobInfo_RequiresAdmin(c *gc.C) {
 	req := apiparams.JobInfoRequest{JobID: "1"}
 
 	_, err := root.JobInfo(ctx, req)
+	c.Assert(err, gc.ErrorMatches, "unauthorized")
+	c.Assert(errors.ErrorCode(err), gc.Equals, errors.CodeUnauthorized)
+}
+
+func (s *jimmUnitTestSuite) TestListJobs(c *gc.C) {
+	ctx := context.Background()
+
+	jimm := &jimmtest.JIMM{
+		JobManager_: func() jujuapi.JobManager {
+			return &mocks.JobManager{
+				ListJobs_: func(ctx context.Context, params apiparams.ListJobsRequest) (apiparams.ListJobsResponse, error) {
+					c.Check(params.Statuses, gc.DeepEquals, []apiparams.JobStatus{apiparams.StatusRunning})
+					c.Check(params.Kinds, gc.DeepEquals, []string{"bootstrap-controller"})
+					c.Check(params.Count, gc.Equals, 10)
+					return apiparams.ListJobsResponse{
+						Jobs: []apiparams.ListJobInfo{
+							{ID: 1, Status: apiparams.StatusRunning, Kind: "bootstrap-controller", MaxAttempts: 3},
+							{ID: 2, Status: apiparams.StatusRunning, Kind: "bootstrap-controller", MaxAttempts: 3},
+							{ID: 3, Status: apiparams.StatusRunning, Kind: "bootstrap-controller", MaxAttempts: 3},
+						},
+						NextCursor: "test-cursor",
+					}, nil
+				},
+			}
+		},
+	}
+
+	root := newTestControllerRoot(jimm, "alice@canonical.com", true)
+	req := apiparams.ListJobsRequest{
+		Statuses: []apiparams.JobStatus{apiparams.StatusRunning},
+		Kinds:    []string{"bootstrap-controller"},
+		Count:    10,
+	}
+
+	resp, err := root.ListJobs(ctx, req)
+	c.Assert(err, gc.IsNil)
+	c.Assert(resp.Jobs, gc.HasLen, 3)
+	c.Assert(resp.Jobs[0].ID, gc.Equals, int64(1))
+	c.Assert(resp.Jobs[0].Status, gc.Equals, apiparams.StatusRunning)
+	c.Assert(resp.Jobs[0].Kind, gc.Equals, "bootstrap-controller")
+	c.Assert(resp.Jobs[0].MaxAttempts, gc.Equals, 3)
+	c.Assert(resp.NextCursor, gc.Equals, "test-cursor")
+
+	// Test error case
+	jimm2 := &jimmtest.JIMM{
+		JobManager_: func() jujuapi.JobManager {
+			return &mocks.JobManager{
+				ListJobs_: func(ctx context.Context, params apiparams.ListJobsRequest) (apiparams.ListJobsResponse, error) {
+					return apiparams.ListJobsResponse{}, errors.E(errors.CodeNotFound, "no jobs found")
+				},
+			}
+		},
+	}
+	root2 := newTestControllerRoot(jimm2, "alice@canonical.com", true)
+	_, err = root2.ListJobs(ctx, req)
+	c.Assert(errors.ErrorCode(err), gc.Equals, errors.CodeNotFound)
+}
+
+func (s *jimmUnitTestSuite) TestListJobs_RequiresAdmin(c *gc.C) {
+	ctx := context.Background()
+
+	root := newTestControllerRoot(nil, "alice@canonical.com", false)
+	req := apiparams.ListJobsRequest{
+		Statuses: []apiparams.JobStatus{apiparams.StatusRunning},
+		Kinds:    []string{"bootstrap-controller"},
+		Count:    10,
+	}
+
+	_, err := root.ListJobs(ctx, req)
 	c.Assert(err, gc.ErrorMatches, "unauthorized")
 	c.Assert(errors.ErrorCode(err), gc.Equals, errors.CodeUnauthorized)
 }

@@ -20,6 +20,11 @@ type Client struct {
 	client *river.Client[*sql.Tx]
 }
 
+// SetClient sets the underlying River client. This is useful for testing.
+func (c *Client) SetClient(client *river.Client[*sql.Tx]) {
+	c.client = client
+}
+
 // NewRiverClient creates a new Client instance.
 func NewRiverClient(db *db.Database) (*Client, error) {
 	sqlDb, err := db.SqlDB()

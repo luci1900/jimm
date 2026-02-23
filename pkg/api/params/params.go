@@ -709,10 +709,45 @@ type JobError struct {
 // JobInfoResponse holds information about a job.
 type JobInfoResponse struct {
 	ID             int64      `json:"id" yaml:"id"`
-	Status         string     `json:"status" yaml:"status"`
+	Status         JobStatus  `json:"status" yaml:"status"`
 	Kind           string     `json:"kind" yaml:"kind"`
 	CurrentAttempt int        `json:"current_attempt" yaml:"current_attempt"`
 	MaxAttempts    int        `json:"max_attempts" yaml:"max_attempts"`
 	FinishedAt     *time.Time `json:"finished_at,omitempty" yaml:"finished_at,omitempty"`
 	Errors         []JobError `json:"errors,omitempty" yaml:"errors,omitempty"`
+}
+
+// ListJobsRequest holds the parameters to list jobs.
+type ListJobsRequest struct {
+	// Kinds is used to filter the jobs by their types. If empty, returns all kinds.
+	Kinds []string `json:"kinds,omitempty"`
+	// Statuses is used to filter the jobs by their statuses. If empty, returns all statuses.
+	Statuses []JobStatus `json:"statuses,omitempty"`
+	// Count is the maximum number of jobs to return. If not set, defaults to 100.
+	Count int `json:"count,omitempty"`
+	// Cursor is the pagination cursor to continue from a previous query.
+	Cursor string `json:"cursor,omitempty"`
+}
+
+// ListJobInfo holds summary information about a job.
+type ListJobInfo struct {
+	// ID is the unique identifier for the job.
+	ID int64 `json:"id" yaml:"id"`
+	// Status is the current status of the job.
+	Status JobStatus `json:"status" yaml:"status"`
+	// Kind is the type of job.
+	Kind string `json:"kind" yaml:"kind"`
+	// MaxAttempts is the maximum number of attempts for this job.
+	MaxAttempts int `json:"max_attempts" yaml:"max_attempts"`
+	// Attempt is the current attempt number for this job.
+	Attempt int `json:"attempt" yaml:"attempt"`
+}
+
+// ListJobsResponse holds the response for listing jobs.
+// It contains a list of jobs that match the request parameters.
+type ListJobsResponse struct {
+	Jobs []ListJobInfo `json:"jobs" yaml:"jobs"`
+	// NextCursor is the cursor to use for the next page of results.
+	// If empty, there are no more results.
+	NextCursor string `json:"next_cursor,omitempty" yaml:"next_cursor,omitempty"`
 }
