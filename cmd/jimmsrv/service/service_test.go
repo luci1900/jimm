@@ -76,7 +76,7 @@ func TestDefaultService(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	defer svc.Cleanup()
 	rr := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/debug/info", nil)
+	req, err := http.NewRequest("GET", "/macaroons/publickey", nil)
 	c.Assert(err, qt.IsNil)
 	svc.ServeHTTP(rr, req)
 	resp := rr.Result()
@@ -577,7 +577,7 @@ func TestCORS(t *testing.T) {
 	srv := httptest.NewServer(svc)
 	c.Cleanup(srv.Close)
 
-	url, err := url.Parse(srv.URL + "/debug/info")
+	url, err := url.Parse(srv.URL + "/macaroons/publickey")
 	c.Assert(err, qt.IsNil)
 	// Invalid origin won't receive CORS headers.
 	req := http.Request{

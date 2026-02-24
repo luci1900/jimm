@@ -187,6 +187,12 @@ func start(ctx context.Context, s *service.Service) error {
 		}
 	}
 
+	internalAddr := os.Getenv("JIMM_INTERNAL_LISTEN_ADDR")
+	if internalAddr == "" {
+		internalAddr = ":9090"
+	}
+	internalSrv := jimmsvc.NewInternalService(internalAddr, corsAllowedOrigins)
+
 	jimmsvc, err := jimmsvc.NewService(ctx, jimmsvc.Params{
 		ControllerUUID:      jimmUUID,
 		DSN:                 os.Getenv("JIMM_DSN"),
@@ -246,7 +252,7 @@ func start(ctx context.Context, s *service.Service) error {
 	httpsrv := &http.Server{
 		Addr:              addr,
 		Handler:           jimmsvc,
-		ReadHeaderTimeout: time.Second * 5,
+		ReadHeaderTimeout: time.Second * 30,
 	}
 
 	sshServer, err := ssh.NewJumpServer(ctx, ssh.Config{
@@ -265,6 +271,12 @@ func start(ctx context.Context, s *service.Service) error {
 		err = httpsrv.Shutdown(ctx)
 		if err != nil {
 			zapctx.Error(ctx, "failed to shutdown HTTP server gracefully", zap.Error(err))
+		}
+
+		zapctx.Warn(ctx, "Internal HTTP server shutdown triggered")
+		err = internalSrv.Shutdown(ctx)
+		if err != nil {
+			zapctx.Error(ctx, "failed to shutdown internal HTTP server gracefully", zap.Error(err))
 		}
 
 		zapctx.Warn(ctx, "SSH server shutdown triggered")
@@ -292,6 +304,8 @@ func start(ctx context.Context, s *service.Service) error {
 	zapctx.Info(ctx, "Registered all River workers")
 	s.Go(httpsrv.ListenAndServe)
 	zapctx.Info(ctx, "Started JIMM HTTP server")
+	s.Go(internalSrv.ListenAndServe)
+	zapctx.Info(ctx, "Started JIMM internal HTTP server")
 	s.Go(sshServer.ListenAndServe)
 	zapctx.Info(ctx, "Started JIMM SSH server")
 	return nil

@@ -597,23 +597,12 @@ func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) 
 		s.mux.Mount(path, h.Routes())
 	}
 
-	s.mux.Mount("/metrics", promhttp.Handler())
-
 	rebacBackend, err := rebac_admin.SetupBackend(ctx, jujuapi.NewJIMMAdapter(s.jimm))
 	if err != nil {
 		return nil, errors.E(err)
 	}
 
 	s.mux.Mount("/rebac", middleware.AuthenticateRebac("/rebac", rebacBackend.Handler(""), s.jimm.LoginManager))
-
-	mountHandler(
-		"/debug",
-		jimmhttp.NewDebugHandler(
-			map[string]jimmhttp.StatusCheck{
-				"start_time": jimmhttp.ServerStartTime,
-			},
-		),
-	)
 
 	mountHandler("/.well-known", jimmhttp.NewWellKnownHandler(s.jimm.CredentialStore))
 
@@ -658,6 +647,28 @@ func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) 
 	s.isLeader = deps.IsLeader
 
 	return s, nil
+}
+
+// NewInternalService builds the internal-only HTTP server.
+func NewInternalService(addr string, corsAllowedOrigins []string) *http.Server {
+	mux := chi.NewRouter()
+	corsOpts := cors.New(cors.Options{
+		AllowedOrigins:   corsAllowedOrigins,
+		AllowedMethods:   []string{"GET"},
+		AllowCredentials: true,
+	})
+	mux.Use(corsOpts.Handler)
+	mux.Mount("/metrics", promhttp.Handler())
+	mux.Mount("/debug", jimmhttp.NewDebugHandler(
+		map[string]jimmhttp.StatusCheck{
+			"start_time": jimmhttp.ServerStartTime,
+		},
+	).Routes())
+	return &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: time.Second * 5,
+	}
 }
 
 // NewService creates a new Service using the given params.
