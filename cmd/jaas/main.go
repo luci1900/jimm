@@ -38,6 +38,7 @@ func NewSuperCommand() *jujucmd.SuperCommand {
 	jaasCmd.Register(cmd.NewImportModelCommand())
 	jaasCmd.Register(cmd.NewListAuditEventsCommand())
 	jaasCmd.Register(cmd.NewListControllersCommand())
+	jaasCmd.Register(cmd.NewListJobsCommand())
 	jaasCmd.Register(cmd.NewListGroupsCommand())
 	jaasCmd.Register(cmd.NewListMigrationTargetsCommand())
 	jaasCmd.Register(cmd.NewListPermissionsCommand())

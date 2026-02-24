@@ -80,3 +80,6 @@ parts:
       ln -sf jaas bin/juju-destroy-controller
       ln -sf jaas bin/juju-upgrade-to
       ln -sf jaas bin/juju-show-model
+      ln -sf jaas bin/juju-list-jobs
+      ln -sf jaas bin/juju-jobs
+

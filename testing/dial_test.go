@@ -51,10 +51,10 @@ func (s *dialSuite) TestDial(c *gc.C) {
 func (s *dialSuite) TestDialWithJWT(c *gc.C) {
 	ctx := context.Background()
 
-	name, config := s.GetOneControllerConfig(c)
+	config := s.GetControllerConfig(c, s.Model.Controller.Name)
 	ctl := dbmodel.Controller{
 		UUID:          config.UUID,
-		Name:          name,
+		Name:          s.Model.Controller.Name,
 		CACertificate: config.CACert,
 		PublicAddress: config.Addrs[0],
 		TLSHostname:   "juju-apiserver",
@@ -85,10 +85,10 @@ func (s *dialSuite) TestDialWithJWT(c *gc.C) {
 // of our Juju dialer. It verifies that we can connect to valid endpoints
 // on a Juju controller, and that invalid endpoints return errors.
 func (s *dialSuite) TestConnectStreams(c *gc.C) {
-	name, config := s.GetOneControllerConfig(c)
+	config := s.GetControllerConfig(c, s.Model.Controller.Name)
 	ctl := dbmodel.Controller{
 		UUID:          config.UUID,
-		Name:          name,
+		Name:          s.Model.Controller.Name,
 		CACertificate: config.CACert,
 		PublicAddress: config.Addrs[0],
 		TLSHostname:   "juju-apiserver",

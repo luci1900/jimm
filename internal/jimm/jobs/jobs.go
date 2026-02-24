@@ -144,7 +144,7 @@ func convertJobStates(statuses []apiparams.JobStatus) ([]rivertype.JobState, err
 		case apiparams.StatusRunning:
 			riverStates = append(riverStates, rivertype.JobStateRunning)
 		case apiparams.StatusFailed:
-			riverStates = append(riverStates, rivertype.JobStateCancelled)
+			riverStates = append(riverStates, rivertype.JobStateDiscarded, rivertype.JobStateCancelled)
 		case apiparams.StatusSuccessful:
 			riverStates = append(riverStates, rivertype.JobStateCompleted)
 		case apiparams.StatusPending:
