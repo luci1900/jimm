@@ -3,20 +3,18 @@
 package testing
 
 import (
+	"fmt"
 	"os"
 	"testing"
-
-	gc "gopkg.in/check.v1"
 )
 
-// Registers Go Check tests into the Go test runner.
-func TestPackage(t *testing.T) {
-	onlyRunE2ETests(t)
-	gc.TestingT(t)
-}
-
-func onlyRunE2ETests(t *testing.T) {
+func TestMain(m *testing.M) {
 	if _, ok := os.LookupEnv("RUN_E2E_TESTS"); !ok {
-		t.Skip("Skipping e2e tests. Set RUN_E2E_TESTS=true to run them.")
+		fmt.Fprint(os.Stdout, "Skipping e2e tests. Set RUN_E2E_TESTS=true to run them.")
+		os.Exit(0)
 	}
+	// Run all tests in the package
+	code := m.Run()
+
+	os.Exit(code)
 }

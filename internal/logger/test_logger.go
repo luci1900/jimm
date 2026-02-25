@@ -5,13 +5,16 @@ package logger
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	gc "gopkg.in/check.v1"
 )
 
-// NewGoCheckLogger create a logger to be used by the gocheck test library.
+type Logger interface {
+	Logf(format string, args ...any)
+}
+
+// NewTestLogger create a logger to be used by tests.
 // The logs are shown only when the test fails.
-func NewGoCheckLogger(c *gc.C) *zap.Logger {
-	output := gocheckZapWriter{c}
+func NewTestLogger(l Logger) *zap.Logger {
+	output := testZapWriter{l}
 
 	devConfig := zap.NewDevelopmentEncoderConfig()
 	devConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -26,15 +29,15 @@ func NewGoCheckLogger(c *gc.C) *zap.Logger {
 	)
 }
 
-type gocheckZapWriter struct {
-	c *gc.C
+type testZapWriter struct {
+	l Logger
 }
 
-func (w gocheckZapWriter) Write(buf []byte) (int, error) {
-	w.c.Logf(string(buf))
+func (w testZapWriter) Write(buf []byte) (int, error) {
+	w.l.Logf("%s", string(buf))
 	return len(buf), nil
 }
 
-func (w gocheckZapWriter) Sync() error {
+func (w testZapWriter) Sync() error {
 	return nil
 }
