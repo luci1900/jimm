@@ -44,6 +44,9 @@ mkdir -p "$(dirname "${out_file}")"
 #   more naturally than POSIX `[[:space:]]`. BSD sed (macOS) does not.
 # - The replacement uses a literal newline via a backslash at end-of-line.
 sed -E 's/^# jaas\s+(\S+)\s*$/\(command-jaas-\1\)=\
-# jaas \1/' "${md_in}" > "${out_file}"
+# jaas \1/' "${md_in}" \
+  | sed -E '/^## Usage$/{n; s/^(`+)jaas /\1juju jaas /}' > "${out_file}"
+
+
 
 echo "Updated: ${out_file}"
