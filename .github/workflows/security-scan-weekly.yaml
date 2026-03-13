@@ -22,6 +22,7 @@ jobs:
           scan-type: 'fs'
           format: 'sarif'
           output: 'trivy-results.sarif'
+          version: 'v0.69.3'
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/canonical/comsys-build-tools/trivy-db:2
   
