@@ -329,7 +329,7 @@ juju config jimm juju-dashboard-location="http://jimm.workshop/auth/whoami"
 ```
 
 At this point you can run `juju status` and you should observe JIMM is active.
-Navigate to `http://jimm.workshop/debug/info` to verify your JIMM deployment.
+Navigate to `http://jimm.workshop/.well-known/jwks.json` to verify your JIMM deployment.
 
 Finally we will obtain the ca-certificate generated to ensure that we can connect to JIMM with HTTPS.
 This is necessary for the Juju CLI to work properly
@@ -340,7 +340,7 @@ sudo update-ca-certificates --fresh
 
 Verify that you can securely connect to JIMM with the following command:
 ```text
-curl https://jimm.workshop/jimm-jimm/debug/info
+curl https://jimm.workshop/jimm-jimm/.well-known/jwks.json
 ```
 
 Verify that you can login to your new controller with the Juju CLI.
@@ -809,7 +809,7 @@ The following are some common issues that may arise especially after a reboot of
 
 ### JIMM shows invalid certificate
 
-Try `curl https://jimm.workshop/debug/info`, if you receive an SSL certificate error then it's likely that the K8s ingress is no longer
+Try `curl https://jimm.workshop/.well-known/jwks.json`, if you receive an SSL certificate error then it's likely that the K8s ingress is no longer
 serving the correct TLS certificate. The following command can help verify this.
 ```text
 openssl s_client -showcerts -servername jimm.workshop -connect jimm.workshop:443 < /dev/null

@@ -91,7 +91,7 @@ services:
       JIMM_BOOTSTRAP_LOGIN_TOKEN_REFRESH_URL:  "${JIMM_BOOTSTRAP_LOGIN_TOKEN_REFRESH_URL:-https://jimm.localhost/.well-known/jwks.json}"
       GOTOOLCHAIN: auto
     healthcheck:
-      test: [ "CMD", "curl", "http://jimm.localhost:80/debug/info" ]
+      test: [ "CMD", "curl", "http://jimm.localhost/.well-known/jwks.json" ]
       interval: 5s
       timeout: 5s
       retries: 50 # Should fail after approximately (interval*retry) seconds
@@ -117,3 +117,10 @@ services:
       traefik.http.routers.jimm.rule: Host(`jimm.localhost`)
       traefik.http.routers.jimm.entrypoints: websecure
       traefik.http.routers.jimm.tls: true
+      traefik.http.routers.jimm.service: "jimm"
+      traefik.http.services.jimm.loadbalancer.server.port: 80
+      traefik.http.routers.jimm-internal.rule: Host(`jimm-internal.localhost`)
+      traefik.http.routers.jimm-internal.entrypoints: websecure
+      traefik.http.routers.jimm-internal.tls: true
+      traefik.http.routers.jimm-internal.service: "jimm-internal"
+      traefik.http.services.jimm-internal.loadbalancer.server.port: 9090
