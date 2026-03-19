@@ -93,7 +93,7 @@ in a production environment.
 ````{dropdown} JIMM bootstrap
 ```text
 juju switch jimm
-juju jaas boostrap microk8s workload-microk8s 3.6.8 --config controller-service-type=loadbalancer
+juju jaas bootstrap microk8s workload-microk8s 3.6.8 --config controller-service-type=loadbalancer
 ```
 
 ```{note}
