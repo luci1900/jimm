@@ -140,7 +140,7 @@ func (r *controllerRoot) LatestLogTime(ctx context.Context, args jujuparams.Mode
 		return time.Time{}, errors.E(err)
 	}
 
-	t, err := r.jimm.JujuManager().LatestLogTime(ctx, modelTag.Id())
+	t, err := r.jimm.JujuManager().LatestLogTime(ctx, r.user, modelTag.Id())
 	if err != nil {
 		return time.Time{}, errors.E(err)
 	}
@@ -197,6 +197,7 @@ func (r *controllerRoot) Activate(ctx context.Context, args jujuparams.ActivateM
 
 	err = r.jimm.JujuManager().Activate(
 		ctx,
+		r.user,
 		modelTag, migration.SourceControllerInfo{
 			ControllerTag:   controllerTag,
 			ControllerAlias: args.ControllerAlias,

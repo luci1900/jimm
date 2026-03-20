@@ -40,7 +40,6 @@ type AddApplicationOfferParams struct {
 
 // Offer creates a new application offer.
 func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddApplicationOfferParams) error {
-
 	model := dbmodel.Model{
 		UUID: sql.NullString{
 			String: offer.ModelTag.Id(),
@@ -81,7 +80,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 		return errors.E(err)
 	}
 
-	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, user)
 	if err != nil {
 		return errors.E(err)
 	}
@@ -208,12 +207,7 @@ func (j *JujuManager) GetApplicationOfferConsumeDetails(ctx context.Context, use
 		return errors.E(errors.CodeNotFound)
 	}
 
-	api, err := j.dial(
-		ctx,
-		&offer.Model.Controller,
-		names.ModelTag{},
-		nil,
-	)
+	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, user)
 	if err != nil {
 		return errors.E(err)
 	}
@@ -371,12 +365,7 @@ func (j *JujuManager) GetApplicationOffer(ctx context.Context, user *openfga.Use
 	// controller. The all-watcher events do not include enough
 	// information to reasonably keep the local database up-to-date,
 	// and it would be non-trivial to make it do so.
-	api, err := j.dial(
-		ctx,
-		&offer.Model.Controller,
-		names.ModelTag{},
-		nil,
-	)
+	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, user)
 	if err != nil {
 		return nil, errors.E(err)
 	}
@@ -532,7 +521,7 @@ func (j *JujuManager) queryControllersForOffers(ctx context.Context, user *openf
 			// Return early if a single controller has an error
 			// to avoid misleading clients about what exists which
 			// could cause unneeded reconciliation.
-			api, err := j.dial(ctx, ctl, names.ModelTag{}, nil)
+			api, err := j.dial(ctx, ctl, names.ModelTag{}, user)
 			if err != nil {
 				return errors.E(err)
 			}
@@ -590,12 +579,7 @@ func (j *JujuManager) doApplicationOfferAdmin(ctx context.Context, user *openfga
 		return errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
 	// add offer admin claim
-	api, err := j.dial(
-		ctx,
-		&offer.Model.Controller,
-		names.ModelTag{},
-		nil,
-	)
+	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, user)
 	if err != nil {
 		return errors.E(err)
 	}

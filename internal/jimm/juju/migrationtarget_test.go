@@ -792,7 +792,10 @@ func TestActivate_Success(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(incomingModelMigration.UserMapping["jane"], qt.Equals, "")
 
-	err = j.Activate(ctx, names.NewModelTag(migratingModelUUID), sourceInfo, relatedModels)
+	dbUser := env.User("alice@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&dbUser, j.OpenFGAClient)
+
+	err = j.Activate(ctx, user, names.NewModelTag(migratingModelUUID), sourceInfo, relatedModels)
 	c.Assert(err, qt.IsNil)
 
 	modelMigration := dbmodel.IncomingModelMigration{
@@ -853,7 +856,10 @@ func TestActivate_APIFailure(t *testing.T) {
 	env := jimmtest.ParseEnvironment(c, testEnvWithIncomingMigration)
 	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
 
-	err := j.Activate(ctx, names.NewModelTag(migratingModelUUID), sourceInfo, relatedModels)
+	dbUser := env.User("alice@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&dbUser, j.OpenFGAClient)
+
+	err := j.Activate(ctx, user, names.NewModelTag(migratingModelUUID), sourceInfo, relatedModels)
 	c.Assert(err, qt.ErrorMatches, `.*API failure`)
 
 	modelMigration := dbmodel.IncomingModelMigration{
@@ -876,7 +882,10 @@ func TestActivate_NoIncomingModelMigration(t *testing.T) {
 	env := jimmtest.ParseEnvironment(c, testEnvNoIncomingMigration)
 	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
 
-	err := j.Activate(ctx, names.NewModelTag("foo"), migration.SourceControllerInfo{}, nil)
+	dbUser := env.User("alice@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&dbUser, j.OpenFGAClient)
+
+	err := j.Activate(ctx, user, names.NewModelTag("foo"), migration.SourceControllerInfo{}, nil)
 	c.Assert(err, qt.ErrorMatches, `.*model migration not found`)
 }
 
@@ -978,12 +987,15 @@ func TestLatestLogTime_Success(t *testing.T) {
 	env := jimmtest.ParseEnvironment(c, migratedModelEnv)
 	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
 
+	dbUser := env.User("alice@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&dbUser, j.OpenFGAClient)
+
 	// Test a model UUID that does not exist
-	_, err := j.LatestLogTime(ctx, "does-not-exist")
+	_, err := j.LatestLogTime(ctx, user, "does-not-exist")
 	c.Assert(err, qt.IsNotNil)
 
 	// Test a model UUID that exists
-	logTime, err := j.LatestLogTime(ctx, modelUUID)
+	logTime, err := j.LatestLogTime(ctx, user, modelUUID)
 	c.Assert(err, qt.IsNil)
 	c.Assert(logTime, qt.Not(qt.IsNil))
 	c.Assert(latestLogTimeCalled, qt.IsTrue)
