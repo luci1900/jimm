@@ -212,11 +212,7 @@ func (j *JujuManager) GetApplicationOfferConsumeDetails(ctx context.Context, use
 		ctx,
 		&offer.Model.Controller,
 		names.ModelTag{},
-		user,
-		permission{
-			resource: names.NewApplicationOfferTag(offer.UUID).String(),
-			relation: accessLevel,
-		},
+		nil,
 	)
 	if err != nil {
 		return errors.E(err)
