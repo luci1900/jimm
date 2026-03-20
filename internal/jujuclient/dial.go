@@ -31,7 +31,6 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
-	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/rpc"
 	"github.com/canonical/jimm/v3/internal/servermon"
 	jimmversion "github.com/canonical/jimm/v3/version"
@@ -55,13 +54,20 @@ type Dialer struct {
 	JWTService                 *jimmjwx.JWTService
 }
 
-func (d *Dialer) createLoginRequest1(ctx context.Context, controllerTag names.ControllerTag, userTag names.UserTag, permissions map[string]string) (*jujuparams.LoginRequest, error) {
-	if len(permissions) == 0 {
-		return nil, errors.E("")
+func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
+	// Always request superuser permissions, even when representing a non-admin user
+	// This is only safe because we have already checked the user's openfga permissions in a layer above.
+	permissions := make(map[string]string)
+	permissions[ctl.ResourceTag().String()] = "superuser"
+	if modelTag.Id() != "" {
+		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
 	}
+
+	userTag := user.ResourceTag().String()
+
 	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
-		Controller: controllerTag.Id(),
-		User:       userTag.String(),
+		Controller: ctl.ResourceTag().Id(),
+		User:       userTag,
 		Access:     permissions,
 	})
 	if err != nil {
@@ -70,44 +76,10 @@ func (d *Dialer) createLoginRequest1(ctx context.Context, controllerTag names.Co
 	jwtString := base64.StdEncoding.EncodeToString(jwt)
 
 	return &jujuparams.LoginRequest{
-		AuthTag:       userTag.String(),
+		AuthTag:       userTag,
 		ClientVersion: jimmversion.ControllerVersion,
 		Token:         jwtString,
 	}, nil
-}
-
-func (d *Dialer) createAdminLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*jujuparams.LoginRequest, error) {
-	permissions := make(map[string]string)
-	permissions[ctl.ResourceTag().String()] = "superuser"
-	if modelTag.Id() != "" {
-		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
-	}
-	return d.createLoginRequest1(ctx, ctl.ResourceTag(), names.NewUserTag(adminUser), permissions)
-}
-
-func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
-	permissions := make(map[string]string)
-	permissions[ctl.ResourceTag().String()] = "superuser"
-	modelRelation := user.GetModelAccess(ctx, modelTag)
-	if modelRelation != ofganames.NoRelation {
-		permissions[modelTag.String()] = toModelAccessString(modelRelation)
-	}
-
-	return d.createLoginRequest1(ctx, ctl.ResourceTag(), user.ResourceTag(), permissions)
-}
-
-// toModelAccessString maps relation to a model access string.
-func toModelAccessString(relation openfga.Relation) string {
-	switch relation {
-	case ofganames.AdministratorRelation:
-		return "admin"
-	case ofganames.WriterRelation:
-		return "write"
-	case ofganames.ReaderRelation:
-		return "read"
-	default:
-		return ""
-	}
 }
 
 // Dial implements jimm.Dialer.
@@ -123,21 +95,13 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	client := rpc.NewClient(conn)
 
 	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: "admin"}}
+		user = &openfga.User{Identity: &dbmodel.Identity{Name: adminUser}}
 	}
 
 	var loginRequest *jujuparams.LoginRequest
-	if user.Name == adminUser {
-		loginRequest, err = d.createAdminLoginRequest(ctx, ctl, modelTag)
-		if err != nil {
-			return nil, errors.E(err)
-		}
-
-	} else {
-		loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
-		if err != nil {
-			return nil, errors.E(err)
-		}
+	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
+	if err != nil {
+		return nil, errors.E(err)
 	}
 
 	var res jujuparams.LoginResult
