@@ -75,27 +75,15 @@ func NewJujuManager(
 	}, nil
 }
 
-type permission struct {
-	resource string
-	relation string
-}
-
 // dial dials the controller and model specified by the given Controller
 // and ModelTag. If no Dialer has been configured then an error with a
 // code of CodeConnectionFailed will be returned.
-func (j *JujuManager) dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, permissons ...permission) (API, error) {
+func (j *JujuManager) dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error) {
 	if j == nil || j.Dialer == nil {
 		return nil, errors.E(errors.CodeConnectionFailed, "no dialer configured")
 	}
-	var permissionMap map[string]string
-	if len(permissons) > 0 {
-		permissionMap = make(map[string]string, len(permissons))
-		for _, p := range permissons {
-			permissionMap[p.resource] = p.relation
-		}
-	}
 
-	return j.Dialer.Dial(ctx, ctl, modelTag, user, permissionMap)
+	return j.Dialer.Dial(ctx, ctl, modelTag, user, make(map[string]string, 0))
 }
 
 // ResourceTag returns JIMM's controller tag stating its UUID.
