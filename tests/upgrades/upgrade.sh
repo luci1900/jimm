@@ -75,13 +75,14 @@ max_attempts=60  # 60 attempts = 5 minutes / 5 seconds
 attempt=1
 while [ $attempt -le $max_attempts ]; do
     sleep 5
-    new_version="$(juju show-model "$UPGRADING_MODEL_NAME" | yq -r ".${UPGRADING_MODEL_NAME}.agent-version")"
-    if [ "$new_version" != "$current_model_version" ]; then
-        echo "Model upgrade completed to version $new_version."
+    controller_info="$($JAAS show-model "$model_uuid" --format json)"
+    current_controller="$(echo "$controller_info" | jq -r '."controller-name"')"
+    if [ "$current_controller" = "$target_controller" ]; then
+        echo "Model upgrade completed on controller $current_controller."
         break
     fi
     echo
-    echo "Upgrade still in progress (attempt $attempt/$max_attempts), current model version: $new_version"
+    echo "Upgrade still in progress (attempt $attempt/$max_attempts), current backing controller: $current_controller"
     attempt=$((attempt + 1))
 done
 if [ $attempt -gt $max_attempts ]; then
