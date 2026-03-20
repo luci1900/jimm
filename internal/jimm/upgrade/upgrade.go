@@ -101,7 +101,7 @@ func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, tar
 		return errors.E(errors.CodeNotFound, err, "model not found")
 	}
 
-	api, err := u.dialer.Dial(ctx, &model.Controller, names.ModelTag{}, nil, nil)
+	api, err := u.dialer.Dial(ctx, &model.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial target controller: %w", err))
 	}

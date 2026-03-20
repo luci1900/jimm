@@ -30,7 +30,7 @@ type Dialer interface {
 	// dialing the controller the UUID, AgentVersion and HostPorts fields
 	// in the given controller should be updated to the values provided
 	// by the controller.
-	Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, withPermissions map[string]string) (API, error)
+	Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
 }
 
 // An API is the interface JIMM uses to access the API on a controller.

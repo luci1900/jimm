@@ -76,35 +76,24 @@ func (d *Dialer) createLoginRequest1(ctx context.Context, controllerTag names.Co
 	}, nil
 }
 
-func (d *Dialer) createAdminLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, additionalPermissions map[string]string) (*jujuparams.LoginRequest, error) {
+func (d *Dialer) createAdminLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*jujuparams.LoginRequest, error) {
 	permissions := make(map[string]string)
 	permissions[ctl.ResourceTag().String()] = "superuser"
 	if modelTag.Id() != "" {
 		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
 	}
-	for k, v := range additionalPermissions {
-		permissions[k] = v
-	}
 	return d.createLoginRequest1(ctx, ctl.ResourceTag(), names.NewUserTag(adminUser), permissions)
 }
 
-func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, additionalPermissions map[string]string) (*jujuparams.LoginRequest, error) {
-	p := make(map[string]string)
-	ctlRelation := user.GetControllerAccess(ctx, ctl.ResourceTag())
-	if ctlRelation == ofganames.AdministratorRelation {
-		p[ctl.ResourceTag().String()] = "superuser"
-	} else {
-		p[ctl.ResourceTag().String()] = "login"
-	}
+func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
+	permissions := make(map[string]string)
+	permissions[ctl.ResourceTag().String()] = "superuser"
 	modelRelation := user.GetModelAccess(ctx, modelTag)
 	if modelRelation != ofganames.NoRelation {
-		p[modelTag.String()] = toModelAccessString(modelRelation)
+		permissions[modelTag.String()] = toModelAccessString(modelRelation)
 	}
 
-	for k, v := range additionalPermissions {
-		p[k] = v
-	}
-	return d.createLoginRequest1(ctx, ctl.ResourceTag(), user.ResourceTag(), p)
+	return d.createLoginRequest1(ctx, ctl.ResourceTag(), user.ResourceTag(), permissions)
 }
 
 // toModelAccessString maps relation to a model access string.
@@ -122,7 +111,7 @@ func toModelAccessString(relation openfga.Relation) string {
 }
 
 // Dial implements jimm.Dialer.
-func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, withPermissions map[string]string) (*Connection, error) {
+func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
 
 	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
 	if err != nil {
@@ -139,13 +128,13 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 
 	var loginRequest *jujuparams.LoginRequest
 	if user.Name == adminUser {
-		loginRequest, err = d.createAdminLoginRequest(ctx, ctl, modelTag, withPermissions)
+		loginRequest, err = d.createAdminLoginRequest(ctx, ctl, modelTag)
 		if err != nil {
 			return nil, errors.E(err)
 		}
 
 	} else {
-		loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user, withPermissions)
+		loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
 		if err != nil {
 			return nil, errors.E(err)
 		}

@@ -83,7 +83,7 @@ func (j *JujuManager) dial(ctx context.Context, ctl *dbmodel.Controller, modelTa
 		return nil, errors.E(errors.CodeConnectionFailed, "no dialer configured")
 	}
 
-	return j.Dialer.Dial(ctx, ctl, modelTag, user, make(map[string]string, 0))
+	return j.Dialer.Dial(ctx, ctl, modelTag, user)
 }
 
 // ResourceTag returns JIMM's controller tag stating its UUID.
