@@ -9,7 +9,6 @@ import (
 	"sort"
 
 	"github.com/juju/juju/api/base"
-	jujupermission "github.com/juju/juju/core/permission"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
 	"github.com/juju/zaputil"
@@ -547,10 +546,6 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 		b.controller,
 		names.ModelTag{},
 		nil,
-		permission{
-			resource: b.cloud.ResourceTag().String(),
-			relation: string(jujupermission.AddModelAccess),
-		},
 	)
 	if err != nil {
 		b.err = errors.E(err)

@@ -362,6 +362,6 @@ func NewDialerAdapter(dialer *jujuclient.Dialer) *DialerAdapter {
 // Dial implements the juju.Dialer interface for the DialerAdapter.
 // It uses the underlying jujuclient.Dialer to establish a connection
 // to the Juju controller and returns a juju.API connection.
-func (d *DialerAdapter) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, withPermissions map[string]string) (juju.API, error) {
-	return d.dialer.Dial(ctx, ctl, modelTag, user, withPermissions)
+func (d *DialerAdapter) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (juju.API, error) {
+	return d.dialer.Dial(ctx, ctl, modelTag, user)
 }
