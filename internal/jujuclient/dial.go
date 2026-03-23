@@ -31,6 +31,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
+	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/rpc"
 	"github.com/canonical/jimm/v3/internal/servermon"
 	jimmversion "github.com/canonical/jimm/v3/version"
@@ -55,19 +56,32 @@ type Dialer struct {
 }
 
 func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
-	// Always request superuser permissions, even when representing a non-admin user
-	// This is only safe because we have already checked the user's openfga permissions in a layer above.
+	var userTag names.UserTag
 	permissions := make(map[string]string)
-	permissions[ctl.ResourceTag().String()] = "superuser"
-	if modelTag.Id() != "" {
-		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
-	}
 
-	userTag := user.ResourceTag().String()
+	if user == nil {
+		userTag = names.NewUserTag(adminUser)
+		permissions[ctl.ResourceTag().String()] = "superuser"
+		if modelTag.Id() != "" {
+			permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
+		}
+	} else {
+		userTag = user.ResourceTag()
+		ctlRelation := user.GetControllerAccess(ctx, ctl.ResourceTag())
+		if ctlRelation == ofganames.AdministratorRelation {
+			permissions[ctl.ResourceTag().String()] = "superuser"
+		} else {
+			permissions[ctl.ResourceTag().String()] = "login"
+		}
+		modelRelation := user.GetModelAccess(ctx, modelTag)
+		if modelRelation != ofganames.NoRelation {
+			permissions[modelTag.String()] = toModelAccessString(modelRelation)
+		}
+	}
 
 	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
 		Controller: ctl.ResourceTag().Id(),
-		User:       userTag,
+		User:       userTag.String(),
 		Access:     permissions,
 	})
 	if err != nil {
@@ -76,10 +90,24 @@ func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller
 	jwtString := base64.StdEncoding.EncodeToString(jwt)
 
 	return &jujuparams.LoginRequest{
-		AuthTag:       userTag,
+		AuthTag:       userTag.String(),
 		ClientVersion: jimmversion.ControllerVersion,
 		Token:         jwtString,
 	}, nil
+}
+
+// toModelAccessString maps relation to a model access string.
+func toModelAccessString(relation openfga.Relation) string {
+	switch relation {
+	case ofganames.AdministratorRelation:
+		return "admin"
+	case ofganames.WriterRelation:
+		return "write"
+	case ofganames.ReaderRelation:
+		return "read"
+	default:
+		return ""
+	}
 }
 
 // Dial implements jimm.Dialer.
