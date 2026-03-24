@@ -70,13 +70,13 @@ func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller
 		ctlRelation := user.GetControllerAccess(ctx, ctl.ResourceTag())
 		if ctlRelation == ofganames.AdministratorRelation {
 			permissions[ctl.ResourceTag().String()] = "superuser"
-			permissions[modelTag.String()] = "admin"
 		} else {
 			permissions[ctl.ResourceTag().String()] = "login"
-			modelRelation := user.GetModelAccess(ctx, modelTag)
-			if modelRelation != ofganames.NoRelation {
-				permissions[modelTag.String()] = toModelAccessString(modelRelation)
-			}
+		}
+
+		modelRelation := user.GetModelAccess(ctx, modelTag)
+		if modelRelation != ofganames.NoRelation {
+			permissions[modelTag.String()] = toModelAccessString(modelRelation)
 		}
 	}
 
@@ -122,10 +122,6 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 		return nil, errors.E(errors.CodeConnectionFailed, err)
 	}
 	client := rpc.NewClient(conn)
-
-	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: adminUser}}
-	}
 
 	var loginRequest *jujuparams.LoginRequest
 	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
