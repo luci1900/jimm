@@ -301,7 +301,7 @@ func (s *JIMMEnv) AddController(c *qt.C, name string, info *api.Info) *dbmodel.C
 		}})
 	}
 	ctl.TLSHostname = "juju-apiserver"
-	err := s.JIMM.JujuManager.AddController(context.Background(), s.AdminUser, ctl, ctlCreds)
+	err := s.JIMM.JujuManager.AddController(context.Background(), nil, ctl, ctlCreds)
 	c.Assert(err, qt.Equals, nil)
 	return ctl
 }
