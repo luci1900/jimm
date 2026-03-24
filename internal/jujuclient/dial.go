@@ -70,12 +70,13 @@ func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller
 		ctlRelation := user.GetControllerAccess(ctx, ctl.ResourceTag())
 		if ctlRelation == ofganames.AdministratorRelation {
 			permissions[ctl.ResourceTag().String()] = "superuser"
+			permissions[modelTag.String()] = "admin"
 		} else {
 			permissions[ctl.ResourceTag().String()] = "login"
-		}
-		modelRelation := user.GetModelAccess(ctx, modelTag)
-		if modelRelation != ofganames.NoRelation {
-			permissions[modelTag.String()] = toModelAccessString(modelRelation)
+			modelRelation := user.GetModelAccess(ctx, modelTag)
+			if modelRelation != ofganames.NoRelation {
+				permissions[modelTag.String()] = toModelAccessString(modelRelation)
+			}
 		}
 	}
 
