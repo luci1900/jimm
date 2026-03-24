@@ -206,13 +206,13 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 
 	api, err := j.dialController(ctx, ctl, user)
 	if err != nil {
-		return errors.E(fmt.Errorf("failed to dial the controller: %v", err))
+		return fmt.Errorf("failed to dial the controller: %v", err)
 	}
 	defer api.Close()
 
 	cloudSpec, err := api.CloudSpec(ctx)
 	if err != nil {
-		return errors.E(fmt.Errorf("failed to get model summary: %v", err))
+		return fmt.Errorf("failed to get model summary: %v", err)
 	}
 
 	ctl.CloudName = cloudSpec.Name
@@ -253,7 +253,7 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 			return errors.E(err, fmt.Sprintf("controller %q already exists", ctl.Name))
 		}
 
-		return errors.E(fmt.Errorf("failed to add controller: %w", err))
+		return fmt.Errorf("failed to add controller: %w", err)
 	}
 
 	for _, cloud := range dbClouds {
@@ -406,7 +406,7 @@ func (m *modelImporter) setModelOwner(ctx context.Context) error {
 	}
 
 	if ownerTag.IsLocal() {
-		return errors.E("cannot import model from local user, try --owner to switch the model owner")
+		return errors.New("cannot import model from local user, try --owner to switch the model owner")
 	}
 	owner := dbmodel.Identity{}
 	owner.SetTag(ownerTag)
@@ -477,7 +477,7 @@ func (m *modelImporter) setModelCloud(ctx context.Context) error {
 	if m.modelInfo.CloudRegion != "" {
 		cr := cloud.Region(m.modelInfo.CloudRegion)
 		if cr.Name != m.modelInfo.CloudRegion {
-			return errors.E("cloud region not found")
+			return errors.New("cloud region not found")
 		}
 
 		m.model.CloudRegionID = cr.ID
@@ -614,7 +614,7 @@ func (j *JujuManager) UpdateMigratedModel(ctx context.Context, user *openfga.Use
 	model.InternalMigrationSuccess(targetController.ID)
 	err = j.Database.UpdateModel(ctx, &model)
 	if err != nil {
-		return errors.E(fmt.Errorf("failed to update model: %w", err))
+		return fmt.Errorf("failed to update model: %w", err)
 	}
 
 	return nil
@@ -674,7 +674,7 @@ func (j *JujuManager) initiateMigration(ctx context.Context, user *openfga.User,
 		}
 
 		if model.MigrationMode != dbmodel.MigrationModeNone {
-			return errors.E(fmt.Errorf("model is already in migration mode %q", model.MigrationMode))
+			return fmt.Errorf("model is already in migration mode %q", model.MigrationMode)
 		}
 
 		if internalMigration {
@@ -686,7 +686,7 @@ func (j *JujuManager) initiateMigration(ctx context.Context, user *openfga.User,
 		return tx.UpdateModel(ctx, &model)
 	})
 	if err != nil {
-		return result, errors.E(fmt.Errorf("failed to update the model's migration mode: %v", err))
+		return result, fmt.Errorf("failed to update the model's migration mode: %v", err)
 	}
 
 	// Until we have better handling for partial failures we try to revert

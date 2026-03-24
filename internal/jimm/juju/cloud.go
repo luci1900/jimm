@@ -66,11 +66,11 @@ func (j *JujuManager) ForEachUserCloud(ctx context.Context, user *openfga.User, 
 
 	ctrlCount, err := j.Database.CountControllers(ctx)
 	if err != nil {
-		return errors.E(fmt.Errorf("cannot get count controllers: %w", err))
+		return fmt.Errorf("cannot get count controllers: %w", err)
 	}
 
 	if ctrlCount == 0 {
-		return errors.E("no controllers registered")
+		return errors.New("no controllers registered")
 	}
 
 	clouds, err := j.Database.GetClouds(ctx)

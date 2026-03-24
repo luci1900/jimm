@@ -31,7 +31,7 @@ func (d *Database) AddGroup(ctx context.Context, name string) (ge *dbmodel.Group
 	}
 
 	if err := d.DB.WithContext(ctx).Create(ge).Error; err != nil {
-		return nil, errors.E(dbError(err))
+		return nil, dbError(err)
 	}
 	return ge, nil
 }
@@ -49,7 +49,7 @@ func (d *Database) CountGroups(ctx context.Context) (count int, err error) {
 	var c int64
 	var g dbmodel.GroupEntry
 	if err := d.DB.WithContext(ctx).Model(g).Count(&c).Error; err != nil {
-		return 0, errors.E(dbError(err))
+		return 0, dbError(err)
 	}
 	count = int(c)
 	return count, nil
@@ -63,7 +63,7 @@ func (d *Database) GetGroup(ctx context.Context, group *dbmodel.GroupEntry) (err
 	}
 
 	if group.UUID == "" && group.Name == "" {
-		return errors.E("must specify uuid or name")
+		return errors.New("must specify uuid or name")
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -81,7 +81,7 @@ func (d *Database) GetGroup(ctx context.Context, group *dbmodel.GroupEntry) (err
 		db = db.Where("name = ?", group.Name)
 	}
 	if err := db.First(&group).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -111,7 +111,7 @@ func (d *Database) ListGroups(ctx context.Context, limit, offset int, match stri
 	}
 	var groups []dbmodel.GroupEntry
 	if err := db.Find(&groups).Error; err != nil {
-		return nil, errors.E(dbError(err))
+		return nil, dbError(err)
 	}
 	return groups, nil
 }
@@ -121,7 +121,7 @@ func (d *Database) UpdateGroupName(ctx context.Context, uuid, name string) (err 
 	const op = "db.UpdateGroup"
 
 	if uuid == "" {
-		return errors.E("uuid must be specified")
+		return errors.New("uuid must be specified")
 	}
 
 	if err := d.ready(); err != nil {
@@ -157,7 +157,7 @@ func (d *Database) RemoveGroup(ctx context.Context, group *dbmodel.GroupEntry) (
 	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 
 	if err := d.DB.WithContext(ctx).Delete(group).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }

@@ -26,7 +26,7 @@ func (d *Database) AddApplicationOffer(ctx context.Context, offer *dbmodel.Appli
 
 	result := db.Create(offer)
 	if result.Error != nil {
-		return errors.E(dbError(result.Error))
+		return dbError(result.Error)
 	}
 	return nil
 }
@@ -51,7 +51,7 @@ func (d *Database) GetApplicationOffer(ctx context.Context, offer *dbmodel.Appli
 	case offer.URL != "":
 		db = db.Where("url = ?", offer.URL)
 	default:
-		return errors.E("missing offer UUID or URL")
+		return errors.New("missing offer UUID or URL")
 	}
 
 	db = db.Preload("Model").Preload("Model.Controller")
@@ -81,7 +81,7 @@ func (d *Database) DeleteApplicationOffer(ctx context.Context, offer *dbmodel.Ap
 
 	result := db.Delete(offer)
 	if result.Error != nil {
-		return errors.E(dbError(result.Error))
+		return dbError(result.Error)
 	}
 	return nil
 }
@@ -111,14 +111,14 @@ func (d *Database) FindApplicationOffersByModel(ctx context.Context, modelName, 
 	var offers []dbmodel.ApplicationOffer
 	result := db.Preload("Model").Find(&offers)
 	if result.Error != nil {
-		return nil, errors.E(dbError(result.Error))
+		return nil, dbError(result.Error)
 	}
 
 	for i, offer := range offers {
 		offer := offer
 		err := d.GetApplicationOffer(ctx, &offer)
 		if err != nil {
-			return nil, errors.E(dbError(err))
+			return nil, dbError(err)
 		}
 		offers[i] = offer
 	}

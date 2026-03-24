@@ -76,7 +76,7 @@ func ToControllerRelation(accessLevel string) (openfga.Relation, error) {
 	case "superuser":
 		return ofganames.AdministratorRelation, nil
 	default:
-		return ofganames.NoRelation, errors.E("unknown controller access")
+		return ofganames.NoRelation, errors.New("unknown controller access")
 	}
 }
 
@@ -91,7 +91,7 @@ func ToCloudRelation(accessLevel string) (openfga.Relation, error) {
 	case "add-model":
 		return ofganames.CanAddModelRelation, nil
 	default:
-		return ofganames.NoRelation, errors.E("unknown cloud access")
+		return ofganames.NoRelation, errors.New("unknown cloud access")
 	}
 }
 
@@ -105,7 +105,7 @@ func ToModelRelation(accessLevel string) (openfga.Relation, error) {
 	case "read":
 		return ofganames.ReaderRelation, nil
 	default:
-		return ofganames.NoRelation, errors.E("unknown model access")
+		return ofganames.NoRelation, errors.New("unknown model access")
 	}
 }
 
@@ -121,7 +121,7 @@ func ToOfferRelation(accessLevel string) (openfga.Relation, error) {
 	case string(jujuparams.OfferReadAccess):
 		return ofganames.ReaderRelation, nil
 	default:
-		return ofganames.NoRelation, errors.E("unknown application offer access")
+		return ofganames.NoRelation, errors.New("unknown application offer access")
 	}
 }
 
@@ -248,7 +248,7 @@ func (j *PermissionManager) GetJimmControllerAccess(ctx context.Context, user *o
 	// Check if the user is jimm administrator.
 	isAdmin, err := openfga.IsAdministrator(ctx, targetUserTag, j.jimmTag)
 	if err != nil {
-		return "", errors.E(fmt.Errorf("failed to check access rights: %w", err))
+		return "", fmt.Errorf("failed to check access rights: %w", err)
 	}
 	if isAdmin {
 		return "superuser", nil
@@ -320,7 +320,7 @@ func (j *PermissionManager) GrantCloudAccess(ctx context.Context, user *openfga.
 			zap.String("cloud", string(ct.Id())),
 			zap.String("access", string(access)),
 		)
-		return errors.E(fmt.Errorf("failed to set cloud access: %w", err))
+		return fmt.Errorf("failed to set cloud access: %w", err)
 	}
 	return nil
 }
@@ -398,7 +398,7 @@ func (j *PermissionManager) RevokeCloudAccess(ctx context.Context, user *openfga
 			zap.String("cloud", string(ct.Id())),
 			zap.String("access", string(access)),
 		)
-		return errors.E(fmt.Errorf("failed to unset cloud access: %w", err))
+		return fmt.Errorf("failed to unset cloud access: %w", err)
 	}
 
 	return nil
@@ -471,7 +471,7 @@ func (j *PermissionManager) GrantModelAccess(ctx context.Context, user *openfga.
 			zap.String("model", string(mt.Id())),
 			zap.String("access", string(access)),
 		)
-		return errors.E(fmt.Errorf("failed to set model access: %w", err))
+		return fmt.Errorf("failed to set model access: %w", err)
 	}
 	return nil
 }
@@ -560,7 +560,7 @@ func (j *PermissionManager) RevokeModelAccess(ctx context.Context, user *openfga
 			zap.String("model", string(mt.Id())),
 			zap.String("access", string(access)),
 		)
-		return errors.E(fmt.Errorf("failed to unset model access: %w", err))
+		return fmt.Errorf("failed to unset model access: %w", err)
 	}
 	return nil
 }
@@ -692,7 +692,7 @@ func (j *PermissionManager) RevokeOfferAccess(ctx context.Context, user *openfga
 	}
 
 	if stillHasAccess {
-		return errors.E("unable to completely revoke given access due to other relations; try to remove them as well")
+		return errors.New("unable to completely revoke given access due to other relations; try to remove them as well")
 	}
 	return nil
 }

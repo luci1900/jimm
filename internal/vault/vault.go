@@ -260,7 +260,7 @@ func (s *VaultStore) GetJWKS(ctx context.Context) (_ jwk.Set, err error) {
 
 	jsonString, ok := secret.Data[jwksKey].(string)
 	if !ok {
-		return nil, errors.E("invalid type for jwks")
+		return nil, errors.New("invalid type for jwks")
 	}
 
 	ks, err := jwk.ParseString(jsonString)
@@ -332,7 +332,7 @@ func (s *VaultStore) GetJWKSExpiry(ctx context.Context) (_ time.Time, err error)
 
 	expiry, ok := secret.Data[jwksExpiryKey].(string)
 	if !ok {
-		return now, errors.E("failed to retrieve expiry")
+		return now, errors.New("failed to retrieve expiry")
 	}
 
 	t, err := time.Parse(time.RFC3339, expiry)
@@ -475,15 +475,15 @@ func (s *VaultStore) client(ctx context.Context) (*api.Client, error) {
 		roleSecretID,
 	)
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("unable to initialize approle auth method: %w", err))
+		return nil, fmt.Errorf("unable to initialize approle auth method: %w", err)
 	}
 
 	authInfo, err := s.Client.Auth().Login(ctx, appRoleAuth)
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("unable to login to approle auth method: %w", err))
+		return nil, fmt.Errorf("unable to login to approle auth method: %w", err)
 	}
 	if authInfo == nil {
-		return nil, errors.E("no auth info was returned after login")
+		return nil, errors.New("no auth info was returned after login")
 	}
 
 	ttl, err := authInfo.TokenTTL()

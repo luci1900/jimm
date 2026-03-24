@@ -55,7 +55,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 
 	isAdmin, err := openfga.IsAdministrator(ctx, user, model.ResourceTag())
 	if err != nil {
-		return errors.E(fmt.Errorf("failed administrator check: %w", err))
+		return fmt.Errorf("failed administrator check: %w", err)
 	}
 	if !isAdmin {
 		return errors.E(errors.CodeUnauthorized, "unauthorized")
@@ -112,7 +112,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 
 	createdAppOffer, err := api.GetApplicationOffer(ctx, offerURL.String())
 	if err != nil {
-		return errors.E(fmt.Errorf("failed to fetch details of the created application offer: %w", err))
+		return fmt.Errorf("failed to fetch details of the created application offer: %w", err)
 	}
 
 	doc := dbmodel.ApplicationOffer{
@@ -128,7 +128,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 		return nil
 	})
 	if err != nil {
-		return errors.E(fmt.Errorf("failed to store the created application offer: %w", err))
+		return fmt.Errorf("failed to store the created application offer: %w", err)
 	}
 
 	if err := j.OpenFGAClient.AddModelApplicationOffer(
@@ -289,19 +289,19 @@ func (j *JujuManager) listApplicationOfferUsers(ctx context.Context, offer names
 	return userDetails, nil
 }
 
-var noApplicationOfferAccessError = errors.E("no application offer access")
+var noApplicationOfferAccessError = errors.New("no application offer access")
 
 // enrichOfferDetails replaces fields on an application offer's details with information
 // where JIMM is authoritative. It returns a noApplicationOfferAccessError if the user
 // does not have access to the offer.
 func (j *JujuManager) enrichOfferDetails(ctx context.Context, user *openfga.User, offerDetail *crossmodel.ApplicationOfferDetails) error {
 	if offerDetail == nil {
-		return errors.E("offerDetail cannot be nil")
+		return errors.New("offerDetail cannot be nil")
 	}
 	// TODO (alesstimec) Optimize this: currently check all possible
 	// permission levels for an offer, this is suboptimal.
 	if !names.IsValidApplicationOffer(offerDetail.OfferUUID) {
-		return errors.E("invalid application offer UUID")
+		return errors.New("invalid application offer UUID")
 	}
 	offerTag := names.NewApplicationOfferTag(offerDetail.OfferUUID)
 	accessLevel, err := j.getUserOfferAccess(ctx, user, offerTag)
@@ -418,21 +418,21 @@ func (j *JujuManager) DestroyOffer(ctx context.Context, user *openfga.User, offe
 func (j *JujuManager) getUserOfferAccess(ctx context.Context, user *openfga.User, offerTag names.ApplicationOfferTag) (string, error) {
 	isOfferAdmin, err := openfga.IsAdministrator(ctx, user, offerTag)
 	if err != nil {
-		return "", errors.E(fmt.Errorf("openfga check failed: %w", err))
+		return "", fmt.Errorf("openfga check failed: %w", err)
 	}
 	if isOfferAdmin {
 		return string(jujuparams.OfferAdminAccess), nil
 	}
 	isOfferConsumer, err := user.IsApplicationOfferConsumer(ctx, offerTag)
 	if err != nil {
-		return "", errors.E(fmt.Errorf("openfga check failed: %w", err))
+		return "", fmt.Errorf("openfga check failed: %w", err)
 	}
 	if isOfferConsumer {
 		return string(jujuparams.OfferConsumeAccess), nil
 	}
 	isOfferReader, err := user.IsApplicationOfferReader(ctx, offerTag)
 	if err != nil {
-		return "", errors.E(fmt.Errorf("openfga check failed: %w", err))
+		return "", fmt.Errorf("openfga check failed: %w", err)
 	}
 	if isOfferReader {
 		return string(jujuparams.OfferReadAccess), nil
@@ -487,7 +487,7 @@ func (j *JujuManager) ListApplicationOffers(ctx context.Context, user *openfga.U
 	controllers := make(map[uint]*dbmodel.Controller)
 	for _, f := range filters {
 		if f.ModelName == "" {
-			return nil, errors.E("application offer filter must specify a model name")
+			return nil, errors.New("application offer filter must specify a model name")
 		}
 		if f.OwnerName == "" {
 			f.OwnerName = user.Name
