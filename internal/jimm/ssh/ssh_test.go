@@ -117,7 +117,7 @@ func (s *sshManagerSuite) Init(c *qt.C) {
 	cfg, err := jujucontroller.NewConfig(uuid, jujutesting.CACert, attrs)
 	c.Assert(err, qt.IsNil)
 	controllerService := mocks.ControllerService{
-		ControllerConfig_: func(ctx context.Context, controllerName string) (jujucontroller.Config, error) {
+		ControllerConfig_: func(ctx context.Context, user *openfga.User, controllerName string) (jujucontroller.Config, error) {
 			return cfg, nil
 		},
 	}

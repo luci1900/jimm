@@ -214,13 +214,13 @@ func (j *JujuManager) ModelInfo(ctx context.Context, user *openfga.User, mt name
 		return jujuclient.ModelInfo{}, errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
+	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, user)
 	if err != nil {
 		return jujuclient.ModelInfo{}, errors.E(err)
 	}
 	defer api.Close()
 
-	modelInfo, err := j.modelInfo(ctx, &m, api)
+	modelInfo, err := j.modelInfo(ctx, user, &m, api)
 	if err != nil {
 		return jujuclient.ModelInfo{}, errors.E(err)
 	}
@@ -230,17 +230,17 @@ func (j *JujuManager) ModelInfo(ctx context.Context, user *openfga.User, mt name
 
 // modelInfo retrieves the model information from the controller and reacts
 // to the error to update JIMM's state.
-func (j *JujuManager) modelInfo(ctx context.Context, model *dbmodel.Model, api API) (jujuclient.ModelInfo, error) {
+func (j *JujuManager) modelInfo(ctx context.Context, user *openfga.User, model *dbmodel.Model, api API) (jujuclient.ModelInfo, error) {
 	modelInfo, errFromAPI := api.ModelInfo(ctx, model.ResourceTag())
 
 	if errFromAPI == nil {
 		return j.reactToModelInfoSuccess(ctx, model, modelInfo)
 	} else {
-		return j.reactToModelInfoError(ctx, errFromAPI, model)
+		return j.reactToModelInfoError(ctx, user, errFromAPI, model)
 	}
 }
 
-func (j *JujuManager) reactToModelInfoError(ctx context.Context, errFromAPI error, model *dbmodel.Model) (jujuclient.ModelInfo, error) {
+func (j *JujuManager) reactToModelInfoError(ctx context.Context, user *openfga.User, errFromAPI error, model *dbmodel.Model) (jujuclient.ModelInfo, error) {
 	switch model.MigrationMode {
 	case dbmodel.MigrationModeNone:
 		err := j.maybeCleanupModel(ctx, errFromAPI, model)
@@ -261,7 +261,7 @@ func (j *JujuManager) reactToModelInfoError(ctx context.Context, errFromAPI erro
 		if err := j.Database.GetModel(ctx, model); err != nil {
 			return jujuclient.ModelInfo{}, err
 		}
-		api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+		api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, user)
 		if err != nil {
 			return jujuclient.ModelInfo{}, err
 		}
@@ -670,7 +670,7 @@ func (j *JujuManager) doModel(ctx context.Context, user *openfga.User, mt names.
 		return errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
+	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, user)
 	if err != nil {
 		return errors.E(err)
 	}

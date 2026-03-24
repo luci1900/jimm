@@ -541,12 +541,7 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 		return b
 	}
 
-	api, err := b.jujuManager.dial(
-		b.ctx,
-		b.controller,
-		names.ModelTag{},
-		nil,
-	)
+	api, err := b.jujuManager.dial(b.ctx, b.controller, names.ModelTag{}, b.ofgaUser)
 	if err != nil {
 		b.err = errors.E(err)
 		return b

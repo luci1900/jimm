@@ -47,7 +47,7 @@ func (j *JujuManager) AbortMigration(ctx context.Context, user *openfga.User, mo
 		return errors.E(fmt.Errorf("failed to get model migration %q: %w", modelUUID, err))
 	}
 
-	api, err := j.dialController(ctx, &incomingModel.TargetController)
+	api, err := j.dialController(ctx, &incomingModel.TargetController, user)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}
@@ -100,7 +100,7 @@ func (j *JujuManager) CheckMachines(ctx context.Context, user *openfga.User, mod
 		return nil, errors.E(fmt.Errorf("failed to get model migration %q: %w", modelUUID, err))
 	}
 
-	api, err := j.dialController(ctx, &incomingModel.TargetController)
+	api, err := j.dialController(ctx, &incomingModel.TargetController, user)
 	if err != nil {
 		return nil, errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}
@@ -198,7 +198,7 @@ func (j *JujuManager) Prechecks(ctx context.Context, user *openfga.User, model M
 		return errors.E(err)
 	}
 
-	api, err := j.dialController(ctx, &incomingModel.TargetController)
+	api, err := j.dialController(ctx, &incomingModel.TargetController, user)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}
@@ -276,7 +276,7 @@ func (j *JujuManager) AdoptResources(ctx context.Context, user *openfga.User, mo
 		return errors.E(fmt.Errorf("failed to get model migration for model %q: %w", modelUUID, err))
 	}
 
-	api, err := j.dialController(ctx, &model.Controller)
+	api, err := j.dialController(ctx, &model.Controller, user)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}
@@ -367,7 +367,7 @@ func modifyModelDescription(modelDescription description.Model, userMapping dbmo
 
 // LatestLogTime asks the target controller for the time of the latest
 // log record it has seen.
-func (j *JujuManager) LatestLogTime(ctx context.Context, modelUUID string) (time.Time, error) {
+func (j *JujuManager) LatestLogTime(ctx context.Context, user *openfga.User, modelUUID string) (time.Time, error) {
 
 	model := dbmodel.Model{
 		UUID: sql.NullString{
@@ -380,7 +380,7 @@ func (j *JujuManager) LatestLogTime(ctx context.Context, modelUUID string) (time
 		return time.Time{}, errors.E(fmt.Errorf("failed to get model %q: %w", modelUUID, err))
 	}
 
-	api, err := j.dialController(ctx, &model.Controller)
+	api, err := j.dialController(ctx, &model.Controller, user)
 	if err != nil {
 		return time.Time{}, errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}
@@ -395,7 +395,7 @@ func (j *JujuManager) LatestLogTime(ctx context.Context, modelUUID string) (time
 
 // Activate gets the model migration, proxies the Activate call to the target controller,
 // and then deletes the model migration from the database.
-func (j *JujuManager) Activate(ctx context.Context, modelTag names.ModelTag, migrationInfo coremigration.SourceControllerInfo, relatedModels []string) error {
+func (j *JujuManager) Activate(ctx context.Context, user *openfga.User, modelTag names.ModelTag, migrationInfo coremigration.SourceControllerInfo, relatedModels []string) error {
 
 	modelMigration := dbmodel.IncomingModelMigration{
 		ModelUUID: sql.NullString{
@@ -407,7 +407,7 @@ func (j *JujuManager) Activate(ctx context.Context, modelTag names.ModelTag, mig
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to get model migration for model %q: %w", modelTag.Id(), err))
 	}
-	api, err := j.dialController(ctx, &modelMigration.TargetController)
+	api, err := j.dialController(ctx, &modelMigration.TargetController, user)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}
@@ -541,7 +541,7 @@ func (j *JujuManager) Import(ctx context.Context, user *openfga.User, serialized
 	}
 
 	// Call the import method on the target controller to import the model.
-	api, err := j.dialController(ctx, &incomingMigration.TargetController)
+	api, err := j.dialController(ctx, &incomingMigration.TargetController, user)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial controller: %w", err))
 	}

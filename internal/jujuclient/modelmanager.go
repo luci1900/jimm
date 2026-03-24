@@ -99,9 +99,8 @@ func (c Connection) ModelInfo(ctx context.Context, model names.ModelTag) (ModelI
 // GrantJIMMModelAdmin uses the ModifyModelAccess procedure on the
 // ModelManager facade.
 func (c Connection) GrantJIMMModelAdmin(ctx context.Context, tag names.ModelTag) error {
-	userID := c.user.ResourceTag().Id()
 	access := string(jujuparams.ModelAdminAccess)
-	return modelmanager.NewClient(&c).GrantModel(userID, access, tag.Id())
+	return modelmanager.NewClient(&c).GrantModel(adminUser, access, tag.Id())
 }
 
 // DumpModel dumps debugging details for the given model. If the simplied

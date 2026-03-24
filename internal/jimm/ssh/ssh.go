@@ -43,7 +43,7 @@ type IdentityManager interface {
 // JujuManager provides a means to fetch a model from the model service.
 type JujuManager interface {
 	GetModel(ctx context.Context, uuid string) (dbmodel.Model, error)
-	ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error)
+	ControllerConfig(ctx context.Context, user *openfga.User, controllerName string) (jujucontroller.Config, error)
 }
 
 // SSHKeyManager provides a means to manage ssh keys within JIMM.
@@ -142,7 +142,7 @@ func (s *SSHManager) DialInfo(ctx context.Context, modelUUID string, user *openf
 		return DialInfo{}, fmt.Errorf("cannot find model: %v", err)
 	}
 
-	controllerConfig, err := s.jujuManager.ControllerConfig(ctx, model.Controller.Name)
+	controllerConfig, err := s.jujuManager.ControllerConfig(ctx, user, model.Controller.Name)
 	if err != nil {
 		return DialInfo{}, errors.E(err, "cannot get controller config")
 	}

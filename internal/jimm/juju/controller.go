@@ -204,7 +204,7 @@ func addControllerTx(ctx context.Context, j *JujuManager, jujuClouds []dbmodel.C
 // returned.
 func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, creds ControllerCreds) error {
 
-	api, err := j.dialController(ctx, ctl)
+	api, err := j.dialController(ctx, ctl, user)
 	if err != nil {
 		return errors.E(fmt.Errorf("failed to dial the controller: %v", err))
 	}
@@ -354,13 +354,13 @@ func newModelImporter(jimm *JujuManager, newOwner string) (modelImporter, error)
 	return modelImporter, nil
 }
 
-func (m *modelImporter) fetchModelInfo(ctx context.Context, controllerName string, modelTag names.ModelTag) error {
+func (m *modelImporter) fetchModelInfo(ctx context.Context, user *openfga.User, controllerName string, modelTag names.ModelTag) error {
 	controller, err := m.jimm.getControllerByName(ctx, controllerName)
 	if err != nil {
 		return err
 	}
 
-	api, err := m.jimm.dialController(ctx, controller)
+	api, err := m.jimm.dialController(ctx, controller, user)
 	if err != nil {
 		return errors.E("failed to dial the controller", err)
 	}
@@ -535,7 +535,7 @@ func (j *JujuManager) ImportModel(ctx context.Context, user *openfga.User, contr
 		return errors.E(err)
 	}
 
-	if err := importer.fetchModelInfo(ctx, controllerName, modelTag); err != nil {
+	if err := importer.fetchModelInfo(ctx, user, controllerName, modelTag); err != nil {
 		return errors.E(err)
 	}
 
@@ -726,14 +726,14 @@ func (j *JujuManager) initiateMigration(ctx context.Context, user *openfga.User,
 }
 
 // ControllerConfig returns the controller config for the specified controller.
-func (j *JujuManager) ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error) {
+func (j *JujuManager) ControllerConfig(ctx context.Context, user *openfga.User, controllerName string) (jujucontroller.Config, error) {
 
 	controller, err := j.getControllerByName(ctx, controllerName)
 	if err != nil {
 		return jujucontroller.Config{}, errors.E(err)
 	}
 
-	api, err := j.dialController(ctx, controller)
+	api, err := j.dialController(ctx, controller, user)
 	if err != nil {
 		return jujucontroller.Config{}, errors.E(err)
 	}

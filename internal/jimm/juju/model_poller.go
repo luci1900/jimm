@@ -42,7 +42,7 @@ func (j *JujuManager) PollModels(ctx context.Context) (err error) {
 		if len(models) == 0 {
 			continue
 		}
-		api, err := j.dialController(ctx, &models[0].Controller)
+		api, err := j.dialController(ctx, &models[0].Controller, nil)
 		if err != nil {
 			zapctx.Error(ctx, "cannot dial controller", zap.String("controller", controllerUUID), zap.Error(err))
 			continue
@@ -58,7 +58,7 @@ func (j *JujuManager) PollModels(ctx context.Context) (err error) {
 				zap.String("migration-mode", string(m.MigrationMode)),
 			)
 
-			_, err := j.modelInfo(ctx, m, api)
+			_, err := j.modelInfo(ctx, nil, m, api)
 			if err != nil {
 				zapctx.Error(ctx, "error getting model info", zap.Error(err))
 			}
