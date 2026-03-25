@@ -1,6 +1,6 @@
 module github.com/canonical/jimm/v3
 
-go 1.25.7
+go 1.25.8
 
 // Juju based dependencies
 require (
@@ -10,12 +10,12 @@ require (
 	github.com/juju/errors v1.0.0
 	github.com/juju/gnuflag v1.0.0
 	github.com/juju/http/v2 v2.0.1
-	github.com/juju/juju v0.0.0-20260223163124-957e67d923d5 // Tip of 3.6
+	github.com/juju/juju v0.0.0-20260325121537-78832a31ad6b // Tip of 3.6
 	github.com/juju/loggo v1.0.0 // indirect
 	github.com/juju/names/v4 v4.0.0
 	github.com/juju/names/v5 v5.0.0
 	github.com/juju/rpcreflect v1.2.0
-	github.com/juju/testing v1.2.0
+	github.com/juju/testing v1.2.0 // indirect
 	github.com/juju/utils/v4 v4.0.5
 	github.com/juju/version/v2 v2.0.1
 	github.com/juju/zaputil v0.0.0-20190326175239-ef53049637ac
@@ -57,9 +57,9 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.1
-	golang.org/x/oauth2 v0.35.0
-	golang.org/x/sync v0.19.0
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+	golang.org/x/oauth2 v0.36.0
+	golang.org/x/sync v0.20.0
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/errgo.v1 v1.0.1
 	gopkg.in/httprequest.v1 v1.2.1
 	gopkg.in/macaroon.v2 v2.1.0
@@ -151,7 +151,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ansiterm v1.0.0 // indirect
-	github.com/juju/blobstore/v3 v3.0.2 // indirect
+	github.com/juju/blobstore/v3 v3.2.2 // indirect
 	github.com/juju/clock v1.1.1
 	github.com/juju/collections v1.0.4 // indirect
 	github.com/juju/featureflag v1.0.0 // indirect
@@ -161,10 +161,10 @@ require (
 	github.com/juju/gojsonschema v1.0.0 // indirect
 	github.com/juju/idmclient/v2 v2.0.0 // indirect
 	github.com/juju/jsonschema v1.0.0 // indirect
-	github.com/juju/loggo/v2 v2.0.0 // indirect
+	github.com/juju/loggo/v2 v2.2.0 // indirect
 	github.com/juju/lru v1.0.0 // indirect
 	github.com/juju/lumberjack/v2 v2.0.2 // indirect
-	github.com/juju/mgo/v3 v3.0.8 // indirect
+	github.com/juju/mgo/v3 v3.0.9 // indirect
 	github.com/juju/mutex/v2 v2.0.0 // indirect
 	github.com/juju/os/v2 v2.2.5 // indirect
 	github.com/juju/persistent-cookiejar v1.0.0
@@ -175,7 +175,7 @@ require (
 	github.com/juju/rfc/v2 v2.0.0 // indirect
 	github.com/juju/romulus v1.0.0 // indirect
 	github.com/juju/schema v1.2.0 // indirect
-	github.com/juju/txn/v3 v3.0.2 // indirect
+	github.com/juju/txn/v3 v3.2.1 // indirect
 	github.com/juju/usso v1.0.1 // indirect
 	github.com/juju/utils/v3 v3.2.3 // indirect
 	github.com/juju/viddy v0.0.0-beta5 // indirect
@@ -246,13 +246,13 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.6.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.48.0
+	golang.org/x/crypto v0.49.0
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 // indirect
-	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/term v0.41.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/grpc v1.77.0
@@ -282,22 +282,16 @@ require (
 )
 
 require (
-	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
-	github.com/canonical/go-flags v0.0.0-20230403090104-105d09a091b8 // indirect
-	github.com/canonical/pebble v1.29.0 // indirect
-	github.com/canonical/x-go v0.0.0-20251013153820-eed72624b6ac // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/juju/packaging/v4 v4.0.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/pkg/term v1.1.0 // indirect
 	github.com/riverqueue/river/riverdriver v0.30.0 // indirect
 	github.com/riverqueue/river/rivershared v0.30.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
@@ -310,8 +304,8 @@ require (
 	go.uber.org/goleak v1.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
