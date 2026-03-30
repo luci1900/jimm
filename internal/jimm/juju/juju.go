@@ -26,6 +26,7 @@ type JujuManager struct {
 	Dialer                  Dialer
 	crossModelQueryTimeout  time.Duration
 	migrationTokenGenerator MigrationTokenGenerator
+	GitHubClient            GitHubClient
 }
 
 // NewJujuManager returns a new JIMM struct that manages business logic associated

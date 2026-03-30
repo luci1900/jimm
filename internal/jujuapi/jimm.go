@@ -75,6 +75,7 @@ func init() {
 		modelControllerInfoMethod := rpc.Method(r.ModelControllerInfo)
 		jobInfoMethod := rpc.Method(r.JobInfo)
 		listJobsMethod := rpc.Method(r.ListJobs)
+		supportedVersionMethd := rpc.Method(r.SupportedJujuVersions)
 
 		// JIMM Generic RPC
 		r.AddMethod("JIMM", 4, "AddCloudToController", addCloudToControllerMethod)
@@ -128,6 +129,8 @@ func init() {
 		// Job management
 		r.AddMethod("JIMM", 4, "JobInfo", jobInfoMethod)
 		r.AddMethod("JIMM", 4, "ListJobs", listJobsMethod)
+		// Versions
+		r.AddMethod("JIMM", 4, "SupportedJujuVersions", supportedVersionMethd)
 
 		return []int{4}
 	}
@@ -839,4 +842,9 @@ func (r *controllerRoot) ListJobs(ctx context.Context, req apiparams.ListJobsReq
 	}
 
 	return r.jimm.JobManager().ListJobs(ctx, req)
+}
+
+// SupportedJujuVersions returns the list of Juju versions supported by JIMM for bootstrapping new controllers and upgrading existing ones.
+func (r *controllerRoot) SupportedJujuVersions(ctx context.Context, req apiparams.SupportedJujuVersionsRequest) (apiparams.SupportedJujuVersionsResponse, error) {
+	return r.jimm.JujuManager().SupportedVersions(ctx, req.MinVersion)
 }
