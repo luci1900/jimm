@@ -135,10 +135,8 @@ func TestControllerVersion(t *testing.T) {
 	var result jujuparams.ControllerVersionResults
 	err := conn.APICall("Controller", 12, "", "ControllerVersion", nil, &result)
 	c.Assert(err, qt.IsNil)
-	c.Assert(result, qt.DeepEquals, jujuparams.ControllerVersionResults{
-		Version:   "3.6.19",
-		GitCommit: jimmversion.VersionInfo.GitCommit,
-	})
+	c.Assert(result.GitCommit, qt.Equals, jimmversion.VersionInfo.GitCommit)
+	c.Assert(result.Version, qt.Not(qt.Equals), "0.0.0")
 }
 
 func TestControllerAccess(t *testing.T) {

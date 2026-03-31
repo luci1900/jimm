@@ -261,28 +261,28 @@ type ServiceDependencies struct {
 // Validate checks that all required dependencies are present and returns an error if any are missing.
 func (s *ServiceDependencies) Validate() error {
 	if s.Database == nil {
-		return errors.E("missing database")
+		return errors.New("missing database")
 	}
 	if s.RiverClient == nil {
-		return errors.E("missing river client")
+		return errors.New("missing river client")
 	}
 	if s.OpenFGAClient == nil {
-		return errors.E("missing openfga client")
+		return errors.New("missing openfga client")
 	}
 	if s.CredentialStore == nil {
-		return errors.E("missing credential store")
+		return errors.New("missing credential store")
 	}
 	if s.JWTService == nil {
-		return errors.E("missing jwt service")
+		return errors.New("missing jwt service")
 	}
 	if s.JWKSService == nil {
-		return errors.E("missing jwks service")
+		return errors.New("missing jwks service")
 	}
 	if s.OAuthAuthenticator == nil {
-		return errors.E("missing oauth authenticator")
+		return errors.New("missing oauth authenticator")
 	}
 	if s.MigrationTokenGenerator == nil {
-		return errors.E("missing migration token generator")
+		return errors.New("missing migration token generator")
 	}
 	return nil
 }
@@ -407,10 +407,10 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 	if p.AuditLogRetentionPeriodInDays != "" {
 		retentionPeriod, err := strconv.Atoi(p.AuditLogRetentionPeriodInDays)
 		if err != nil {
-			return nil, errors.E("failed to parse audit log retention period")
+			return nil, errors.New("failed to parse audit log retention period")
 		}
 		if retentionPeriod < 0 {
-			return nil, errors.E("retention period cannot be less than 0")
+			return nil, errors.New("retention period cannot be less than 0")
 		}
 		auditLogRetentionDays = retentionPeriod
 	}
@@ -421,16 +421,16 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 
 	publicDNS, err := parseURLWithOptionalScheme(p.PublicDNSName)
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("failed to parse public DNS name: %v", err))
+		return nil, fmt.Errorf("failed to parse public DNS name: %v", err)
 	}
 
 	if p.DSN == "" {
-		return nil, errors.E("missing DSN")
+		return nil, errors.New("missing DSN")
 	}
 
 	database, err := openDB(ctx, p.DSN, p.LogSQL)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 	db := &db.Database{DB: database}
 
@@ -441,7 +441,7 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 
 	openFGAclient, err := newOpenFGAClient(ctx, p.OpenFGAParams)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	if err := ensureControllerAdministrators(ctx, openFGAclient, controllerUUID, p.ControllerAdmins); err != nil {
@@ -450,7 +450,7 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 
 	credentialStore, err := setupCredentialStore(ctx, p, db)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	jwtExpiry := p.JWTExpiryDuration
@@ -494,7 +494,7 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 
 	sessionStore, cleanupFuncs, err := setupSessionStore(p.CookieSessionKey, db)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 	deps.cleanupFuncs = append(deps.cleanupFuncs, cleanupFuncs...)
 
@@ -521,7 +521,7 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 		},
 	)
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("failed to setup authentication service: %w", err))
+		return nil, fmt.Errorf("failed to setup authentication service: %w", err)
 	}
 	deps.OAuthAuthenticator = authSvc
 	deps.MigrationTokenGenerator = authSvc
@@ -533,7 +533,7 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 			DashboardFinalRedirectURL: p.DashboardFinalRedirectURL,
 		})
 		if err != nil {
-			return nil, errors.E(fmt.Errorf("failed to setup authentication handler: %w", err))
+			return nil, fmt.Errorf("failed to setup authentication handler: %w", err)
 		}
 	} else {
 		zapctx.Warn(ctx, "Dashboard final redirect URL not set, OAuth HTTP handler will not be configured")
@@ -546,7 +546,7 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 // Callers can use this to inject mock dependencies while keeping handler setup identical.
 func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) (*Service, error) {
 	if deps == nil {
-		return nil, errors.E("missing service dependencies")
+		return nil, errors.New("missing service dependencies")
 	}
 	if err := deps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid service dependencies: %w", err)
@@ -577,7 +577,7 @@ func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) 
 	var err error
 	s.jimm, err = jimm.New(jimmParameters)
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	s.mux = chi.NewRouter()
@@ -599,7 +599,7 @@ func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) 
 
 	rebacBackend, err := rebac_admin.SetupBackend(ctx, jujuapi.NewJIMMAdapter(s.jimm))
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	s.mux.Mount("/rebac", middleware.AuthenticateRebac("/rebac", rebacBackend.Handler(""), s.jimm.LoginManager))
@@ -619,7 +619,7 @@ func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) 
 		ControllerUUID:         deps.ControllerUUID,
 	}, deps.Database, s.jimm.OfferAuthorizer)
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("failed to set up discharger: %v", err))
+		return nil, fmt.Errorf("failed to set up discharger: %v", err)
 	}
 	s.mux.Handle(localDischargePath+"/*", discharger.GetDischargerMux(macaroonDischarger, localDischargePath))
 
@@ -746,12 +746,12 @@ func (s *Service) StartServices(ctx context.Context, svc *service.Service) {
 func setupSessionStore(sessionSecret []byte, db *db.Database) (*pgstore.PGStore, []func() error, error) {
 	sqlDb, err := db.DB.DB()
 	if err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	store, err := pgstore.NewPGStoreFromPool(sqlDb, sessionSecret)
 	if err != nil {
-		return nil, nil, errors.E(fmt.Errorf("failed to create session store: %w", err))
+		return nil, nil, fmt.Errorf("failed to create session store: %w", err)
 	}
 
 	// Cleanup expired session every 30 minutes
@@ -800,13 +800,13 @@ func setupCredentialStore(ctx context.Context, p Params, db *db.Database) (jimmc
 
 	vs, err := newVaultStore(ctx, p)
 	if err != nil {
-		return nil, errors.E(fmt.Errorf("vault store error: %v", err))
+		return nil, fmt.Errorf("vault store error: %v", err)
 	}
 	if vs != nil {
 		return vs, nil
 	}
 
-	return nil, errors.E("jimm cannot start without a credential store")
+	return nil, errors.New("jimm cannot start without a credential store")
 }
 
 func newVaultStore(ctx context.Context, p Params) (jimmcreds.CredentialStore, error) {
@@ -848,7 +848,7 @@ func newOpenFGAClient(ctx context.Context, p OpenFGAParams) (*openfga.OFGAClient
 		AuthModelID: p.AuthModel,
 	})
 	if err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 	return openfga.NewOpenFGAClient(cofgaClient), nil
 }
@@ -864,12 +864,12 @@ func ensureControllerAdministrators(ctx context.Context, client *openfga.OFGACli
 		userTag := names.NewUserTag(username)
 		i, err := dbmodel.NewIdentity(userTag.Id())
 		if err != nil {
-			return errors.E(err)
+			return err
 		}
 		user := openfga.NewUser(i, client)
 		isAdmin, err := openfga.IsAdministrator(ctx, user, controller)
 		if err != nil {
-			return errors.E(err)
+			return err
 		}
 		if !isAdmin {
 			tuples = append(tuples, openfga.Tuple{

@@ -43,7 +43,7 @@ type IdentityManager interface {
 // JujuManager provides a means to fetch a model from the model service.
 type JujuManager interface {
 	GetModel(ctx context.Context, uuid string) (dbmodel.Model, error)
-	ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error)
+	ControllerConfig(ctx context.Context, user *openfga.User, controllerName string) (jujucontroller.Config, error)
 }
 
 // SSHKeyManager provides a means to manage ssh keys within JIMM.
@@ -76,19 +76,19 @@ type SSHManagerParams struct {
 
 func (p *SSHManagerParams) validate() error {
 	if p.IdentityManager == nil {
-		return errors.E("identityManager cannot be nil")
+		return errors.New("identityManager cannot be nil")
 	}
 	if p.JujuManager == nil {
-		return errors.E("jujuManager cannot be nil")
+		return errors.New("jujuManager cannot be nil")
 	}
 	if p.SSHKeyManager == nil {
-		return errors.E("sshManager cannot be nil")
+		return errors.New("sshManager cannot be nil")
 	}
 	if p.JWTFactory == nil {
-		return errors.E("jwtFactory cannot be nil")
+		return errors.New("jwtFactory cannot be nil")
 	}
 	if p.Dialer == nil {
-		return errors.E("dialer cannot be nil")
+		return errors.New("dialer cannot be nil")
 	}
 	return nil
 }
@@ -142,7 +142,7 @@ func (s *SSHManager) DialInfo(ctx context.Context, modelUUID string, user *openf
 		return DialInfo{}, fmt.Errorf("cannot find model: %v", err)
 	}
 
-	controllerConfig, err := s.jujuManager.ControllerConfig(ctx, model.Controller.Name)
+	controllerConfig, err := s.jujuManager.ControllerConfig(ctx, user, model.Controller.Name)
 	if err != nil {
 		return DialInfo{}, errors.E(err, "cannot get controller config")
 	}
@@ -166,7 +166,7 @@ func (s *SSHManager) DialInfo(ctx context.Context, modelUUID string, user *openf
 
 	publicKey, _ := ctx.Value(ssh.ContextKeyPublicKey).(ssh.PublicKey)
 	if publicKey == nil {
-		return DialInfo{}, errors.E("cannot find user's public key")
+		return DialInfo{}, errors.New("cannot find user's public key")
 	}
 
 	tokenArgs := jujuauth.SSHTokenArgs{

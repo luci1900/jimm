@@ -45,18 +45,18 @@ func (m *MockDialer) EXPECT() *MockDialerMockRecorder {
 }
 
 // Dial mocks base method.
-func (m *MockDialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, withPermissions map[string]string) (juju.API, error) {
+func (m *MockDialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (juju.API, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Dial", ctx, ctl, modelTag, user, withPermissions)
+	ret := m.ctrl.Call(m, "Dial", ctx, ctl, modelTag, user)
 	ret0, _ := ret[0].(juju.API)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Dial indicates an expected call of Dial.
-func (mr *MockDialerMockRecorder) Dial(ctx, ctl, modelTag, user, withPermissions any) *MockDialerDialCall {
+func (mr *MockDialerMockRecorder) Dial(ctx, ctl, modelTag, user any) *MockDialerDialCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dial", reflect.TypeOf((*MockDialer)(nil).Dial), ctx, ctl, modelTag, user, withPermissions)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dial", reflect.TypeOf((*MockDialer)(nil).Dial), ctx, ctl, modelTag, user)
 	return &MockDialerDialCall{Call: call}
 }
 
@@ -72,13 +72,13 @@ func (c *MockDialerDialCall) Return(arg0 juju.API, arg1 error) *MockDialerDialCa
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockDialerDialCall) Do(f func(context.Context, *dbmodel.Controller, names.ModelTag, *openfga.User, map[string]string) (juju.API, error)) *MockDialerDialCall {
+func (c *MockDialerDialCall) Do(f func(context.Context, *dbmodel.Controller, names.ModelTag, *openfga.User) (juju.API, error)) *MockDialerDialCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockDialerDialCall) DoAndReturn(f func(context.Context, *dbmodel.Controller, names.ModelTag, *openfga.User, map[string]string) (juju.API, error)) *MockDialerDialCall {
+func (c *MockDialerDialCall) DoAndReturn(f func(context.Context, *dbmodel.Controller, names.ModelTag, *openfga.User) (juju.API, error)) *MockDialerDialCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
