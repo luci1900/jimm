@@ -676,7 +676,7 @@ func TestInitiateInternalMigration(t *testing.T) {
 		about:         "empty controller name",
 		user:          "alice@canonical.com",
 		migrateInfo:   params.MigrateModelInfo{TargetModelNameOrUUID: "alice@canonical.com/model-1", TargetController: ""},
-		expectedError: `failed to get controller with name ""`,
+		expectedError: `failed to get controller with name "": controller UUID or name must be provided`,
 	}, {
 		about:         "model doesn't exist",
 		user:          "alice@canonical.com",

@@ -78,7 +78,7 @@ func TestModelCreateArgs(t *testing.T) {
 			CloudTag:           names.NewCloudTag("test-cloud").String(),
 			CloudCredentialTag: "test-credential-1",
 		},
-		expectedError: "invalid cloud credential tag",
+		expectedError: `invalid cloud credential tag: "test-credential-1" is not a valid tag`,
 	}, {
 		about: "cloud does not match cloud credential cloud",
 		args: jujuparams.ModelCreateArgs{
@@ -325,7 +325,7 @@ func TestToFullModelInfo(t *testing.T) {
 			NumSecrets: 7,
 			Status:     "available",
 			Message:    "ready",
-			Error:      errors.E("backend warning", errors.CodeBadRequest),
+			Error:      errors.Codef(errors.CodeBadRequest, "backend warning"),
 		}},
 	}
 
@@ -417,7 +417,7 @@ func TestToFullModelInfoNonNilSecretBackendError(t *testing.T) {
 				Name:        "vault",
 				BackendType: "vault",
 			},
-			Error: errors.E("an error", errors.CodeNotFound, map[string]any{"detail": "not found"}),
+			Error: &errors.Error{Code: errors.CodeNotFound, Message: "an error", Info: map[string]any{"detail": "not found"}},
 		}},
 	}
 

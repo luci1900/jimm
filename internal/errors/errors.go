@@ -8,8 +8,6 @@ import (
 	"fmt"
 
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/zaputil/zapctx"
-	"go.uber.org/zap"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -65,58 +63,23 @@ func New(text string) error {
 	return stderr.New(text)
 }
 
-// E constructs errors for use throughout the JIMM application. An error
-// is constructed by processing the given arguments. The meaning of the
-// arguments is as follows:
+// Codef constructs an error with a formatted message and an explicit code.
 //
-//	errors.Code - string code classifying the error.
-//	error       - underlying error that caused the new error.
-//	string      - A human readable message describing the error.
+// The message is formatted using fmt.Errorf with the provided format and args.
+// The code is attached to the error and can be retrieved using the ErrorCode function.
 //
-// E will panic if no arguments are provided.
-func E(args ...interface{}) error {
-	if len(args) == 0 {
-		panic("call to errors.E with no arguments")
+// If the format string includes a %w verb and the corresponding argument is an error,
+// that error will be wrapped and can be retrieved using errors.Unwrap.
+//
+// To attach a code to an error without adding context use %w or %v as necessary, i.e.:
+// `errors.Codef(code, "%w", err)`
+// or
+// `errors.Codef(code, "%v", err)`
+func Codef(code Code, format string, args ...any) error {
+	return &Error{
+		Code: code,
+		Err:  fmt.Errorf(format, args...),
 	}
-	var setCode bool
-	var setInfo bool
-	var e Error
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case Code:
-			setCode = true
-			e.Code = v
-		case error:
-			e.Err = v
-		case string:
-			e.Message = v
-		case map[string]any:
-			setInfo = true
-			e.Info = v
-		default:
-			zapctx.Default.DPanic("unknown type passed to errors.E", zap.String("type", fmt.Sprintf("%T", arg)), zap.Any("value", arg))
-			return fmt.Errorf("unknown type (%T) passed to errors.E", arg)
-		}
-	}
-	if setCode {
-		return &e
-	}
-
-	// If the caller didn't explicitly set the code/info for this error, attempt
-	// to copy the code/info from the wrapped error. The interface used to
-	// extract the details is compatible with both the Error type and juju
-	// API Error types.
-	if !setCode {
-		if code := ErrorCode(e.Err); code != "" {
-			e.Code = code
-		}
-	}
-	if !setInfo {
-		if info := ErrorInfo(e.Err); info != nil {
-			e.Info = info
-		}
-	}
-	return &e
 }
 
 // A Code is a code which describes the class of error. Where possible

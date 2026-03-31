@@ -96,9 +96,7 @@ func (s *dbSuite) TestGetController(c *qt.C) {
 	}
 	err = s.Database.GetController(context.Background(), &dbController)
 	c.Assert(err, qt.Not(qt.IsNil))
-	eError, ok := err.(*errors.Error)
-	c.Assert(ok, qt.IsTrue)
-	c.Assert(eError.Code, qt.Equals, errors.CodeNotFound)
+	c.Assert(errors.ErrorCode(err), qt.Equals, errors.CodeNotFound)
 }
 
 func TestForEachControllerUnconfiguredDatabase(t *testing.T) {

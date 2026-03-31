@@ -64,7 +64,7 @@ func (d *Database) GetModel(ctx context.Context, model *dbmodel.Model) (err erro
 		// TODO: fix ordering of where fields and handle error to represent what is *actually* required.
 		db = db.Where("controller_id = ?", model.ControllerID)
 	default:
-		return errors.E("missing id or uuid", errors.CodeBadRequest)
+		return errors.Codef(errors.CodeBadRequest, "missing id or uuid")
 	}
 
 	db = preloadModel("", db)
@@ -72,9 +72,9 @@ func (d *Database) GetModel(ctx context.Context, model *dbmodel.Model) (err erro
 	if err := db.First(&model).Error; err != nil {
 		err = dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(err, "model not found")
+			return errors.Codef(errors.CodeNotFound, "model not found")
 		}
-		return dbError(err)
+		return err
 	}
 	return nil
 }
@@ -134,7 +134,7 @@ func (d *Database) DeleteModel(ctx context.Context, model *dbmodel.Model) (err e
 	case model.ID != 0:
 		db = db.Where("id = ?", model.ID)
 	default:
-		return errors.E("missing id or uuid", errors.CodeBadRequest)
+		return errors.Codef(errors.CodeBadRequest, "missing id or uuid")
 	}
 
 	if err := db.Delete(model).Error; err != nil {
@@ -195,7 +195,7 @@ func (d *Database) GetModelsByUUID(ctx context.Context, modelUUIDs []string) (_ 
 	if err != nil {
 		err = dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return nil, errors.E(err, "model not found")
+			return nil, errors.Codef(errors.CodeNotFound, "model not found")
 		}
 		return nil, dbError(err)
 	}

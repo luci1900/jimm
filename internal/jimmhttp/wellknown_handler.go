@@ -61,30 +61,30 @@ func (wkh *WellKnownHandler) JWKS(w http.ResponseWriter, r *http.Request) {
 	if wkh == nil || wkh.CredentialStore == nil {
 		zapctx.Error(ctx, "nil reference in JWKS handler")
 		w.WriteHeader(http.StatusInternalServerError)
-		render.JSON(w, r, errors.E(errors.CodeJWKSRetrievalFailed, "JWKS does not exist"))
+		render.JSON(w, r, errors.Codef(errors.CodeJWKSRetrievalFailed, "JWKS does not exist"))
 		return
 	}
 	ks, err := wkh.CredentialStore.GetJWKS(ctx)
 
 	if err != nil && errors.ErrorCode(err) == errors.CodeNotFound {
 		w.WriteHeader(http.StatusNotFound)
-		zapctx.Error(ctx, "HTTP error", zap.NamedError("/jwks.json", errors.E(errors.CodeJWKSRetrievalFailed, "JWKS does not exist yet", err)))
-		render.JSON(w, r, errors.E(errors.CodeNotFound, "JWKS does not exist yet"))
+		zapctx.Error(ctx, "HTTP error", zap.NamedError("/jwks.json", fmt.Errorf("JWKS does not exist yet: %w", err)))
+		render.JSON(w, r, errors.Error{Code: errors.CodeNotFound, Message: "JWKS does not exist yet"})
 		return
 	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		zapctx.Error(ctx, "HTTP error", zap.NamedError("/jwks.json", errors.E(errors.CodeJWKSRetrievalFailed, "failed to retrieve JWKS", err)))
-		render.JSON(w, r, errors.E(errors.CodeJWKSRetrievalFailed, "failed to retrieve JWKS"))
+		zapctx.Error(ctx, "HTTP error", zap.NamedError("/jwks.json", fmt.Errorf("failed to retrieve JWKS: %w", err)))
+		render.JSON(w, r, errors.Codef(errors.CodeJWKSRetrievalFailed, "failed to retrieve JWKS"))
 		return
 	}
 
 	expiry, err := wkh.CredentialStore.GetJWKSExpiry(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		zapctx.Error(ctx, "HTTP error", zap.NamedError("/jwks.json", errors.E(errors.CodeJWKSRetrievalFailed, "failed to retrieve JWKS expiry", err)))
-		render.JSON(w, r, errors.E(errors.CodeJWKSRetrievalFailed, "something went wrong..."))
+		zapctx.Error(ctx, "HTTP error", zap.NamedError("/jwks.json", fmt.Errorf("failed to retrieve JWKS expiry: %w", err)))
+		render.JSON(w, r, errors.Error{Code: errors.CodeJWKSRetrievalFailed, Message: "something went wrong..."})
 		return
 	}
 

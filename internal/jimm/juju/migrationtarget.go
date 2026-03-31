@@ -127,7 +127,7 @@ func (j *JujuManager) ControllerDetailsForIncomingModel(ctx context.Context, mod
 	err := j.Database.GetIncomingModelMigration(ctx, &incomingModel)
 	if err != nil {
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return ControllerConnectionDetails{}, errors.E(errors.CodeNotFound, fmt.Sprintf("migrating model %q not found", modelUUID))
+			return ControllerConnectionDetails{}, errors.Codef(errors.CodeNotFound, "migrating model %q not found", modelUUID)
 		}
 		return ControllerConnectionDetails{}, fmt.Errorf("failed to get controller for model %q: %w", modelUUID, err)
 	}
@@ -138,7 +138,7 @@ func (j *JujuManager) ControllerDetailsForIncomingModel(ctx context.Context, mod
 	}
 
 	if username == "" || password == "" {
-		return ControllerConnectionDetails{}, errors.E(errors.CodeNotFound, fmt.Errorf("missing credentials for controller %q", incomingModel.TargetController.Name))
+		return ControllerConnectionDetails{}, errors.Codef(errors.CodeNotFound, "missing credentials for controller %q", incomingModel.TargetController.Name)
 	}
 
 	return toControllerConnectionDetails(incomingModel.TargetController, username, password), nil
@@ -628,7 +628,7 @@ func importFromDescription(ctx context.Context, tx *db.Database, targetControlle
 			}
 			if err := tx.AddApplicationOffer(ctx, &dbOffer); err != nil {
 				if errors.ErrorCode(err) == errors.CodeAlreadyExists {
-					return nil, nil, fmt.Errorf("offer with URL %s already exists", dbOffer.URL)
+					return nil, nil, errors.Codef(errors.CodeAlreadyExists, "offer with URL %s already exists", dbOffer.URL)
 				}
 				return nil, nil, fmt.Errorf("failed to add application offer %q: %w", dbOffer.Name, err)
 			}

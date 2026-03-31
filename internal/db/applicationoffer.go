@@ -58,7 +58,7 @@ func (d *Database) GetApplicationOffer(ctx context.Context, offer *dbmodel.Appli
 	if err := db.First(&offer).Error; err != nil {
 		err := dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(err, "application offer not found")
+			return errors.Codef(errors.CodeNotFound, "application offer not found")
 		}
 		return err
 	}
@@ -91,7 +91,7 @@ func (d *Database) FindApplicationOffersByModel(ctx context.Context, modelName, 
 	const op = "db.FindApplicationOfferByModel"
 
 	if modelName == "" || modelOwner == "" {
-		return nil, errors.E(errors.CodeBadRequest, "model name or owner not specified")
+		return nil, errors.Codef(errors.CodeBadRequest, "model name or owner not specified")
 	}
 	if err := d.ready(); err != nil {
 		return nil, err
