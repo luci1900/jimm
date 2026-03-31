@@ -230,7 +230,7 @@ type JujuManager interface {
 	ListControllers(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
 	RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
-	ControllerConfig(ctx context.Context, controllerName string) (jujucontroller.Config, error)
+	ControllerConfig(ctx context.Context, user *openfga.User, controllerName string) (jujucontroller.Config, error)
 
 	// Model related methods
 
@@ -254,7 +254,7 @@ type JujuManager interface {
 	UnsetModelDefaults(ctx context.Context, user *dbmodel.Identity, cloudTag names.CloudTag, region string, keys []string) error
 	UpdateMigratedModel(ctx context.Context, user *openfga.User, modelTag names.ModelTag, targetControllerName string) error
 	ValidateModelUpgrade(ctx context.Context, u *openfga.User, mt names.ModelTag, force bool) error
-
+	SupportedVersions(ctx context.Context, contextualVersion *string) (params.SupportedJujuVersionsResponse, error)
 	// Migration related methods
 
 	// ControllerDetailsForIncomingModel retrieves details about the
@@ -269,9 +269,9 @@ type JujuManager interface {
 	Prechecks(ctx context.Context, user *openfga.User, model juju.MigratingModelInfo) error
 	CheckMachines(ctx context.Context, user *openfga.User, modelUUID string) ([]error, error)
 	Import(ctx context.Context, user *openfga.User, serialized jujuparams.SerializedModel) error
-	Activate(ctx context.Context, modelTag names.ModelTag, migrationInfo coremigration.SourceControllerInfo, relatedModels []string) error
+	Activate(ctx context.Context, user *openfga.User, modelTag names.ModelTag, migrationInfo coremigration.SourceControllerInfo, relatedModels []string) error
 	AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error
-	LatestLogTime(ctx context.Context, modelUUID string) (time.Time, error)
+	LatestLogTime(ctx context.Context, user *openfga.User, modelUUID string) (time.Time, error)
 	AbortMigration(ctx context.Context, user *openfga.User, modelUUID string) error
 	CleanupPartialModelMigrations(ctx context.Context) error
 	ListMigrationTargets(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)

@@ -16,7 +16,7 @@ import (
 func (d *Database) AddController(ctx context.Context, controller *dbmodel.Controller) (err error) {
 	const op = "db.AddController"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -26,7 +26,7 @@ func (d *Database) AddController(ctx context.Context, controller *dbmodel.Contro
 	db := d.DB.WithContext(ctx)
 
 	if err := db.Create(controller).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -36,7 +36,7 @@ func (d *Database) AddController(ctx context.Context, controller *dbmodel.Contro
 func (d *Database) GetController(ctx context.Context, controller *dbmodel.Controller) (err error) {
 	const op = "db.GetController"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -59,7 +59,7 @@ func (d *Database) GetController(ctx context.Context, controller *dbmodel.Contro
 		if errors.ErrorCode(err) == errors.CodeNotFound {
 			return errors.E(err, "controller not found")
 		}
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (d *Database) UpdateController(ctx context.Context, controller *dbmodel.Con
 	}
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -84,7 +84,7 @@ func (d *Database) UpdateController(ctx context.Context, controller *dbmodel.Con
 	db := d.DB.WithContext(ctx)
 	db = db.Omit("CloudRegions").Omit("Models")
 	if err := db.Save(controller).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func (d *Database) DeleteController(ctx context.Context, controller *dbmodel.Con
 	}
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -110,10 +110,10 @@ func (d *Database) DeleteController(ctx context.Context, controller *dbmodel.Con
 		if errors.ErrorCode(err) == errors.CodeNotFound {
 			return errors.E(err, "controller not found")
 		}
-		return errors.E(err)
+		return err
 	}
 	if err := db.Select(clause.Associations).Delete(controller).Error; err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
@@ -125,7 +125,7 @@ func (d *Database) ForEachController(ctx context.Context, f func(*dbmodel.Contro
 	const op = "db.ForEachController"
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -137,7 +137,7 @@ func (d *Database) ForEachController(ctx context.Context, f func(*dbmodel.Contro
 
 	var controllers []dbmodel.Controller
 	if err := db.Order("name asc").Find(&controllers).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	for _, c := range controllers {
 		if err := f(&c); err != nil {
@@ -155,7 +155,7 @@ func (d *Database) ForEachControllerModel(ctx context.Context, ctl *dbmodel.Cont
 	const op = "db.ForEachControllerModel"
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -165,7 +165,7 @@ func (d *Database) ForEachControllerModel(ctx context.Context, ctl *dbmodel.Cont
 	var models []dbmodel.Model
 	db := d.DB.WithContext(ctx)
 	if err := db.Model(ctl).Association("Models").Find(&models); err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	for _, m := range models {
 		if err := f(&m); err != nil {
@@ -180,7 +180,7 @@ func (d *Database) CountControllers(ctx context.Context) (count int, err error) 
 	const op = "db.CountControllers"
 
 	if err := d.ready(); err != nil {
-		return -1, errors.E(err)
+		return -1, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -190,7 +190,7 @@ func (d *Database) CountControllers(ctx context.Context) (count int, err error) 
 	db := d.DB.WithContext(ctx)
 	var count64 int64
 	if err := db.Model(&dbmodel.Controller{}).Count(&count64).Error; err != nil {
-		return -1, errors.E(dbError(err))
+		return -1, dbError(err)
 	}
 	return int(count64), nil
 }

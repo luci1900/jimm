@@ -14,7 +14,7 @@ import (
 func (d *Database) AddUserMapping(ctx context.Context, userMapping *dbmodel.UserMapping) (err error) {
 	const op = "db.AddUserMapping"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -24,7 +24,7 @@ func (d *Database) AddUserMapping(ctx context.Context, userMapping *dbmodel.User
 	db := d.DB.WithContext(ctx)
 
 	if err := db.Create(userMapping).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -33,7 +33,7 @@ func (d *Database) AddUserMapping(ctx context.Context, userMapping *dbmodel.User
 func (d *Database) GetUserMapping(ctx context.Context, userMapping *dbmodel.UserMapping) (err error) {
 	const op = "db.GetUserMapping"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -57,7 +57,7 @@ func (d *Database) GetUserMapping(ctx context.Context, userMapping *dbmodel.User
 		if errors.ErrorCode(err) == errors.CodeNotFound {
 			return errors.E(err, "user mapping not found")
 		}
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (d *Database) GetUserMapping(ctx context.Context, userMapping *dbmodel.User
 func (d *Database) DeleteUserMapping(ctx context.Context, userMapping *dbmodel.UserMapping) (err error) {
 	const op = "db.DeleteUserMapping"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -75,7 +75,7 @@ func (d *Database) DeleteUserMapping(ctx context.Context, userMapping *dbmodel.U
 
 	db := d.DB.WithContext(ctx)
 	if err := db.Delete(userMapping).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func (d *Database) DeleteUserMapping(ctx context.Context, userMapping *dbmodel.U
 func (d *Database) DeleteUserMappingsByModelUUID(ctx context.Context, modelUUID string) (err error) {
 	const op = "db.DeleteUserMappingsByModelUUID"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -93,7 +93,7 @@ func (d *Database) DeleteUserMappingsByModelUUID(ctx context.Context, modelUUID 
 
 	db := d.DB.WithContext(ctx)
 	if err := db.Where("model_uuid = ?", modelUUID).Delete(&dbmodel.UserMapping{}).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }

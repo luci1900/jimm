@@ -21,7 +21,7 @@ func (d *Database) AddJobLog(ctx context.Context, jobId int64, logLine string) (
 	const op = "db.AddJobLog"
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -53,7 +53,7 @@ func (d *Database) AddJobLog(ctx context.Context, jobId int64, logLine string) (
 		}
 
 		if err := d.DB.WithContext(ctx).Create(log).Error; err != nil {
-			return errors.E(dbError(err))
+			return dbError(err)
 		}
 		return nil
 	})
@@ -68,7 +68,7 @@ func (d *Database) QueryJobLog(ctx context.Context, jobId int64, offset int) (lo
 	const op = "db.QueryJobLog"
 
 	if err := d.ready(); err != nil {
-		return loggies, nextOffsetValue, errors.E(err)
+		return loggies, nextOffsetValue, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -83,7 +83,7 @@ func (d *Database) QueryJobLog(ctx context.Context, jobId int64, offset int) (lo
 
 		var count int64
 		if err := query.Count(&count).Error; err != nil {
-			return errors.E(dbError(err))
+			return dbError(err)
 		}
 
 		if count == 0 {
@@ -92,7 +92,7 @@ func (d *Database) QueryJobLog(ctx context.Context, jobId int64, offset int) (lo
 
 		result := query.Offset(offset).Order("line_number ASC").Find(&logs)
 		if result.Error != nil {
-			return errors.E(dbError(result.Error))
+			return dbError(result.Error)
 		}
 
 		// Get the next line number

@@ -14,7 +14,7 @@ import (
 func (d *Database) AddSSHKey(ctx context.Context, sshKey *dbmodel.SSHKey) (err error) {
 	const op = "db.AddSSHKey"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -37,7 +37,7 @@ func (d *Database) RemoveSSHKeyByFingerprint(ctx context.Context, identityName s
 	const op = "db.RemoveSSHKeyByFingerprint"
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -50,7 +50,7 @@ func (d *Database) RemoveSSHKeyByFingerprint(ctx context.Context, identityName s
 		Delete(&dbmodel.SSHKey{})
 
 	if err := query.Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 
 	if query.RowsAffected == 0 {
@@ -65,7 +65,7 @@ func (d *Database) RemoveSSHKeyByComment(ctx context.Context, identityName strin
 	const op = "db.RemoveSSHKeyByComment"
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -76,7 +76,7 @@ func (d *Database) RemoveSSHKeyByComment(ctx context.Context, identityName strin
 		Where("model_uuid = ?", model.ModelUUID).
 		Delete(&dbmodel.SSHKey{})
 	if err := query.Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 
 	if query.RowsAffected == 0 {
@@ -91,7 +91,7 @@ func (d *Database) ListSSHKeysForUser(ctx context.Context, identityName string, 
 	const op = "db.ListSSHKeysForUser"
 
 	if err := d.ready(); err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -103,7 +103,7 @@ func (d *Database) ListSSHKeysForUser(ctx context.Context, identityName string, 
 	}
 	if err := query.
 		Find(&keys).Error; err != nil {
-		return nil, errors.E(dbError(err))
+		return nil, dbError(err)
 	}
 
 	return keys, nil

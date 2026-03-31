@@ -19,11 +19,11 @@ import (
 type MigrationMocks struct {
 	Prechecks_            func(ctx context.Context, user *openfga.User, model juju.MigratingModelInfo) error
 	AdoptResources_       func(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error
-	Activate_             func(ctx context.Context, modelUUID names.ModelTag, sourceControllerInfo migration.SourceControllerInfo, relatedModels []string) error
+	Activate_             func(ctx context.Context, user *openfga.User, modelUUID names.ModelTag, sourceControllerInfo migration.SourceControllerInfo, relatedModels []string) error
 	AbortMigration_       func(ctx context.Context, user *openfga.User, modelUUID string) error
 	CheckMachines_        func(ctx context.Context, user *openfga.User, modelUUID string) ([]error, error)
 	Import_               func(ctx context.Context, user *openfga.User, serialized jujuparams.SerializedModel) error
-	LatestLogTime_        func(ctx context.Context, modelUUID string) (time.Time, error)
+	LatestLogTime_        func(ctx context.Context, user *openfga.User, modelUUID string) (time.Time, error)
 	ListMigrationTargets_ func(ctx context.Context, user *openfga.User, modelTag names.ModelTag) ([]dbmodel.Controller, error)
 }
 
@@ -48,11 +48,11 @@ func (j *MigrationMocks) AdoptResources(ctx context.Context, user *openfga.User,
 	return j.AdoptResources_(ctx, user, modelUUID, sourceControllerVersion)
 }
 
-func (j *MigrationMocks) Activate(ctx context.Context, modelTag names.ModelTag, sourceControllerInfo migration.SourceControllerInfo, relatedModels []string) error {
+func (j *MigrationMocks) Activate(ctx context.Context, user *openfga.User, modelTag names.ModelTag, sourceControllerInfo migration.SourceControllerInfo, relatedModels []string) error {
 	if j.Activate_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}
-	return j.Activate_(ctx, modelTag, sourceControllerInfo, relatedModels)
+	return j.Activate_(ctx, user, modelTag, sourceControllerInfo, relatedModels)
 }
 
 func (j *MigrationMocks) CheckMachines(ctx context.Context, user *openfga.User, modelUUID string) ([]error, error) {
@@ -62,11 +62,11 @@ func (j *MigrationMocks) CheckMachines(ctx context.Context, user *openfga.User, 
 	return j.CheckMachines_(ctx, user, modelUUID)
 }
 
-func (j *MigrationMocks) LatestLogTime(ctx context.Context, modelUUID string) (time.Time, error) {
+func (j *MigrationMocks) LatestLogTime(ctx context.Context, user *openfga.User, modelUUID string) (time.Time, error) {
 	if j.LatestLogTime_ == nil {
 		return time.Time{}, errors.E(errors.CodeNotImplemented)
 	}
-	return j.LatestLogTime_(ctx, modelUUID)
+	return j.LatestLogTime_(ctx, user, modelUUID)
 }
 
 func (j *MigrationMocks) Import(ctx context.Context, user *openfga.User, serialized jujuparams.SerializedModel) error {

@@ -418,7 +418,7 @@ func TestBootstrapStart(t *testing.T) {
 	})
 
 	// Test start bootstrap fails
-	startBootstrapErr = errors.E("foo")
+	startBootstrapErr = errors.New("foo")
 	_, err = root.StartBootstrap(ctx, params)
 	c.Assert(err, qt.Not(qt.IsNil))
 	c.Assert(err.Error(), qt.Matches, "failed to start bootstrap job: foo")
@@ -663,7 +663,7 @@ func TestModelControllerInfo(t *testing.T) {
 		jujuManager: func(c *qt.C) jujuapi.JujuManager {
 			return &mocks.JujuManager{
 				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
-					return nil, errors.E("model not found")
+					return nil, errors.New("model not found")
 				},
 			}
 		},
@@ -739,7 +739,7 @@ func TestModelControllerInfo(t *testing.T) {
 		jujuManager: func(c *qt.C) jujuapi.JujuManager {
 			return &mocks.JujuManager{
 				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
-					return nil, errors.E("model not found")
+					return nil, errors.New("model not found")
 				},
 			}
 		},

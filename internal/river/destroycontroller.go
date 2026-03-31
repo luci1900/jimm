@@ -22,13 +22,13 @@ import (
 // newDestroyControllerWorker creates a new destroyControllerWorker.
 func newDestroyControllerWorker(openfgaClient *openfga.OFGAClient, store Store, bootstrapManager BootstrapManager) (*destroyControllerWorker, error) {
 	if openfgaClient == nil {
-		return nil, errors.E("openfgaClient is required")
+		return nil, errors.New("openfgaClient is required")
 	}
 	if bootstrapManager == nil {
-		return nil, errors.E("bootstrapManager is required")
+		return nil, errors.New("bootstrapManager is required")
 	}
 	if store == nil {
-		return nil, errors.E("store is required")
+		return nil, errors.New("store is required")
 	}
 
 	return &destroyControllerWorker{
@@ -65,7 +65,7 @@ func (w *destroyControllerWorker) Work(ctx context.Context, job *river.Job[river
 
 	temp, err := os.MkdirTemp("", "juju-data-dir")
 	if err != nil {
-		return errors.E(fmt.Errorf("failed to create temporary directory for Juju data: %w", err))
+		return fmt.Errorf("failed to create temporary directory for Juju data: %w", err)
 	}
 	defer func() {
 		if err := os.RemoveAll(temp); err != nil {

@@ -103,7 +103,7 @@ func (s streamControllerProxier) ServeWS(ctx context.Context, clientConn *websoc
 		return
 	}
 
-	api, err := s.jimm.Dialer.Dial(ctx, &model.Controller, names.ModelTag{}, nil, nil)
+	api, err := s.jimm.Dialer.Dial(ctx, &model.Controller, names.ModelTag{}, user)
 	if err != nil {
 		zapctx.Error(ctx, "failed to dial controller", zap.Error(err))
 		writeError(fmt.Sprintf("failed to dial controller: %s", err.Error()), errors.CodeConnectionFailed)

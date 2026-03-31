@@ -18,7 +18,7 @@ import (
 func (d *Database) AddModel(ctx context.Context, model *dbmodel.Model) (err error) {
 	const op = "db.AddModel"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -28,7 +28,7 @@ func (d *Database) AddModel(ctx context.Context, model *dbmodel.Model) (err erro
 	db := d.DB.WithContext(ctx)
 
 	if err := db.Create(model).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -38,7 +38,7 @@ func (d *Database) AddModel(ctx context.Context, model *dbmodel.Model) (err erro
 func (d *Database) GetModel(ctx context.Context, model *dbmodel.Model) (err error) {
 	const op = "db.GetModel"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -46,7 +46,7 @@ func (d *Database) GetModel(ctx context.Context, model *dbmodel.Model) (err erro
 	defer servermon.ErrorCounter(servermon.DBQueryErrorCount, &err, op)
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	db := d.DB.WithContext(ctx)
@@ -74,7 +74,7 @@ func (d *Database) GetModel(ctx context.Context, model *dbmodel.Model) (err erro
 		if errors.ErrorCode(err) == errors.CodeNotFound {
 			return errors.E(err, "model not found")
 		}
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (d *Database) GetModel(ctx context.Context, model *dbmodel.Model) (err erro
 func (d *Database) GetModelsUsingCredential(ctx context.Context, credentialID uint) (_ []dbmodel.Model, err error) {
 	const op = "db.GetModelsUsingCredential"
 	if err := d.ready(); err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -94,7 +94,7 @@ func (d *Database) GetModelsUsingCredential(ctx context.Context, credentialID ui
 	var models []dbmodel.Model
 	result := db.Where("cloud_credential_id = ?", credentialID).Preload("Controller").Find(&models)
 	if result.Error != nil {
-		return nil, errors.E(dbError(result.Error))
+		return nil, dbError(result.Error)
 	}
 	return models, nil
 }
@@ -103,7 +103,7 @@ func (d *Database) GetModelsUsingCredential(ctx context.Context, credentialID ui
 func (d *Database) UpdateModel(ctx context.Context, model *dbmodel.Model) (err error) {
 	const op = "db.UpdateModel"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -112,7 +112,7 @@ func (d *Database) UpdateModel(ctx context.Context, model *dbmodel.Model) (err e
 
 	db := d.DB.WithContext(ctx)
 	if err := db.Save(model).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -121,7 +121,7 @@ func (d *Database) UpdateModel(ctx context.Context, model *dbmodel.Model) (err e
 func (d *Database) DeleteModel(ctx context.Context, model *dbmodel.Model) (err error) {
 	const op = "db.DeleteModel"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -138,7 +138,7 @@ func (d *Database) DeleteModel(ctx context.Context, model *dbmodel.Model) (err e
 	}
 
 	if err := db.Delete(model).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	return nil
 }
@@ -150,7 +150,7 @@ func (d *Database) ForEachModel(ctx context.Context, f func(m *dbmodel.Model) er
 	const op = "db.ForEachModel"
 
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -162,7 +162,7 @@ func (d *Database) ForEachModel(ctx context.Context, f func(m *dbmodel.Model) er
 
 	var models []dbmodel.Model
 	if err := db.Find(&models).Error; err != nil {
-		return errors.E(dbError(err))
+		return dbError(err)
 	}
 	for _, m := range models {
 		if err := f(&m); err != nil {
@@ -181,7 +181,7 @@ func (d *Database) GetModelsByUUID(ctx context.Context, modelUUIDs []string) (_ 
 	const op = "db.GetModelsByUUID"
 
 	if err := d.ready(); err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -197,7 +197,7 @@ func (d *Database) GetModelsByUUID(ctx context.Context, modelUUIDs []string) (_ 
 		if errors.ErrorCode(err) == errors.CodeNotFound {
 			return nil, errors.E(err, "model not found")
 		}
-		return nil, errors.E(dbError(err))
+		return nil, dbError(err)
 	}
 	return models, nil
 }
@@ -224,7 +224,7 @@ func (d *Database) GetModelsByController(ctx context.Context, ctl dbmodel.Contro
 	const op = "db.GetModelsByController"
 
 	if err := d.ready(); err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -233,7 +233,7 @@ func (d *Database) GetModelsByController(ctx context.Context, ctl dbmodel.Contro
 
 	db := d.DB.WithContext(ctx)
 	if err := db.Model(ctl).Association("Models").Find(&models); err != nil {
-		return nil, errors.E(dbError(err))
+		return nil, dbError(err)
 	}
 	return models, nil
 }
@@ -243,7 +243,7 @@ func (d *Database) CountModelsByController(ctx context.Context, ctl dbmodel.Cont
 	const op = "db.CountModelsByController"
 
 	if err := d.ready(); err != nil {
-		return 0, errors.E(err)
+		return 0, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -254,7 +254,7 @@ func (d *Database) CountModelsByController(ctx context.Context, ctl dbmodel.Cont
 	asc := db.Model(ctl).Association("Models")
 	count = int(asc.Count())
 	if err := asc.Error; err != nil {
-		return 0, errors.E(dbError(err))
+		return 0, dbError(err)
 	}
 	return count, nil
 }

@@ -192,34 +192,34 @@ func SetupJimmEnv(c *qt.C, opts ...SetupOption) JIMMEnv {
 func jwkSetFromPrivateKeyFile() (jwk.Set, []byte, error) {
 	block, _ := pem.Decode(testJWKSPrivateKey)
 	if block == nil {
-		return nil, nil, errors.E("failed to decode PEM block from private key file")
+		return nil, nil, errors.New("failed to decode PEM block from private key file")
 	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	jwks, err := jwk.FromRaw(privateKey.PublicKey)
 	if err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	if err := jwks.Set(jwk.KeyIDKey, "test-kid"); err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	if err := jwks.Set(jwk.KeyUsageKey, "sig"); err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	if err := jwks.Set(jwk.AlgorithmKey, jwa.RS256); err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	ks := jwk.NewSet()
 	if err := ks.AddKey(jwks); err != nil {
-		return nil, nil, errors.E(err)
+		return nil, nil, err
 	}
 
 	return ks, testJWKSPrivateKey, nil

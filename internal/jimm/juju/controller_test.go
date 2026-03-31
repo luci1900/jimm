@@ -427,12 +427,21 @@ func TestControllerConfig(t *testing.T) {
 	env := jimmtest.ParseEnvironment(c, testControllerConfigEnv)
 	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
 
-	config, err := j.ControllerConfig(ctx, env.Controllers[0].Name)
+	u, err := dbmodel.NewIdentity("alice@canonical.com")
+	c.Assert(err, qt.IsNil)
+
+	alice := openfga.NewUser(u, j.OpenFGAClient)
+	alice.JimmAdmin = true
+
+	err = alice.SetControllerAccess(context.Background(), j.ResourceTag(), ofganames.AdministratorRelation)
+	c.Assert(err, qt.IsNil)
+
+	config, err := j.ControllerConfig(ctx, alice, env.Controllers[0].Name)
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(config, qt.Not(qt.IsNil))
 	c.Assert(config.SSHServerPort(), qt.Equals, 17022)
 
-	_, err = j.ControllerConfig(ctx, "not-found")
+	_, err = j.ControllerConfig(ctx, alice, "not-found")
 	c.Assert(err, qt.ErrorMatches, "controller not found")
 }
 
@@ -1130,7 +1139,7 @@ func TestUpdateMigratedModel(t *testing.T) {
 		model:            names.NewModelTag("00000002-0000-0000-0000-000000000002"),
 		targetController: "controller-2",
 		modelInfo: func(model names.ModelTag) (jujuclient.ModelInfo, error) {
-			return jujuclient.ModelInfo{}, errors.E("an error")
+			return jujuclient.ModelInfo{}, errors.New("an error")
 		},
 		expectedError: "an error",
 		jimmAdmin:     true,
@@ -1326,7 +1335,7 @@ func TestInitiateMigration(t *testing.T) {
 			},
 		},
 		initiateMigrationResults: []result{{
-			err: errors.E("mocked error"),
+			err: errors.New("mocked error"),
 		}},
 		expectedError: "mocked error",
 	}, {
