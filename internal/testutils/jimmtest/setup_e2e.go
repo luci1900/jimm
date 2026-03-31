@@ -333,7 +333,7 @@ func (s *JimmWithControllers) OpenNoAssert(c *qt.C, d LoginDetails, modelTag *na
 		dialOpts.DialWebsocket = d.DialWebsocket
 	}
 
-	return api.Open(c.Context(), &inf, dialOpts)
+	return api.Open(context.Background(), &inf, dialOpts)
 }
 
 func (s *JimmWithControllers) Open(c *qt.C, info *api.Info, username string, modelTag *names.ModelTag) api.Connection {

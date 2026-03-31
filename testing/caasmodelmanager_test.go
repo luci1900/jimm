@@ -3,6 +3,7 @@
 package testing
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -47,7 +48,7 @@ func SetupCaasModelTest(c *qt.C) caasModelManagerDeps {
 		conn := s.Open(c, nil, "bob@canonical.com", nil)
 		defer conn.Close()
 		cloudclient := cloudapi.NewClient(conn)
-		err := cloudclient.RemoveCloud(c.Context(), deps.cloudName)
+		err := cloudclient.RemoveCloud(context.Background(), deps.cloudName)
 		c.Check(err, qt.Equals, nil)
 	})
 
