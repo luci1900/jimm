@@ -15,7 +15,7 @@ import (
 
 	bootstrap "github.com/canonical/jimm/v3/internal/jimm/bootstrap"
 	openfga "github.com/canonical/jimm/v3/internal/openfga"
-	version "github.com/juju/version/v2"
+	semversion "github.com/juju/juju/core/semversion"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -82,7 +82,7 @@ func (c *MockUpgradeManagerMigrateModelCall) DoAndReturn(f func(context.Context,
 }
 
 // UpgradeModel mocks base method.
-func (m *MockUpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, targetVersion version.Number) error {
+func (m *MockUpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, targetVersion semversion.Number) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpgradeModel", ctx, modelUUID, targetVersion)
 	ret0, _ := ret[0].(error)
@@ -108,13 +108,13 @@ func (c *MockUpgradeManagerUpgradeModelCall) Return(arg0 error) *MockUpgradeMana
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockUpgradeManagerUpgradeModelCall) Do(f func(context.Context, string, version.Number) error) *MockUpgradeManagerUpgradeModelCall {
+func (c *MockUpgradeManagerUpgradeModelCall) Do(f func(context.Context, string, semversion.Number) error) *MockUpgradeManagerUpgradeModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockUpgradeManagerUpgradeModelCall) DoAndReturn(f func(context.Context, string, version.Number) error) *MockUpgradeManagerUpgradeModelCall {
+func (c *MockUpgradeManagerUpgradeModelCall) DoAndReturn(f func(context.Context, string, semversion.Number) error) *MockUpgradeManagerUpgradeModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

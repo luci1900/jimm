@@ -21,7 +21,7 @@ func TestAddUser(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	_, _, err := client.AddUser("bob", "Bob", "bob's super secret password")
+	_, _, err := client.AddUser(t.Context(), "bob", "Bob", "bob's super secret password")
 	c.Assert(err, qt.ErrorMatches, `unauthorized \(unauthorized access\)`)
 }
 
@@ -33,7 +33,7 @@ func TestRemoveUser(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	err := client.RemoveUser("bob")
+	err := client.RemoveUser(t.Context(), "bob")
 	c.Assert(err, qt.ErrorMatches, `unauthorized \(unauthorized access\)`)
 }
 
@@ -45,7 +45,7 @@ func TestEnableUser(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	err := client.EnableUser("bob")
+	err := client.EnableUser(t.Context(), "bob")
 	c.Assert(err, qt.ErrorMatches, `unauthorized \(unauthorized access\)`)
 }
 
@@ -57,7 +57,7 @@ func TestDisableUser(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	err := client.DisableUser("bob")
+	err := client.DisableUser(t.Context(), "bob")
 	c.Assert(err, qt.ErrorMatches, `unauthorized \(unauthorized access\)`)
 }
 
@@ -69,7 +69,7 @@ func TestUserInfoAllUsers(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	users, err := client.UserInfo(nil, usermanager.AllUsers)
+	users, err := client.UserInfo(t.Context(), nil, usermanager.AllUsers)
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(len(users), qt.Equals, 0)
 }
@@ -82,7 +82,7 @@ func TestUserInfoSpecifiedUser(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	users, err := client.UserInfo([]string{"alice@canonical.com"}, usermanager.AllUsers)
+	users, err := client.UserInfo(t.Context(), []string{"alice@canonical.com"}, usermanager.AllUsers)
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(len(users), qt.Equals, 1)
 	c.Assert(users[0].DateCreated.IsZero(), qt.Equals, false)
@@ -103,7 +103,7 @@ func TestUserInfoSpecifiedUsers(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	users, err := client.UserInfo([]string{"alice@canonical.com", "bob@canonical.com"}, usermanager.AllUsers)
+	users, err := client.UserInfo(t.Context(), []string{"alice@canonical.com", "bob@canonical.com"}, usermanager.AllUsers)
 	c.Assert(err, qt.ErrorMatches, "bob@canonical.com: unauthorized access")
 	c.Assert(users, qt.HasLen, 0)
 }
@@ -116,7 +116,7 @@ func TestUserInfoWithDomain(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	users, err := client.UserInfo([]string{"alice@mydomain"}, usermanager.AllUsers)
+	users, err := client.UserInfo(t.Context(), []string{"alice@mydomain"}, usermanager.AllUsers)
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(len(users), qt.Equals, 1)
 	c.Assert(users[0].DateCreated.IsZero(), qt.Equals, false)
@@ -137,7 +137,7 @@ func TestUserInfoInvalidUsername(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	users, err := client.UserInfo([]string{"alice-@canonical.com"}, usermanager.AllUsers)
+	users, err := client.UserInfo(t.Context(), []string{"alice-@canonical.com"}, usermanager.AllUsers)
 	c.Assert(err, qt.ErrorMatches, `"alice-@canonical.com" is not a valid username`)
 	c.Assert(users, qt.HasLen, 0)
 }
@@ -150,7 +150,7 @@ func TestUserInfoLocalUsername(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	users, err := client.UserInfo([]string{"alice"}, usermanager.AllUsers)
+	users, err := client.UserInfo(t.Context(), []string{"alice"}, usermanager.AllUsers)
 	c.Assert(err, qt.ErrorMatches, `alice: unsupported local user; if this is a service account add @serviceaccount domain`)
 	c.Assert(users, qt.HasLen, 0)
 }
@@ -163,6 +163,6 @@ func TestSetPassword(t *testing.T) {
 	defer conn.Close()
 
 	client := usermanager.NewClient(conn)
-	err := client.SetPassword("bob", "bob's new super secret password")
+	err := client.SetPassword(t.Context(), "bob", "bob's new super secret password")
 	c.Assert(err, qt.ErrorMatches, `unauthorized \(unauthorized access\)`)
 }

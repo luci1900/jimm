@@ -41,7 +41,7 @@ func TestUnimplementedMethodFails(t *testing.T) {
 	}, "test", nil)
 	defer conn.Close()
 	var resp jujuparams.RedirectInfoResult
-	err := conn.APICall("Admin", 3, "", "Logout", nil, &resp)
+	err := conn.APICall(t.Context(), "Admin", 3, "", "Logout", nil, &resp)
 	c.Assert(err, qt.ErrorMatches, `(?s).*no such request - method Admin.Logout is not implemented \(not implemented\).*`)
 }
 
@@ -52,6 +52,6 @@ func TestUnimplementedRootFails(t *testing.T) {
 	conn := s.Open(c, nil, "test", nil)
 	defer conn.Close()
 	var resp jujuparams.RedirectInfoResult
-	err := conn.APICall("NoSuch", 1, "", "Method", nil, &resp)
+	err := conn.APICall(t.Context(), "NoSuch", 1, "", "Method", nil, &resp)
 	c.Assert(err, qt.ErrorMatches, `(?s).*no such request - method NoSuch\(1\).Method is not implemented \(not implemented\).*`)
 }

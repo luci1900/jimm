@@ -3,9 +3,11 @@
 package cmd
 
 import (
+	"context"
+
 	jujucloud "github.com/juju/juju/cloud"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -15,64 +17,64 @@ type JIMMAPI interface {
 	Close() error
 
 	// Job operations
-	BootstrapInfo(req *params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error)
-	StopBootstrap(req *params.StopBootstrapRequest) error
-	StartBootstrap(req *params.BootstrapParams) (*params.StartBootstrapResponse, error)
-	StartDestroyController(req *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error)
-	ListJobs(req *params.ListJobsRequest) (*params.ListJobsResponse, error)
+	BootstrapInfo(ctx context.Context, req *params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error)
+	StopBootstrap(ctx context.Context, req *params.StopBootstrapRequest) error
+	StartBootstrap(ctx context.Context, req *params.BootstrapParams) (*params.StartBootstrapResponse, error)
+	StartDestroyController(ctx context.Context, req *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error)
+	ListJobs(ctx context.Context, req *params.ListJobsRequest) (*params.ListJobsResponse, error)
 
 	// Cloud operations
-	ListUserClouds(req *params.ListUserCloudsRequest) (map[names.CloudTag]jujucloud.Cloud, error)
+	ListUserClouds(ctx context.Context, req *params.ListUserCloudsRequest) (map[names.CloudTag]jujucloud.Cloud, error)
 
 	// Controller operations
-	AddCloudToController(req *params.AddCloudToControllerRequest) error
-	AddController(req *params.AddControllerRequest) (params.ControllerInfo, error)
-	ListControllers() ([]params.ControllerInfo, error)
-	RemoveCloudFromController(req *params.RemoveCloudFromControllerRequest) error
-	RemoveController(req *params.RemoveControllerRequest) (params.ControllerInfo, error)
-	SetControllerDeprecated(req *params.SetControllerDeprecatedRequest) (params.ControllerInfo, error)
+	AddCloudToController(ctx context.Context, req *params.AddCloudToControllerRequest) error
+	AddController(ctx context.Context, req *params.AddControllerRequest) (params.ControllerInfo, error)
+	ListControllers(ctx context.Context) ([]params.ControllerInfo, error)
+	RemoveCloudFromController(ctx context.Context, req *params.RemoveCloudFromControllerRequest) error
+	RemoveController(ctx context.Context, req *params.RemoveControllerRequest) (params.ControllerInfo, error)
+	SetControllerDeprecated(ctx context.Context, req *params.SetControllerDeprecatedRequest) (params.ControllerInfo, error)
 
 	// Migration operations
-	ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)
-	PrepareModelMigration(req *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)
-	MigrateModel(req *params.MigrateModelRequest) (*jujuparams.InitiateMigrationResults, error)
-	ImportModel(req *params.ImportModelRequest) error
-	UpdateMigratedModel(req *params.UpdateMigratedModelRequest) error
+	ListMigrationTargets(ctx context.Context, req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)
+	PrepareModelMigration(ctx context.Context, req *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)
+	MigrateModel(ctx context.Context, req *params.MigrateModelRequest) (*jujuparams.InitiateMigrationResults, error)
+	ImportModel(ctx context.Context, req *params.ImportModelRequest) error
+	UpdateMigratedModel(ctx context.Context, req *params.UpdateMigratedModelRequest) error
 
 	// Model operations
-	FullModelStatus(req *params.FullModelStatusRequest) (jujuparams.FullStatus, error)
-	ModelControllerInfo(model string) (*params.ModelControllerInfo, error)
-	AddModelToController(req *params.AddModelToControllerRequest) (jujuparams.ModelInfo, error)
+	FullModelStatus(ctx context.Context, req *params.FullModelStatusRequest) (jujuparams.FullStatus, error)
+	ModelControllerInfo(ctx context.Context, model string) (*params.ModelControllerInfo, error)
+	AddModelToController(ctx context.Context, req *params.AddModelToControllerRequest) (jujuparams.ModelInfo, error)
 
 	// Audit log operations
-	FindAuditEvents(req *params.FindAuditEventsRequest) (params.AuditEvents, error)
-	GrantAuditLogAccess(req *params.AuditLogAccessRequest) error
-	RevokeAuditLogAccess(req *params.AuditLogAccessRequest) error
-	PurgeLogs(req *params.PurgeLogsRequest) (*params.PurgeLogsResponse, error)
+	FindAuditEvents(ctx context.Context, req *params.FindAuditEventsRequest) (params.AuditEvents, error)
+	GrantAuditLogAccess(ctx context.Context, req *params.AuditLogAccessRequest) error
+	RevokeAuditLogAccess(ctx context.Context, req *params.AuditLogAccessRequest) error
+	PurgeLogs(ctx context.Context, req *params.PurgeLogsRequest) (*params.PurgeLogsResponse, error)
 
 	// Group operations
-	AddGroup(req *params.AddGroupRequest) (params.AddGroupResponse, error)
-	GetGroup(req *params.GetGroupRequest) (params.GetGroupResponse, error)
-	RenameGroup(req *params.RenameGroupRequest) error
-	RemoveGroup(req *params.RemoveGroupRequest) error
-	ListGroups(req *params.ListGroupsRequest) ([]params.Group, error)
+	AddGroup(ctx context.Context, req *params.AddGroupRequest) (params.AddGroupResponse, error)
+	GetGroup(ctx context.Context, req *params.GetGroupRequest) (params.GetGroupResponse, error)
+	RenameGroup(ctx context.Context, req *params.RenameGroupRequest) error
+	RemoveGroup(ctx context.Context, req *params.RemoveGroupRequest) error
+	ListGroups(ctx context.Context, req *params.ListGroupsRequest) ([]params.Group, error)
 
 	// Role operations
-	AddRole(req *params.AddRoleRequest) (params.AddRoleResponse, error)
-	GetRole(req *params.GetRoleRequest) (params.GetRoleResponse, error)
-	RenameRole(req *params.RenameRoleRequest) error
-	RemoveRole(req *params.RemoveRoleRequest) error
-	ListRoles(req *params.ListRolesRequest) ([]params.Role, error)
+	AddRole(ctx context.Context, req *params.AddRoleRequest) (params.AddRoleResponse, error)
+	GetRole(ctx context.Context, req *params.GetRoleRequest) (params.GetRoleResponse, error)
+	RenameRole(ctx context.Context, req *params.RenameRoleRequest) error
+	RemoveRole(ctx context.Context, req *params.RemoveRoleRequest) error
+	ListRoles(ctx context.Context, req *params.ListRolesRequest) ([]params.Role, error)
 
 	// Permission operations
-	AddRelation(req *params.AddRelationRequest) error
-	RemoveRelation(req *params.RemoveRelationRequest) error
-	CheckRelation(req *params.CheckRelationRequest) (params.CheckRelationResponse, error)
-	ListRelationshipTuples(req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error)
+	AddRelation(ctx context.Context, req *params.AddRelationRequest) error
+	RemoveRelation(ctx context.Context, req *params.RemoveRelationRequest) error
+	CheckRelation(ctx context.Context, req *params.CheckRelationRequest) (params.CheckRelationResponse, error)
+	ListRelationshipTuples(ctx context.Context, req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error)
 
 	// Query operations
-	CrossModelQuery(req *params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error)
+	CrossModelQuery(ctx context.Context, req *params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error)
 
 	// Other operations
-	UpgradeTo(req *params.UpgradeToRequest) (params.UpgradeToResponse, error)
+	UpgradeTo(ctx context.Context, req *params.UpgradeToRequest) (params.UpgradeToResponse, error)
 }

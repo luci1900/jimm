@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -21,8 +22,8 @@ func TestListJobsRun_FlagsArePassedToAPICorrectly(t *testing.T) {
 	}
 
 	cmdMocks.client.EXPECT().
-		ListJobs(gomock.Any()).
-		DoAndReturn(func(req *apiparams.ListJobsRequest) (*apiparams.ListJobsResponse, error) {
+		ListJobs(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.ListJobsRequest) (*apiparams.ListJobsResponse, error) {
 			c.Check(req.Count, qt.Equals, 500)
 			c.Check(req.Kinds, qt.DeepEquals, []string{"backup", "restore"})
 			c.Check(req.Statuses, qt.DeepEquals, []apiparams.JobStatus{

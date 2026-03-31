@@ -8,9 +8,10 @@ import (
 
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/core/life"
+	coremodel "github.com/juju/juju/core/model"
+	"github.com/juju/juju/domain/modelmigration"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 )
 
 // MigrationMode specifies where the Model is with respect to migration.
@@ -22,15 +23,15 @@ type MigrationMode string
 const (
 	// MigrationModeNone is the default mode for a model and reflects
 	// that it isn't involved with a model migration.
-	MigrationModeNone = MigrationMode(state.MigrationMode(""))
+	MigrationModeNone = MigrationMode(modelmigration.MigrationMode(""))
 
 	// MigrationModeExporting reflects a model that is in the process of being
 	// exported away from JIMM.
-	MigrationModeExporting = MigrationMode(state.MigrationMode("exporting"))
+	MigrationModeExporting = MigrationMode(modelmigration.MigrationMode("exporting"))
 
 	// MigrationModeImporting reflects a model that is being imported into a
 	// controller, but is not yet fully active.
-	MigrationModeImporting = MigrationMode(state.MigrationMode("importing"))
+	MigrationModeImporting = MigrationMode(modelmigration.MigrationMode("importing"))
 
 	// MigrationModeMovingInternal reflects a model that is being moved internally
 	// within JIMM, e.g. from one controller to another.
@@ -112,8 +113,8 @@ func (m *Model) SetOwner(u *Identity) {
 func (m *Model) FromJujuModelInfo(info base.ModelInfo) error {
 	m.Name = info.Name
 	SetNullString(&m.UUID, &info.UUID)
-	if info.Owner != "" {
-		m.OwnerIdentityName = info.Owner
+	if info.Qualifier != "" {
+		m.OwnerIdentityName = info.Qualifier.String()
 	}
 	m.Life = string(info.Life)
 
@@ -131,18 +132,13 @@ func (m *Model) FromJujuModelInfo(info base.ModelInfo) error {
 	return nil
 }
 
-// FromModelUpdate updates the model from the given ModelUpdate.
-func (m *Model) FromJujuModelUpdate(info jujuparams.ModelUpdate) {
-	m.Name = info.Name
-	m.Life = string(info.Life)
-}
-
 // ToJujuModel converts a model into a jujuparams.Model.
 func (m Model) ToJujuModel() jujuparams.Model {
 	var jm jujuparams.Model
 	jm.Name = m.Name
 	jm.UUID = m.UUID.String
-	jm.OwnerTag = names.NewUserTag(m.OwnerIdentityName).String()
+	jm.Qualifier = m.OwnerIdentityName
+	jm.Type = m.CloudRegion.Cloud.Type
 	return jm
 }
 
@@ -162,7 +158,7 @@ func (m Model) MergeModelSummaryFromController(jujuModelSummary base.UserModelSu
 	jujuModelSummary.Cloud = m.CloudRegion.Cloud.Name
 	jujuModelSummary.CloudRegion = m.CloudRegion.Name
 	jujuModelSummary.CloudCredential = m.CloudCredential.Tag().Id()
-	jujuModelSummary.Owner = m.Owner.Name
+	jujuModelSummary.Qualifier = coremodel.Qualifier(m.Owner.Name)
 	jujuModelSummary.Life = life.Value(m.Life)
 	jujuModelSummary.ModelUserAccess = access
 	return jujuModelSummary

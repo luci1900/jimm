@@ -5,7 +5,7 @@ package jujuclient
 import (
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/core/instance"
-	"github.com/juju/juju/core/model"
+	coremodel "github.com/juju/juju/core/model"
 	"github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v4"
 )
@@ -36,7 +36,6 @@ func convertParamsModelInfo(modelInfo params.ModelInfo) (ModelInfo, error) {
 		}
 		credential = credTag.Id()
 	}
-	ownerTag, err := names.ParseUserTag(modelInfo.OwnerTag)
 	if err != nil {
 		return ModelInfo{}, err
 	}
@@ -46,19 +45,18 @@ func convertParamsModelInfo(modelInfo params.ModelInfo) (ModelInfo, error) {
 		ControllerUUID:  modelInfo.ControllerUUID,
 		IsController:    modelInfo.IsController,
 		ProviderType:    modelInfo.ProviderType,
-		DefaultSeries:   modelInfo.DefaultSeries,
 		Cloud:           cloud.Id(),
 		CloudRegion:     modelInfo.CloudRegion,
 		CloudCredential: credential,
-		Owner:           ownerTag.Id(),
+		Qualifier:       coremodel.Qualifier(modelInfo.Qualifier),
 		Life:            modelInfo.Life,
 		AgentVersion:    modelInfo.AgentVersion,
 	}
 	modelType := modelInfo.Type
 	if modelType == "" {
-		modelType = model.IAAS.String()
+		modelType = coremodel.IAAS.String()
 	}
-	result.Type = model.ModelType(modelType)
+	result.Type = coremodel.ModelType(modelType)
 	result.Status = base.Status{
 		Status: modelInfo.Status.Status,
 		Info:   modelInfo.Status.Info,
@@ -83,10 +81,7 @@ func convertParamsModelInfo(modelInfo params.ModelInfo) (ModelInfo, error) {
 			Id:          m.Id,
 			InstanceId:  m.InstanceId,
 			DisplayName: m.DisplayName,
-			HasVote:     m.HasVote,
-			WantsVote:   m.WantsVote,
 			Status:      m.Status,
-			HAPrimary:   m.HAPrimary,
 		}
 		if m.Hardware != nil {
 			machine.Hardware = &instance.HardwareCharacteristics{

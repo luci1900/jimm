@@ -90,6 +90,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, status int, err erro
 	if err != nil {
 		errMsg = " - " + err.Error()
 	}
+	//nolint:gosec // TODO(JUJU-9521): consider if we need to address this.
 	_, err = w.Write([]byte(http.StatusText(status) + errMsg))
 	if err != nil {
 		zapctx.Error(ctx, "failed to write status text error", zap.Error(err))

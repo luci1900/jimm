@@ -8,7 +8,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	jujucloud "github.com/juju/juju/cloud"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -391,8 +391,8 @@ users:
 var addHostedCloudTests = []struct {
 	name            string
 	dialError       error
-	addCloud        func(names.CloudTag, jujucloud.Cloud, bool) error
-	cloud_          func(names.CloudTag) (jujucloud.Cloud, error)
+	addCloud        func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error
+	cloud_          func(context.Context, names.CloudTag) (jujucloud.Cloud, error)
 	username        string
 	cloudName       string
 	cloud           jujucloud.Cloud
@@ -401,10 +401,10 @@ var addHostedCloudTests = []struct {
 	expectErrorCode errors.Code
 }{{
 	name: "Success",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return nil
 	},
-	cloud_: func(_ names.CloudTag) (jujucloud.Cloud, error) {
+	cloud_: func(_ context.Context, _ names.CloudTag) (jujucloud.Cloud, error) {
 		cld := jujucloud.Cloud{}
 		cld.Type = "kubernetes"
 		cld.HostCloudRegion = "test-provider/test-region"
@@ -458,10 +458,10 @@ var addHostedCloudTests = []struct {
 	},
 }, {
 	name: "Success - with cloud name and region",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return nil
 	},
-	cloud_: func(_ names.CloudTag) (jujucloud.Cloud, error) {
+	cloud_: func(_ context.Context, _ names.CloudTag) (jujucloud.Cloud, error) {
 		cld := jujucloud.Cloud{}
 		cld.Type = "kubernetes"
 		cld.HostCloudRegion = "test-cloud/test-region"
@@ -515,10 +515,10 @@ var addHostedCloudTests = []struct {
 	},
 }, {
 	name: "Success - with cloud name",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return nil
 	},
-	cloud_: func(_ names.CloudTag) (jujucloud.Cloud, error) {
+	cloud_: func(_ context.Context, _ names.CloudTag) (jujucloud.Cloud, error) {
 		cld := jujucloud.Cloud{}
 		cld.Type = "kubernetes"
 		cld.HostCloudRegion = "test-cloud/test-region"
@@ -670,7 +670,7 @@ var addHostedCloudTests = []struct {
 	expectError: `dial error`,
 }, {
 	name: "AddCloudError",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return errors.New("addcloud error")
 	},
 	username:  "alice@canonical.com",
@@ -738,8 +738,8 @@ func TestAddHostedCloud(t *testing.T) {
 var addHostedCloudToControllerTests = []struct {
 	name            string
 	dialError       error
-	addCloud        func(names.CloudTag, jujucloud.Cloud, bool) error
-	cloud_          func(names.CloudTag) (jujucloud.Cloud, error)
+	addCloud        func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error
+	cloud_          func(context.Context, names.CloudTag) (jujucloud.Cloud, error)
 	username        string
 	controllerName  string
 	cloudName       string
@@ -749,10 +749,10 @@ var addHostedCloudToControllerTests = []struct {
 	expectErrorCode errors.Code
 }{{
 	name: "Success",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return nil
 	},
-	cloud_: func(_ names.CloudTag) (jujucloud.Cloud, error) {
+	cloud_: func(_ context.Context, _ names.CloudTag) (jujucloud.Cloud, error) {
 		cld := jujucloud.Cloud{}
 		cld.Type = "maas"
 		cld.HostCloudRegion = "test-provider/test-region"
@@ -806,10 +806,10 @@ var addHostedCloudToControllerTests = []struct {
 	},
 }, {
 	name: "Controller not found",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return nil
 	},
-	cloud_: func(_ names.CloudTag) (jujucloud.Cloud, error) {
+	cloud_: func(_ context.Context, _ names.CloudTag) (jujucloud.Cloud, error) {
 		cld := jujucloud.Cloud{}
 		cld.Type = "kubernetes"
 		cld.HostCloudRegion = "test-provider/test-region"
@@ -932,7 +932,7 @@ var addHostedCloudToControllerTests = []struct {
 	expectError: `dial error`,
 }, {
 	name: "AddCloudError",
-	addCloud: func(names.CloudTag, jujucloud.Cloud, bool) error {
+	addCloud: func(context.Context, names.CloudTag, jujucloud.Cloud, bool) error {
 		return errors.New("addcloud error")
 	},
 	username:       "alice@canonical.com",
@@ -1033,7 +1033,7 @@ controllers:
 var removeCloudTests = []struct {
 	name            string
 	env             string
-	removeCloud     func(names.CloudTag) error
+	removeCloud     func(context.Context, names.CloudTag) error
 	dialError       error
 	username        string
 	cloud           string
@@ -1048,7 +1048,7 @@ var removeCloudTests = []struct {
 }, {
 	name: "Success",
 	env:  removeCloudTestEnv,
-	removeCloud: func(ct names.CloudTag) error {
+	removeCloud: func(_ context.Context, ct names.CloudTag) error {
 		if ct.Id() != "test" {
 			return errors.New("bad cloud tag")
 		}
@@ -1073,7 +1073,7 @@ var removeCloudTests = []struct {
 }, {
 	name: "APIError",
 	env:  removeCloudTestEnv,
-	removeCloud: func(mt names.CloudTag) error {
+	removeCloud: func(_ context.Context, mt names.CloudTag) error {
 		return errors.New("test error")
 	},
 	username:    "alice@canonical.com",
@@ -1159,7 +1159,7 @@ users:
 var updateCloudTests = []struct {
 	name            string
 	env             string
-	updateCloud     func(names.CloudTag, jujucloud.Cloud) error
+	updateCloud     func(context.Context, names.CloudTag, jujucloud.Cloud) error
 	dialError       error
 	username        string
 	cloud           string
@@ -1246,7 +1246,7 @@ var updateCloudTests = []struct {
 	{
 		name: "SuccessHostedCloud",
 		env:  updateCloudTestEnv,
-		updateCloud: func(ct names.CloudTag, c jujucloud.Cloud) error {
+		updateCloud: func(_ context.Context, ct names.CloudTag, c jujucloud.Cloud) error {
 			if ct.Id() != "test" {
 				return errors.New("bad cloud tag")
 			}
@@ -1303,7 +1303,7 @@ var updateCloudTests = []struct {
 	}, {
 		name: "APIError",
 		env:  updateCloudTestEnv,
-		updateCloud: func(names.CloudTag, jujucloud.Cloud) error {
+		updateCloud: func(context.Context, names.CloudTag, jujucloud.Cloud) error {
 			return errors.New("test error")
 		},
 		username:    "alice@canonical.com",
@@ -1413,7 +1413,7 @@ controllers:
 var removeCloudFromControllerTests = []struct {
 	name            string
 	env             string
-	removeCloud     func(names.CloudTag) error
+	removeCloud     func(context.Context, names.CloudTag) error
 	dialError       error
 	username        string
 	cloud           string
@@ -1431,7 +1431,7 @@ var removeCloudFromControllerTests = []struct {
 }, {
 	name: "Success - with other controllers for the cloud",
 	env:  removeCloudFromControllerTestEnv,
-	removeCloud: func(ct names.CloudTag) error {
+	removeCloud: func(_ context.Context, ct names.CloudTag) error {
 		if ct.Id() != "test" {
 			return errors.New("bad cloud tag")
 		}
@@ -1455,7 +1455,7 @@ var removeCloudFromControllerTests = []struct {
 }, {
 	name: "Success - the only controller for the cloud",
 	env:  removeCloudFromControllerTestEnv,
-	removeCloud: func(ct names.CloudTag) error {
+	removeCloud: func(_ context.Context, ct names.CloudTag) error {
 		if ct.Id() != "test-cloud-2" {
 			return errors.New("bad cloud tag")
 		}
@@ -1490,7 +1490,7 @@ var removeCloudFromControllerTests = []struct {
 }, {
 	name: "APIError",
 	env:  removeCloudFromControllerTestEnv,
-	removeCloud: func(mt names.CloudTag) error {
+	removeCloud: func(_ context.Context, mt names.CloudTag) error {
 		return errors.New("test error")
 	},
 	username:       "alice@canonical.com",

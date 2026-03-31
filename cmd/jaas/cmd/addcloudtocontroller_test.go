@@ -10,6 +10,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/juju/cloud"
 	"github.com/juju/juju/rpc/params"
+	"go.uber.org/mock/gomock"
 
 	jimmjujuapi "github.com/canonical/jimm/v3/internal/jujuapi"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -31,7 +32,7 @@ func TestAddCloudToControllerRun(t *testing.T) {
 	}
 
 	cmdMocks.client.EXPECT().Close().Times(1)
-	cmdMocks.client.EXPECT().AddCloudToController(&apiparams.AddCloudToControllerRequest{
+	cmdMocks.client.EXPECT().AddCloudToController(gomock.Any(), &apiparams.AddCloudToControllerRequest{
 		ControllerName: "",
 		AddCloudArgs: params.AddCloudArgs{
 			Name:  "",
@@ -91,14 +92,16 @@ clouds:
 
 	force := false
 
-	cmdMocks.client.EXPECT().AddCloudToController(&apiparams.AddCloudToControllerRequest{
-		ControllerName: "",
-		AddCloudArgs: params.AddCloudArgs{
-			Name:  "test-maas-cloud",
-			Cloud: jimmjujuapi.CloudToParams(*expectedCloud),
-			Force: &force,
-		},
-	}).Return(nil).Times(1)
+	cmdMocks.client.EXPECT().AddCloudToController(
+		gomock.Any(),
+		&apiparams.AddCloudToControllerRequest{
+			ControllerName: "",
+			AddCloudArgs: params.AddCloudArgs{
+				Name:  "test-maas-cloud",
+				Cloud: jimmjujuapi.CloudToParams(*expectedCloud),
+				Force: &force,
+			},
+		}).Return(nil).Times(1)
 
 	cmd := addCloudToControllerCommand{
 		cloudName:           "test-maas-cloud",

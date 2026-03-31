@@ -12,7 +12,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/frankban/quicktest/qtsuite"
 	"github.com/google/uuid"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 	gossh "golang.org/x/crypto/ssh"
 
 	"github.com/canonical/jimm/v3/internal/db"
@@ -50,7 +50,7 @@ func (s *sshKeysSuite) Init(c *qt.C) {
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cloudCred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	err = s.Database.AddModel(ctx, &model2)
 	c.Assert(err, qt.IsNil)

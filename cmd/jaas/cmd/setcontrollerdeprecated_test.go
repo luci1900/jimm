@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/errors"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	jujuparams "github.com/juju/juju/rpc/params"
+	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -75,7 +76,7 @@ func TestSetControllerDeprecatedSuperuser(t *testing.T) {
 	}
 
 	mocks := setupCmdMocks(c)
-	mocks.client.EXPECT().SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
+	mocks.client.EXPECT().SetControllerDeprecated(gomock.Any(), &apiparams.SetControllerDeprecatedRequest{
 		Name:       "controller-1",
 		Deprecated: true,
 	}).Return(controllerInfo, nil)
@@ -122,7 +123,7 @@ status:
   since: null
 `)
 
-	mocks.client.EXPECT().SetControllerDeprecated(&apiparams.SetControllerDeprecatedRequest{
+	mocks.client.EXPECT().SetControllerDeprecated(gomock.Any(), &apiparams.SetControllerDeprecatedRequest{
 		Name:       "controller-1",
 		Deprecated: true,
 	}).Return(apiparams.ControllerInfo{}, errors.Unauthorizedf("unauthorized"))

@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path"
 	"testing"
@@ -44,8 +45,8 @@ func TestAddRelation(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		AddRelation(gomock.Any()).
-		DoAndReturn(func(req *params.AddRelationRequest) error {
+		AddRelation(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.AddRelationRequest) error {
 			c.Check(req.Tuples, qt.HasLen, 1)
 			tuple := req.Tuples[0]
 			c.Check(tuple.Object, qt.Equals, "user-alice@canonical.com")
@@ -78,8 +79,8 @@ func TestAddRelationFromFile(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		AddRelation(gomock.Any()).
-		DoAndReturn(func(req *params.AddRelationRequest) error {
+		AddRelation(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.AddRelationRequest) error {
 			c.Check(req.Tuples, qt.HasLen, 1)
 			tuple := req.Tuples[0]
 			c.Check(tuple.Object, qt.Equals, "user-alice@canonical.com")
@@ -106,8 +107,8 @@ func TestRemovePermission(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		RemoveRelation(gomock.Any()).
-		DoAndReturn(func(req *params.RemoveRelationRequest) error {
+		RemoveRelation(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.RemoveRelationRequest) error {
 			c.Check(req.Tuples, qt.HasLen, 1)
 			tuple := req.Tuples[0]
 			c.Check(tuple.Object, qt.Equals, "user-alice@canonical.com")
@@ -140,8 +141,8 @@ func TestRemoveRelationFromFile(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		RemoveRelation(gomock.Any()).
-		DoAndReturn(func(req *params.RemoveRelationRequest) error {
+		RemoveRelation(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.RemoveRelationRequest) error {
 			c.Check(req.Tuples, qt.HasLen, 1)
 			tuple := req.Tuples[0]
 			c.Check(tuple.Object, qt.Equals, "user-alice@canonical.com")
@@ -168,8 +169,8 @@ func TestCheckPermission(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		CheckRelation(gomock.Any()).
-		DoAndReturn(func(req *params.CheckRelationRequest) (params.CheckRelationResponse, error) {
+		CheckRelation(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.CheckRelationRequest) (params.CheckRelationResponse, error) {
 			c.Check(req.Tuple.Object, qt.Equals, "user-alice@canonical.com")
 			c.Check(req.Tuple.Relation, qt.Equals, "member")
 			c.Check(req.Tuple.TargetObject, qt.Equals, "group-mygroup")
@@ -198,8 +199,8 @@ func TestListPermissions(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		ListRelationshipTuples(gomock.Any()).
-		DoAndReturn(func(req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
+		ListRelationshipTuples(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
 			c.Check(req.Tuple.Object, qt.Equals, "user-alice@canonical.com")
 			c.Check(req.Tuple.Relation, qt.Equals, "member")
 			c.Check(req.Tuple.TargetObject, qt.Equals, "group-mygroup")
@@ -235,8 +236,8 @@ func TestListPermissionsTabular(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		ListRelationshipTuples(gomock.Any()).
-		DoAndReturn(func(req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
+		ListRelationshipTuples(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
 			c.Check(req.Tuple.Object, qt.Equals, "user-alice@canonical.com")
 			c.Check(req.Tuple.Relation, qt.Equals, "member")
 			c.Check(req.Tuple.TargetObject, qt.Equals, "group-mygroup")

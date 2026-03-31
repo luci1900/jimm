@@ -3,8 +3,10 @@
 package jujuclient
 
 import (
+	"context"
+
 	"github.com/juju/juju/api/client/modelupgrader"
-	"github.com/juju/version/v2"
+	"github.com/juju/juju/core/semversion"
 )
 
 // UpgradeModel upgrades the model to the provided agent version.
@@ -12,11 +14,12 @@ import (
 // best version is selected by the controller and returned as ChosenVersion
 // in the result.
 func (c Connection) UpgradeModel(
+	ctx context.Context,
 	modelUUID string,
-	targetVersion version.Number,
+	targetVersion semversion.Number,
 	stream string,
 	ignoreAgentVersions bool,
 	dryRun bool,
-) (version.Number, error) {
-	return modelupgrader.NewClient(&c).UpgradeModel(modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
+) (semversion.Number, error) {
+	return modelupgrader.NewClient(&c).UpgradeModel(ctx, modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
 }

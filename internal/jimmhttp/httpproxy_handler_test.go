@@ -14,7 +14,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/go-chi/chi/v5"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"

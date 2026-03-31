@@ -4,10 +4,16 @@ package jimmtest
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"flag"
+	"math/big"
 	"strings"
+	"time"
 )
 
 // TestRSAKey, will panic if used outside tests.
@@ -47,4 +53,32 @@ UjmopwKBgAqB2KYYMUqAOvYcBnEfLDmyZv9BTVNHbR2lKkMYqv5LlvDaBxVfilE0
 7d56RZOE+ERK2uz/7JX9VSsM/LbH9pJibd4e8mikDS9ntciqOH/3
 -----END RSA TESTING KEY-----`[1:], "TESTING KEY", "PRIVATE KEY")))
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+// GenerateTestCACert generates a self-signed CA certificate and returns
+// the PEM-encoded certificate and the private key. Panics if called
+// outside of tests.
+func GenerateTestCACert() (certPEM string, key *ecdsa.PrivateKey, err error) {
+	if flag.Lookup("test.v") == nil {
+		panic("GenerateTestCACert cannot be used outside tests")
+	}
+	key, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return "", nil, err
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-time.Minute),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	if err != nil {
+		return "", nil, err
+	}
+	certPEM = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}))
+	return certPEM, key, nil
 }

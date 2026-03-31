@@ -3,11 +3,12 @@
 package cmd
 
 import (
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -53,8 +54,8 @@ func TestImportModelRun_PassesRequestToAPI(t *testing.T) {
 	modelUUID := "ac30d6ae-0bed-4398-bba7-75d49e39f189"
 
 	cmdMocks.client.EXPECT().
-		ImportModel(gomock.Any()).
-		DoAndReturn(func(req *apiparams.ImportModelRequest) error {
+		ImportModel(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.ImportModelRequest) error {
 			c.Assert(req.Controller, qt.Equals, "controller-1")
 			c.Assert(req.ModelTag, qt.Equals, "model-"+modelUUID)
 			c.Assert(req.Owner, qt.Equals, "alice@canonical.com")
@@ -82,8 +83,8 @@ func TestImportModelRun_WithoutOwnerFlag(t *testing.T) {
 	modelUUID := "ac30d6ae-0bed-4398-bba7-75d49e39f189"
 
 	cmdMocks.client.EXPECT().
-		ImportModel(gomock.Any()).
-		DoAndReturn(func(req *apiparams.ImportModelRequest) error {
+		ImportModel(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.ImportModelRequest) error {
 			c.Assert(req.Controller, qt.Equals, "controller-1")
 			c.Assert(req.ModelTag, qt.Equals, "model-"+modelUUID)
 			c.Assert(req.Owner, qt.Equals, "")

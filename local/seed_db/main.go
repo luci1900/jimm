@@ -10,7 +10,7 @@ import (
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/google/uuid"
 	"github.com/juju/juju/core/crossmodel"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -103,7 +103,7 @@ func main() {
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	if err = db.AddModel(ctx, &model); err != nil {
 		fmt.Println("failed to add model to db ", err)

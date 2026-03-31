@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 )
 
 // A CloudCredential is a credential that is used to access a cloud.

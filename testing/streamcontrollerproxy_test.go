@@ -20,7 +20,7 @@ func TestImportLogs(t *testing.T) {
 	conn := s.Open(c, &api.Info{}, s.AdminUser.Name, nil)
 	defer conn.Close()
 	client := migrationtarget.NewClient(conn)
-	_, err := client.OpenLogTransferStream(model.UUID.String)
+	_, err := client.OpenLogTransferStream(t.Context(), model.UUID.String)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -34,6 +34,6 @@ func TestImportLogsError(t *testing.T) {
 	conn := s.Open(c, &api.Info{}, s.AdminUser.Name, nil)
 	defer conn.Close()
 	client := migrationtarget.NewClient(conn)
-	_, err := client.OpenLogTransferStream(model.UUID.String)
+	_, err := client.OpenLogTransferStream(t.Context(), model.UUID.String)
 	c.Assert(err, qt.IsNil)
 }

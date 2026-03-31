@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -18,7 +18,7 @@ import (
 
 type MigrationMocks struct {
 	Prechecks_            func(ctx context.Context, user *openfga.User, model juju.MigratingModelInfo) error
-	AdoptResources_       func(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error
+	AdoptResources_       func(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion semversion.Number) error
 	Activate_             func(ctx context.Context, user *openfga.User, modelUUID names.ModelTag, sourceControllerInfo migration.SourceControllerInfo, relatedModels []string) error
 	AbortMigration_       func(ctx context.Context, user *openfga.User, modelUUID string) error
 	CheckMachines_        func(ctx context.Context, user *openfga.User, modelUUID string) ([]error, error)
@@ -41,7 +41,7 @@ func (j *MigrationMocks) Prechecks(ctx context.Context, user *openfga.User, mode
 	return j.Prechecks_(ctx, user, model)
 }
 
-func (j *MigrationMocks) AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error {
+func (j *MigrationMocks) AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion semversion.Number) error {
 	if j.AdoptResources_ == nil {
 		return errors.E(errors.CodeNotImplemented)
 	}

@@ -6,7 +6,7 @@ import (
 	"database/sql"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -53,7 +53,7 @@ func SetupDB(c *qt.C, database *db.Database) (dbmodel.Model, dbmodel.Controller,
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	err = database.AddModel(context.Background(), &model)
 	c.Assert(err, qt.Equals, nil)

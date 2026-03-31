@@ -21,9 +21,9 @@ import (
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/httpbakery"
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/client/cloud"
+	"github.com/juju/juju/api/macaroon"
 	jujucloud "github.com/juju/juju/cloud"
-	"github.com/juju/juju/core/macaroon"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	jimmsvc "github.com/canonical/jimm/v3/cmd/jimmsrv/service"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -118,7 +118,7 @@ func TestAuthenticator(t *testing.T) {
 		Addrs: []string{srv.Listener.Addr().String()},
 	}
 
-	conn, err := api.Open(&info, api.DialOpts{
+	conn, err := api.Open(t.Context(), &info, api.DialOpts{
 		LoginProvider:      jimmtest.NewUserSessionLogin(c, "alice"),
 		InsecureSkipVerify: true,
 	})
@@ -133,7 +133,7 @@ func TestAuthenticator(t *testing.T) {
 	c.Check(conn.AuthTag(), qt.Equals, names.NewUserTag("alice@canonical.com"))
 	c.Check(conn.ControllerAccess(), qt.Equals, "")
 
-	conn, err = api.Open(&info, api.DialOpts{
+	conn, err = api.Open(t.Context(), &info, api.DialOpts{
 		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob"),
 		InsecureSkipVerify: true,
 	})
@@ -184,7 +184,7 @@ func TestVault(t *testing.T) {
 		Addrs: []string{srv.Listener.Addr().String()},
 	}
 
-	conn, err := api.Open(&info, api.DialOpts{
+	conn, err := api.Open(t.Context(), &info, api.DialOpts{
 		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob"),
 		InsecureSkipVerify: true,
 	})
@@ -198,12 +198,14 @@ func TestVault(t *testing.T) {
 	cloudClient := cloud.NewClient(conn)
 
 	tag := names.NewCloudCredentialTag("test/bob@canonical.com/test-1").String()
-	_, err = cloudClient.UpdateCloudsCredentials(map[string]jujucloud.Credential{
-		tag: jujucloud.NewCredential(jujucloud.UserPassAuthType, map[string]string{
-			"username": "test-user",
-			"password": "test-secret",
-		}),
-	}, false)
+	_, err = cloudClient.UpdateCloudsCredentials(
+		t.Context(),
+		map[string]jujucloud.Credential{
+			tag: jujucloud.NewCredential(jujucloud.UserPassAuthType, map[string]string{
+				"username": "test-user",
+				"password": "test-secret",
+			}),
+		}, false)
 	c.Assert(err, qt.IsNil)
 
 	store := vault.VaultStore{
@@ -258,7 +260,7 @@ func TestOpenFGA(t *testing.T) {
 		Addrs: []string{srv.Listener.Addr().String()},
 	}
 
-	conn, err := api.Open(&info, api.DialOpts{
+	conn, err := api.Open(t.Context(), &info, api.DialOpts{
 		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob"),
 		InsecureSkipVerify: true,
 	})

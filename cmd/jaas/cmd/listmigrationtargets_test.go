@@ -4,11 +4,12 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
-	"github.com/juju/juju/jujuclient/jujuclienttesting"
+	"github.com/juju/juju/api/jujuclient/jujuclienttesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
@@ -42,7 +43,7 @@ func TestListMigrationTargetsValidation(t *testing.T) {
 		t.Run(test.about, func(t *testing.T) {
 			c := qt.New(t)
 			command := &listMigrationTargetsCommand{}
-			command.SetClientStore(jujuclienttesting.MinimalStore())
+			command.SetClientStore(jujuclienttesting.NewStubStore())
 			err := cmdtesting.InitCommand(command, test.args)
 			if test.errMatch == "" {
 				c.Check(err, qt.IsNil)
@@ -58,7 +59,7 @@ func TestListMigrationTargets(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().ListMigrationTargets(gomock.Any()).DoAndReturn(func(lmtr *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
+	s.client.EXPECT().ListMigrationTargets(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, lmtr *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
 		c.Check(lmtr.ModelTag, qt.Equals, "model-e14aff09-e951-413b-833d-60b1a27bd604")
 		return []params.ControllerInfo{
 			{

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/juju/core/life"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 )
@@ -43,7 +43,7 @@ func TestApplicationOfferUniqueConstraint(t *testing.T) {
 		Controller:      ctl,
 		CloudRegion:     cl.Regions[0],
 		CloudCredential: cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.Create(&m).Error, qt.IsNil)
 

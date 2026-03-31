@@ -4,14 +4,15 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -25,8 +26,8 @@ func TestListAuditEventsRun_Success(t *testing.T) {
 	expected := apiparams.AuditEvents{Events: []apiparams.AuditEvent{{MessageId: 1}}}
 
 	cmdMocks.client.EXPECT().
-		FindAuditEvents(gomock.Any()).
-		DoAndReturn(func(req *apiparams.FindAuditEventsRequest) (apiparams.AuditEvents, error) {
+		FindAuditEvents(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.FindAuditEventsRequest) (apiparams.AuditEvents, error) {
 			c.Check(req, qt.Not(qt.IsNil))
 			return expected, nil
 		}).
@@ -54,7 +55,7 @@ func TestListAuditEventsRun_APICallFails(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
-		FindAuditEvents(gomock.Any()).
+		FindAuditEvents(gomock.Any(), gomock.Any()).
 		Return(apiparams.AuditEvents{}, errors.New("nope")).
 		Times(1)
 
@@ -84,8 +85,8 @@ func TestListAuditEventsRun_FlagsArePassedToAPICorrectly(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
-		FindAuditEvents(gomock.Any()).
-		DoAndReturn(func(req *apiparams.FindAuditEventsRequest) (apiparams.AuditEvents, error) {
+		FindAuditEvents(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.FindAuditEventsRequest) (apiparams.AuditEvents, error) {
 			c.Check(req.After, qt.Equals, "2020-01-01T15:00:00Z")
 			c.Check(req.Before, qt.Equals, "2020-01-02T15:00:00Z")
 			c.Check(req.UserTag, qt.Equals, "user-alice@canonical.com")
@@ -130,7 +131,7 @@ func TestListAuditEventsRun_TabularFormat(t *testing.T) {
 	ts := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	cmdMocks.client.EXPECT().
-		FindAuditEvents(gomock.Any()).
+		FindAuditEvents(gomock.Any(), gomock.Any()).
 		Return(
 			apiparams.AuditEvents{Events: []apiparams.AuditEvent{{
 				Time:           ts,

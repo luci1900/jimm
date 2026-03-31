@@ -13,9 +13,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/frankban/quicktest/qtsuite"
+	"github.com/juju/juju/api/jujuclient"
 	jujucloud "github.com/juju/juju/cloud"
 	"github.com/juju/juju/core/network"
-	"github.com/juju/juju/jujuclient"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/riverqueue/river/rivertype"
 	"go.uber.org/mock/gomock"
@@ -1273,7 +1273,7 @@ func (s *bootstrapManagerSuite) TestDestroyController(c *qt.C) {
 //go:generate go tool mockgen -typed -destination=./mocks/binarystore.go -package=mocks . BinaryStore
 //go:generate go tool mockgen -typed -destination=./mocks/commandfactory.go -package=mocks . CommandFactory
 //go:generate go tool mockgen -typed -destination=./mocks/jujucommands.go -package=mocks . JujuCommands
-//go:generate go tool mockgen -typed -destination=./mocks/jujuclientstore.go -package=mocks github.com/juju/juju/jujuclient ClientStore
+//go:generate go tool mockgen -typed -destination=./mocks/jujuclientstore.go -package=mocks github.com/juju/juju/api/jujuclient ClientStore
 //go:generate go tool mockgen -typed -destination=./mocks/credentialstore.go -package=mocks . CredentialStore
 //go:generate go tool mockgen -typed -destination=./mocks/queue.go -package=mocks . JobQueue
 func TestBootstrapManager(t *testing.T) {

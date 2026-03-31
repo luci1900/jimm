@@ -7,8 +7,9 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
-	"github.com/juju/names/v5"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
+	"github.com/juju/names/v6"
+	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -37,7 +38,7 @@ func TestRevokeAuditLogAccess(t *testing.T) {
 	c := qt.New(t)
 
 	mocks := setupCmdMocks(c)
-	mocks.client.EXPECT().RevokeAuditLogAccess(&apiparams.AuditLogAccessRequest{
+	mocks.client.EXPECT().RevokeAuditLogAccess(gomock.Any(), &apiparams.AuditLogAccessRequest{
 		UserTag: names.NewUserTag("alice@canonical.com").String(),
 	}).Return(nil)
 
@@ -49,7 +50,7 @@ func TestRevokeAuditLogAccessError(t *testing.T) {
 	c := qt.New(t)
 
 	mocks := setupCmdMocks(c)
-	mocks.client.EXPECT().RevokeAuditLogAccess(&apiparams.AuditLogAccessRequest{
+	mocks.client.EXPECT().RevokeAuditLogAccess(gomock.Any(), &apiparams.AuditLogAccessRequest{
 		UserTag: names.NewUserTag("alice@canonical.com").String(),
 	}).Return(fmt.Errorf("unauthorized"))
 

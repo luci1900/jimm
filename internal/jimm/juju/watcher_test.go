@@ -11,7 +11,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/internal/db"
@@ -142,10 +142,10 @@ func TestModelSummaryWatcher(t *testing.T) {
 			nextC := make(chan []jujuparams.ModelAbstract)
 			mockWatcher := mocks.NewMockSummaryWatcher(ctrl)
 
-			mockWatcher.EXPECT().Stop().Do(func() error {
+			mockWatcher.EXPECT().Stop(gomock.Any()).Do(func(ctx context.Context) error {
 				return nil
 			}).AnyTimes()
-			mockWatcher.EXPECT().Next().DoAndReturn(func() ([]jujuparams.ModelAbstract, error) {
+			mockWatcher.EXPECT().Next(gomock.Any()).DoAndReturn(func(ctx context.Context) ([]jujuparams.ModelAbstract, error) {
 				select {
 				case <-ctx.Done():
 					return nil, ctx.Err()
@@ -272,12 +272,12 @@ func TestWatcherClearsControllerUnavailable(t *testing.T) {
 
 	mockWatcher := mocks.NewMockSummaryWatcher(ctrl)
 
-	mockWatcher.EXPECT().Next().Do(func() ([]jujuparams.ModelAbstract, error) {
+	mockWatcher.EXPECT().Next(gomock.Any()).Do(func(ctx context.Context) ([]jujuparams.ModelAbstract, error) {
 		cancel()
 		<-ctx.Done()
 		return nil, ctx.Err()
 	})
-	mockWatcher.EXPECT().Stop().Return(nil)
+	mockWatcher.EXPECT().Stop(gomock.Any()).Return(nil)
 
 	w := juju.Watcher{
 		Database: &db.Database{

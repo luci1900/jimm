@@ -5,11 +5,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -75,13 +75,13 @@ func (c *unregisterControllerCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *unregisterControllerCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	info, err := client.RemoveController(&c.params)
+	info, err := client.RemoveController(ctxt, &c.params)
 	if err != nil {
 		return err
 	}

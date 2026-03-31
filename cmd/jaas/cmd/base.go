@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/juju/juju/cmd/modelcmd"
@@ -19,11 +20,11 @@ func (c *jaasCommandBase) setJIMMAPI(api JIMMAPI) {
 	c.jimmAPI = api
 }
 
-func (c *jaasCommandBase) getJIMMAPI() (JIMMAPI, error) {
-	return c.getJIMMAPIWithController("")
+func (c *jaasCommandBase) getJIMMAPI(ctx context.Context) (JIMMAPI, error) {
+	return c.getJIMMAPIWithController(ctx, "")
 }
 
-func (c *jaasCommandBase) getJIMMAPIWithController(controller string) (JIMMAPI, error) {
+func (c *jaasCommandBase) getJIMMAPIWithController(ctx context.Context, controller string) (JIMMAPI, error) {
 	if c.jimmAPI != nil {
 		return c.jimmAPI, nil
 	}
@@ -37,7 +38,7 @@ func (c *jaasCommandBase) getJIMMAPIWithController(controller string) (JIMMAPI, 
 		}
 	}
 
-	apiCaller, err := c.NewAPIRootWithDialOpts(c.ClientStore(), currentController, "", nil)
+	apiCaller, err := c.NewAPIRootWithDialOpts(ctx, c.ClientStore(), currentController, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}

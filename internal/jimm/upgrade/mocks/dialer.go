@@ -16,7 +16,7 @@ import (
 	dbmodel "github.com/canonical/jimm/v3/internal/dbmodel"
 	juju "github.com/canonical/jimm/v3/internal/jimm/juju"
 	openfga "github.com/canonical/jimm/v3/internal/openfga"
-	names "github.com/juju/names/v5"
+	names "github.com/juju/names/v6"
 	gomock "go.uber.org/mock/gomock"
 )
 

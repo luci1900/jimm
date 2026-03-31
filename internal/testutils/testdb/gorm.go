@@ -106,6 +106,8 @@ func dbCleanup(t Tester, gdb *gorm.DB, databaseName string) {
 }
 
 const unsafeCharsPattern = "[ .:;`'\"|<>~/\\?!@#$%^&*()[\\]{}=+-]"
+
+//nolint:gosec
 const defaultDSN = "postgresql://jimm:jimm@127.0.0.1:5432/jimm"
 
 // maxDatabaseNameLength Postgres's limit on database name length.

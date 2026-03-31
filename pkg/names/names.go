@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 )
 
 // TagKind returns one of the *TagKind constants for the given tag, or

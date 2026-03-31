@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -14,7 +15,7 @@ func TestUpdateMigratedModel(t *testing.T) {
 	c := qt.New(t)
 	cmdMocks := setupCmdMocks(c)
 
-	cmdMocks.client.EXPECT().UpdateMigratedModel(&apiparams.UpdateMigratedModelRequest{
+	cmdMocks.client.EXPECT().UpdateMigratedModel(gomock.Any(), &apiparams.UpdateMigratedModelRequest{
 		ModelTag:         "model-2f54eaf8-0608-42e7-9f69-d85d6e1369b0",
 		TargetController: "mycontroller",
 	}).Return(nil)

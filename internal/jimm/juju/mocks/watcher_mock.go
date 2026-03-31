@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	params "github.com/juju/juju/rpc/params"
@@ -41,18 +42,18 @@ func (m *MockSummaryWatcher) EXPECT() *MockSummaryWatcherMockRecorder {
 }
 
 // Next mocks base method.
-func (m *MockSummaryWatcher) Next() ([]params.ModelAbstract, error) {
+func (m *MockSummaryWatcher) Next(arg0 context.Context) ([]params.ModelAbstract, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Next")
+	ret := m.ctrl.Call(m, "Next", arg0)
 	ret0, _ := ret[0].([]params.ModelAbstract)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Next indicates an expected call of Next.
-func (mr *MockSummaryWatcherMockRecorder) Next() *MockSummaryWatcherNextCall {
+func (mr *MockSummaryWatcherMockRecorder) Next(arg0 any) *MockSummaryWatcherNextCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockSummaryWatcher)(nil).Next))
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockSummaryWatcher)(nil).Next), arg0)
 	return &MockSummaryWatcherNextCall{Call: call}
 }
 
@@ -68,29 +69,29 @@ func (c *MockSummaryWatcherNextCall) Return(arg0 []params.ModelAbstract, arg1 er
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockSummaryWatcherNextCall) Do(f func() ([]params.ModelAbstract, error)) *MockSummaryWatcherNextCall {
+func (c *MockSummaryWatcherNextCall) Do(f func(context.Context) ([]params.ModelAbstract, error)) *MockSummaryWatcherNextCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockSummaryWatcherNextCall) DoAndReturn(f func() ([]params.ModelAbstract, error)) *MockSummaryWatcherNextCall {
+func (c *MockSummaryWatcherNextCall) DoAndReturn(f func(context.Context) ([]params.ModelAbstract, error)) *MockSummaryWatcherNextCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // Stop mocks base method.
-func (m *MockSummaryWatcher) Stop() error {
+func (m *MockSummaryWatcher) Stop(arg0 context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
+	ret := m.ctrl.Call(m, "Stop", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockSummaryWatcherMockRecorder) Stop() *MockSummaryWatcherStopCall {
+func (mr *MockSummaryWatcherMockRecorder) Stop(arg0 any) *MockSummaryWatcherStopCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockSummaryWatcher)(nil).Stop))
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockSummaryWatcher)(nil).Stop), arg0)
 	return &MockSummaryWatcherStopCall{Call: call}
 }
 
@@ -106,13 +107,13 @@ func (c *MockSummaryWatcherStopCall) Return(arg0 error) *MockSummaryWatcherStopC
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockSummaryWatcherStopCall) Do(f func() error) *MockSummaryWatcherStopCall {
+func (c *MockSummaryWatcherStopCall) Do(f func(context.Context) error) *MockSummaryWatcherStopCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockSummaryWatcherStopCall) DoAndReturn(f func() error) *MockSummaryWatcherStopCall {
+func (c *MockSummaryWatcherStopCall) DoAndReturn(f func(context.Context) error) *MockSummaryWatcherStopCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

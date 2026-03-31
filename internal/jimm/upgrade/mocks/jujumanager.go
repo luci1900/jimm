@@ -17,7 +17,7 @@ import (
 	jujuclient "github.com/canonical/jimm/v3/internal/jujuclient"
 	openfga "github.com/canonical/jimm/v3/internal/openfga"
 	params "github.com/juju/juju/rpc/params"
-	names "github.com/juju/names/v5"
+	names "github.com/juju/names/v6"
 	gomock "go.uber.org/mock/gomock"
 )
 

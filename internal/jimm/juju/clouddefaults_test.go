@@ -9,7 +9,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"gorm.io/gorm"
 
 	"github.com/canonical/jimm/v3/internal/db"

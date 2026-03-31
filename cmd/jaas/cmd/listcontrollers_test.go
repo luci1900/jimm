@@ -8,6 +8,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	jujuparams "github.com/juju/juju/rpc/params"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v2"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
@@ -50,7 +51,7 @@ func TestListControllersSuperuser(t *testing.T) {
 		},
 	}
 
-	cmdMocks.client.EXPECT().ListControllers().Return(expectedControllers, nil)
+	cmdMocks.client.EXPECT().ListControllers(gomock.Any()).Return(expectedControllers, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
 	command := &listControllersCommand{}
@@ -75,7 +76,7 @@ func TestListControllersEmpty(t *testing.T) {
 	c := qt.New(t)
 	cmdMocks := setupCmdMocks(c)
 
-	cmdMocks.client.EXPECT().ListControllers().Return([]params.ControllerInfo{}, nil)
+	cmdMocks.client.EXPECT().ListControllers(gomock.Any()).Return([]params.ControllerInfo{}, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)
 
 	command := &listControllersCommand{}

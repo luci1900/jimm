@@ -4,11 +4,12 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
-	"github.com/juju/juju/jujuclient/jujuclienttesting"
+	"github.com/juju/juju/api/jujuclient/jujuclienttesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
@@ -47,7 +48,7 @@ func TestArgParsing(t *testing.T) {
 	for i, test := range tests {
 		c.Log("Test ", i)
 		command := &destroyControllerCommand{}
-		command.SetClientStore(jujuclienttesting.MinimalStore())
+		command.SetClientStore(jujuclienttesting.NewStubStore())
 		command.noPrompt = true
 		err := cmdtesting.InitCommand(command, test.args)
 		if test.errMatch == "" {
@@ -64,11 +65,11 @@ func TestRunDetached(t *testing.T) {
 
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().StartDestroyController(gomock.Any()).DoAndReturn(func(bsp *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error) {
+	s.client.EXPECT().StartDestroyController(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error) {
 		expected := &params.DestroyControllerRequest{
 			ControllerName: "controller-name",
 		}
-		c.Assert(bsp.ControllerName, qt.Equals, expected.ControllerName)
+		c.Assert(req.ControllerName, qt.Equals, expected.ControllerName)
 
 		return &params.StartBootstrapResponse{
 			JobID: "test-job-id",
@@ -92,12 +93,12 @@ func TestWatchLogs(t *testing.T) {
 
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().StartDestroyController(gomock.Any()).Return(&params.StartBootstrapResponse{
+	s.client.EXPECT().StartDestroyController(gomock.Any(), gomock.Any()).Return(&params.StartBootstrapResponse{
 		JobID: "test-job-id",
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
-	s.client.EXPECT().BootstrapInfo(gomock.Any()).Return(params.GetBootstrapInfoResponse{
+	s.client.EXPECT().BootstrapInfo(gomock.Any(), gomock.Any()).Return(params.GetBootstrapInfoResponse{
 		Status:    params.StatusSuccessful,
 		Logs:      []string{"log-line", "log-line"},
 		Watermark: 2,

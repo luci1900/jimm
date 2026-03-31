@@ -11,7 +11,7 @@ import (
 
 // Status returns the status of the juju model.
 func (c Connection) Status(ctx context.Context, patterns []string) (*jujuparams.FullStatus, error) {
-	return client.NewClient(&c, nil).Status(&client.StatusArgs{
+	return client.NewClient(&c, nil).Status(ctx, &client.StatusArgs{
 		Patterns: patterns,
 	})
 }

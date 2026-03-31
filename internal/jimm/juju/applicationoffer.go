@@ -12,9 +12,10 @@ import (
 
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/juju/juju/core/crossmodel"
+	coremodel "github.com/juju/juju/core/model"
 	jujupermission "github.com/juju/juju/core/permission"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -62,11 +63,9 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 	}
 
 	offerURL := crossmodel.OfferURL{
-		User:      model.OwnerIdentityName,
-		ModelName: model.Name,
-		// Confusingly the application name in the offer URL is
-		// actually the offer name.
-		ApplicationName: offer.OfferName,
+		ModelQualifier: model.OwnerIdentityName,
+		ModelName:      model.Name,
+		Name:           offer.OfferName,
 	}
 
 	// Verify offer URL doesn't already exist.
@@ -489,13 +488,13 @@ func (j *JujuManager) ListApplicationOffers(ctx context.Context, user *openfga.U
 		if f.ModelName == "" {
 			return nil, errors.New("application offer filter must specify a model name")
 		}
-		if f.OwnerName == "" {
-			f.OwnerName = user.Name
+		if f.ModelQualifier == "" {
+			f.ModelQualifier = coremodel.Qualifier(user.Name)
 		}
 
 		m := dbmodel.Model{
 			Name:              f.ModelName,
-			OwnerIdentityName: f.OwnerName,
+			OwnerIdentityName: f.ModelQualifier.String(),
 		}
 		if err := j.Database.GetModel(ctx, &m); err != nil {
 			return nil, err

@@ -3,6 +3,7 @@
 package testing
 
 import (
+	"context"
 	"sort"
 	"testing"
 	"time"
@@ -13,9 +14,9 @@ import (
 	controllerapi "github.com/juju/juju/api/controller/controller"
 	jujucontroller "github.com/juju/juju/controller"
 	"github.com/juju/juju/core/life"
+	coremodel "github.com/juju/juju/core/model"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	jimmversion "github.com/canonical/jimm/v3/version"
@@ -28,19 +29,7 @@ func TestControllerConfigSetNotSupported(t *testing.T) {
 	conn := s.Open(c, nil, "test", nil)
 	defer conn.Close()
 	client := controllerapi.NewClient(conn)
-	err := client.ConfigSet(nil)
-	c.Assert(jujuparams.IsCodeNotSupported(err), qt.Equals, true)
-}
-
-func TestMongoVersion(t *testing.T) {
-	c := qt.New(t)
-	s := jimmtest.SetupJimmWithControllers(c)
-
-	conn := s.Open(c, nil, "alice", nil)
-	defer conn.Close()
-	client := controllerapi.NewClient(conn)
-	_, err := client.MongoVersion()
-	c.Assert(err, qt.ErrorMatches, `not supported \(not supported\)`)
+	err := client.ConfigSet(t.Context(), nil)
 	c.Assert(jujuparams.IsCodeNotSupported(err), qt.Equals, true)
 }
 
@@ -54,18 +43,18 @@ func TestAllModels(t *testing.T) {
 	defer conn.Close()
 	client := controllerapi.NewClient(conn)
 
-	models, err := client.AllModels()
+	models, err := client.AllModels(t.Context())
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(models, qt.ContentEquals, []base.UserModel{{
 		Name:           model.Name,
 		UUID:           model.UUID.String,
-		Owner:          "bob@canonical.com",
+		Qualifier:      "bob@canonical.com",
 		LastConnection: nil,
 		Type:           "iaas",
 	}, {
 		Name:           model3.Name,
 		UUID:           model3.UUID.String,
-		Owner:          "charlie@canonical.com",
+		Qualifier:      "charlie@canonical.com",
 		LastConnection: nil,
 		Type:           "iaas",
 	}})
@@ -79,17 +68,17 @@ func TestModelStatus(t *testing.T) {
 	model3 := s.CreateModelForCharlieWithBobReadAccess(c)
 
 	type modelStatuser interface {
-		ModelStatus(tags ...names.ModelTag) ([]base.ModelStatus, error)
+		ModelStatus(ctx context.Context, tags ...names.ModelTag) ([]base.ModelStatus, error)
 	}
 	doTest := func(client modelStatuser) {
-		models, err := client.ModelStatus(model.ResourceTag(), model3.ResourceTag())
+		models, err := client.ModelStatus(t.Context(), model.ResourceTag(), model3.ResourceTag())
 		c.Assert(err, qt.Equals, nil)
 		c.Assert(models, qt.HasLen, 2)
 		c.Check(models[0], qt.DeepEquals, base.ModelStatus{
 			Applications:       []base.Application{},
 			UUID:               model.UUID.String,
-			Life:               life.Value(state.Alive.String()),
-			Owner:              "bob@canonical.com",
+			Life:               life.Value(string(life.Alive)),
+			Qualifier:          coremodel.Qualifier("bob@canonical.com"),
 			TotalMachineCount:  0,
 			Volumes:            []base.Volume{},
 			Filesystems:        []base.Filesystem{},
@@ -100,7 +89,7 @@ func TestModelStatus(t *testing.T) {
 			ModelType:          "iaas",
 		})
 		c.Check(models[1].Error, qt.ErrorMatches, `unauthorized`)
-		status, err := client.ModelStatus(model2.ResourceTag())
+		status, err := client.ModelStatus(t.Context(), model2.ResourceTag())
 		c.Assert(err, qt.Equals, nil)
 		c.Assert(status, qt.HasLen, 1)
 		c.Check(status[0].Error, qt.ErrorMatches, "unauthorized")
@@ -120,7 +109,7 @@ func TestIdentityProviderURL(t *testing.T) {
 	defer conn.Close()
 
 	var result jujuparams.StringResult
-	err := conn.APICall("Controller", 12, "", "IdentityProviderURL", nil, &result)
+	err := conn.APICall(t.Context(), "Controller", 12, "", "IdentityProviderURL", nil, &result)
 	c.Assert(err, qt.IsNil)
 	c.Assert(result.Result, qt.Matches, ``)
 }
@@ -133,7 +122,7 @@ func TestControllerVersion(t *testing.T) {
 	defer conn.Close()
 
 	var result jujuparams.ControllerVersionResults
-	err := conn.APICall("Controller", 12, "", "ControllerVersion", nil, &result)
+	err := conn.APICall(t.Context(), "Controller", 12, "", "ControllerVersion", nil, &result)
 	c.Assert(err, qt.IsNil)
 	c.Assert(result, qt.DeepEquals, jujuparams.ControllerVersionResults{
 		Version:   "3.6.19",
@@ -149,11 +138,11 @@ func TestControllerAccess(t *testing.T) {
 	defer conn.Close()
 
 	client := controllerapi.NewClient(conn)
-	access, err := client.GetControllerAccess("alice@canonical.com")
+	access, err := client.GetControllerAccess(t.Context(), "alice@canonical.com")
 	c.Assert(err, qt.Equals, nil)
 	c.Check(string(access), qt.Equals, "superuser")
 
-	access, err = client.GetControllerAccess("bob@canonical.com")
+	access, err = client.GetControllerAccess(t.Context(), "bob@canonical.com")
 	c.Assert(err, qt.Equals, nil)
 	c.Check(string(access), qt.Equals, "login")
 
@@ -161,11 +150,11 @@ func TestControllerAccess(t *testing.T) {
 	defer conn.Close()
 
 	client = controllerapi.NewClient(conn)
-	access, err = client.GetControllerAccess("bob@canonical.com")
+	access, err = client.GetControllerAccess(t.Context(), "bob@canonical.com")
 	c.Assert(err, qt.Equals, nil)
 	c.Check(string(access), qt.Equals, "login")
 
-	_, err = client.GetControllerAccess("alice@canonical.com")
+	_, err = client.GetControllerAccess(t.Context(), "alice@canonical.com")
 	c.Assert(err, qt.ErrorMatches, `unauthorized`)
 }
 
@@ -177,7 +166,7 @@ func TestControllerConfig(t *testing.T) {
 	defer conn.Close()
 
 	client := controllerapi.NewClient(conn)
-	config, err := client.ControllerConfig()
+	config, err := client.ControllerConfig(t.Context())
 	c.Assert(err, qt.Equals, nil)
 
 	c.Assert(config[jujucontroller.ControllerUUIDKey], qt.Equals, s.JIMM.ControllerConfig.ControllerUUID)
@@ -231,18 +220,18 @@ func TestWatchModelSummaries(t *testing.T) {
 	defer conn.Close()
 
 	var watcherID jujuparams.SummaryWatcherID
-	err := conn.APICall("Controller", 12, "", "WatchModelSummaries", nil, &watcherID)
+	err := conn.APICall(t.Context(), "Controller", 12, "", "WatchModelSummaries", nil, &watcherID)
 	c.Assert(err, qt.IsNil)
 
 	var summaries jujuparams.SummaryWatcherNextResults
-	err = conn.APICall("ModelSummaryWatcher", 1, watcherID.WatcherID, "Next", nil, &summaries)
+	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Next", nil, &summaries)
 	c.Assert(err, qt.IsNil)
 	c.Assert(summaries.Models, qt.DeepEquals, expectedModels)
 
-	err = conn.APICall("ModelSummaryWatcher", 1, watcherID.WatcherID, "Stop", nil, nil)
+	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Stop", nil, nil)
 	c.Assert(err, qt.IsNil)
 
-	err = conn.APICall("ModelSummaryWatcher", 1, "unknown-id", "Next", nil, &summaries)
+	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, "unknown-id", "Next", nil, &summaries)
 	c.Assert(err, qt.ErrorMatches, `not found \(not found\)`)
 }
 
@@ -290,17 +279,17 @@ func TestWatchAllModelSummaries(t *testing.T) {
 	defer conn.Close()
 
 	var watcherID jujuparams.SummaryWatcherID
-	err := conn.APICall("Controller", 12, "", "WatchAllModelSummaries", nil, &watcherID)
+	err := conn.APICall(t.Context(), "Controller", 12, "", "WatchAllModelSummaries", nil, &watcherID)
 	c.Assert(err, qt.IsNil)
 
 	var summaries jujuparams.SummaryWatcherNextResults
-	err = conn.APICall("ModelSummaryWatcher", 1, watcherID.WatcherID, "Next", nil, &summaries)
+	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Next", nil, &summaries)
 	c.Assert(err, qt.IsNil)
 	c.Assert(summaries.Models, qt.DeepEquals, expectedModels)
 
-	err = conn.APICall("ModelSummaryWatcher", 1, watcherID.WatcherID, "Stop", nil, nil)
+	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Stop", nil, nil)
 	c.Assert(err, qt.IsNil)
 
-	err = conn.APICall("ModelSummaryWatcher", 1, "unknown-id", "Next", nil, &summaries)
+	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, "unknown-id", "Next", nil, &summaries)
 	c.Assert(err, qt.ErrorMatches, `not found \(not found\)`)
 }

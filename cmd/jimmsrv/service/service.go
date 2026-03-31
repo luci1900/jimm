@@ -21,7 +21,7 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"

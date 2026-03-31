@@ -3,17 +3,18 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/gosuri/uitable"
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -211,7 +212,7 @@ func (c *addPermissionCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *addPermissionCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
@@ -231,7 +232,7 @@ func (c *addPermissionCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	err = client.AddRelation(&params)
+	err = client.AddRelation(ctxt, &params)
 	if err != nil {
 		return err
 	}
@@ -295,7 +296,7 @@ func (c *removePermissionCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
@@ -315,7 +316,7 @@ func (c *removePermissionCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	err = client.RemoveRelation(&params)
+	err = client.RemoveRelation(ctxt, &params)
 	if err != nil {
 		return err
 	}
@@ -406,13 +407,13 @@ func formatCheckRelationString(writer io.Writer, value interface{}) error {
 
 // Run implements Command.Run.
 func (c *checkPermissionCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	resp, err := client.CheckRelation(&apiparams.CheckRelationRequest{
+	resp, err := client.CheckRelation(ctxt, &apiparams.CheckRelationRequest{
 		Tuple: c.tuple,
 	})
 	if err != nil {
@@ -512,7 +513,7 @@ func (c *listPermissionsCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listPermissionsCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
@@ -523,7 +524,7 @@ func (c *listPermissionsCommand) Run(ctxt *cmd.Context) error {
 		PageSize:     defaultPageSize,
 		ResolveUUIDs: c.resolveUUIDs,
 	}
-	result, err := fetchRelations(client, params)
+	result, err := fetchRelations(ctxt, client, params)
 	if err != nil {
 		return err
 	}
@@ -538,10 +539,10 @@ func (c *listPermissionsCommand) Run(ctxt *cmd.Context) error {
 	return nil
 }
 
-func fetchRelations(client JIMMAPI, params apiparams.ListRelationshipTuplesRequest) (*apiparams.ListRelationshipTuplesResponse, error) {
+func fetchRelations(ctx context.Context, client JIMMAPI, params apiparams.ListRelationshipTuplesRequest) (*apiparams.ListRelationshipTuplesResponse, error) {
 	tuples := make([]apiparams.RelationshipTuple, 0)
 	for {
-		response, err := client.ListRelationshipTuples(&params)
+		response, err := client.ListRelationshipTuples(ctx, &params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch list of relationship tuples: %w", err)
 		}

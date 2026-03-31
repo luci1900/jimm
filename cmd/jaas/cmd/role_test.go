@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -25,8 +26,8 @@ func TestAddRole(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		AddRole(gomock.Any()).
-		DoAndReturn(func(req *params.AddRoleRequest) (params.AddRoleResponse, error) {
+		AddRole(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.AddRoleRequest) (params.AddRoleResponse, error) {
 			c.Check(req.Name, qt.Equals, "myrole")
 			return params.AddRoleResponse{
 				Role: params.Role{
@@ -55,8 +56,8 @@ func TestRenameRole(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		RenameRole(gomock.Any()).
-		DoAndReturn(func(req *params.RenameRoleRequest) error {
+		RenameRole(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.RenameRoleRequest) error {
 			c.Check(req.Name, qt.Equals, "myrole")
 			return nil
 		}).Times(1)
@@ -79,8 +80,8 @@ func TestRemoveRole(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		RemoveRole(gomock.Any()).
-		DoAndReturn(func(req *params.RemoveRoleRequest) error {
+		RemoveRole(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.RemoveRoleRequest) error {
 			c.Check(req.Name, qt.Equals, "myrole")
 			return nil
 		}).Times(1)
@@ -103,8 +104,8 @@ func TestListRoles(t *testing.T) {
 	ctx := newTestContext(c)
 
 	cmdMocks.client.EXPECT().
-		ListRoles(gomock.Any()).
-		DoAndReturn(func(req *params.ListRolesRequest) ([]params.Role, error) {
+		ListRoles(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *params.ListRolesRequest) ([]params.Role, error) {
 			c.Check(req.Limit, qt.Equals, 10)
 			c.Check(req.Offset, qt.Equals, 5)
 			return []params.Role{

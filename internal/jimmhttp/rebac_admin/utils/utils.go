@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/canonical/rebac-admin-ui-handlers/v1/resources"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/common/pagination"
 	"github.com/canonical/jimm/v3/internal/db"

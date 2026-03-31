@@ -5,7 +5,7 @@ package dbmodel
 import (
 	"time"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 )
 
 // An ApplicationOffer is an offer for an application.

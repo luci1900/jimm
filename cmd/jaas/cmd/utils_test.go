@@ -5,8 +5,8 @@ import (
 	"io"
 
 	qt "github.com/frankban/quicktest"
-	jujucmd "github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	jujucmd "github.com/juju/juju/cmd/cmd"
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/cmd/jaas/cmd/mocks"

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -24,7 +25,7 @@ func TestUpgradeTo(t *testing.T) {
 		ModelTag:             testModelTag,
 	}
 
-	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{
+	s.client.EXPECT().UpgradeTo(gomock.Any(), upgradeToParams).Return(apiparams.UpgradeToResponse{
 		Success: true,
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
@@ -54,7 +55,7 @@ func TestUpgradeToWithFailureResponse(t *testing.T) {
 	}
 
 	// Now the error is returned directly by UpgradeTo instead of embedded in the response.
-	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{}, errors.New(testErrorMessage))
+	s.client.EXPECT().UpgradeTo(gomock.Any(), upgradeToParams).Return(apiparams.UpgradeToResponse{}, errors.New(testErrorMessage))
 	s.client.EXPECT().Close().Return(nil)
 
 	upgradeToCmd := &upgradeToCommand{}
@@ -79,7 +80,7 @@ func TestUpgradeToWithError(t *testing.T) {
 		ModelTag:             testModelTag,
 	}
 	errorToReturn := errors.New("failed to initiate upgrade")
-	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{}, errorToReturn)
+	s.client.EXPECT().UpgradeTo(gomock.Any(), upgradeToParams).Return(apiparams.UpgradeToResponse{}, errorToReturn)
 	s.client.EXPECT().Close().Return(nil)
 
 	upgradeToCmd := &upgradeToCommand{}
@@ -125,7 +126,7 @@ func TestUpgradeToWithPositionalArgs(t *testing.T) {
 		ModelTag:             testModelTag,
 	}
 
-	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{
+	s.client.EXPECT().UpgradeTo(gomock.Any(), upgradeToParams).Return(apiparams.UpgradeToResponse{
 		Success: true,
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)

@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -98,13 +98,13 @@ func (c *addRoleCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *addRoleCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	resp, err := client.AddRole(&apiparams.AddRoleRequest{
+	resp, err := client.AddRole(ctxt, &apiparams.AddRoleRequest{
 		Name: c.name,
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *renameRoleCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (c *renameRoleCommand) Run(ctxt *cmd.Context) error {
 		NewName: c.newName,
 	}
 
-	err = client.RenameRole(&params)
+	err = client.RenameRole(ctxt, &params)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (c *removeRoleCommand) Run(ctxt *cmd.Context) error {
 		Name: c.name,
 	}
 
-	err = client.RemoveRole(&params)
+	err = client.RemoveRole(ctxt, &params)
 	if err != nil {
 		return err
 	}
@@ -313,14 +313,14 @@ func (c *listRolesCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listRolesCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
 	req := apiparams.ListRolesRequest{Limit: c.limit, Offset: c.offset}
-	roles, err := client.ListRoles(&req)
+	roles, err := client.ListRoles(ctxt, &req)
 	if err != nil {
 		return err
 	}

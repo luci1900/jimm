@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -22,7 +23,7 @@ func TestAddGroup(t *testing.T) {
 		UUID: "group-uuid",
 		Name: "test-group",
 	}
-	s.client.EXPECT().AddGroup(gomock.Any()).DoAndReturn(func(agr *params.AddGroupRequest) (params.AddGroupResponse, error) {
+	s.client.EXPECT().AddGroup(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, agr *params.AddGroupRequest) (params.AddGroupResponse, error) {
 		c.Check(agr.Name, qt.Equals, "test-group")
 		return params.AddGroupResponse{Group: expectedGroup}, nil
 	})
@@ -50,7 +51,7 @@ func TestRenameGroup(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	// Setup expectations
-	s.client.EXPECT().RenameGroup(gomock.Any()).DoAndReturn(func(rgr *params.RenameGroupRequest) error {
+	s.client.EXPECT().RenameGroup(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, rgr *params.RenameGroupRequest) error {
 		c.Check(rgr.Name, qt.Equals, "old-group")
 		c.Check(rgr.NewName, qt.Equals, "new-group")
 		return nil
@@ -76,7 +77,7 @@ func TestRemoveGroup(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	// Setup expectations
-	s.client.EXPECT().RemoveGroup(gomock.Any()).DoAndReturn(func(rgr *params.RemoveGroupRequest) error {
+	s.client.EXPECT().RemoveGroup(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, rgr *params.RemoveGroupRequest) error {
 		c.Check(rgr.Name, qt.Equals, "test-group")
 		return nil
 	})
@@ -99,7 +100,7 @@ func TestRemoveGroupForce(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	// Setup expectations
-	s.client.EXPECT().RemoveGroup(gomock.Any()).DoAndReturn(func(rgr *params.RemoveGroupRequest) error {
+	s.client.EXPECT().RemoveGroup(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, rgr *params.RemoveGroupRequest) error {
 		c.Check(rgr.Name, qt.Equals, "test-group")
 		return nil
 	})
@@ -122,7 +123,7 @@ func TestListGroups(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	// Setup expectations
-	s.client.EXPECT().ListGroups(gomock.Any()).Return([]params.Group{
+	s.client.EXPECT().ListGroups(gomock.Any(), gomock.Any()).Return([]params.Group{
 		{Name: "group-1", UUID: "uuid-1"},
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)

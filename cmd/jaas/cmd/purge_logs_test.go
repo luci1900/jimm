@@ -7,7 +7,8 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
+	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -18,7 +19,7 @@ func TestPurgeLogs(t *testing.T) {
 
 	datastring := "2021-01-01T00:00:00Z"
 
-	cmdMocks.client.EXPECT().PurgeLogs(&apiparams.PurgeLogsRequest{
+	cmdMocks.client.EXPECT().PurgeLogs(gomock.Any(), &apiparams.PurgeLogsRequest{
 		Date: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 	}).Return(&apiparams.PurgeLogsResponse{DeletedCount: 2}, nil)
 	cmdMocks.client.EXPECT().Close().Return(nil)

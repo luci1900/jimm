@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -87,7 +87,7 @@ func (c *migrateInternalModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *migrateInternalModelCommand) Run(ctxt *cmd.Context) error {
-	jimmAPI, err := c.getJIMMAPI()
+	jimmAPI, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}
@@ -98,7 +98,7 @@ func (c *migrateInternalModelCommand) Run(ctxt *cmd.Context) error {
 		specs = append(specs, apiparams.MigrateModelInfo{TargetModelNameOrUUID: model, TargetController: c.targetController})
 	}
 	req := apiparams.MigrateModelRequest{Specs: specs}
-	events, err := jimmAPI.MigrateModel(&req)
+	events, err := jimmAPI.MigrateModel(ctxt, &req)
 	if err != nil {
 		return fmt.Errorf("could not migrate models: %w", err)
 	}

@@ -10,12 +10,13 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	params "github.com/canonical/jimm/v3/pkg/api/params"
 	cloud "github.com/juju/juju/cloud"
 	params0 "github.com/juju/juju/rpc/params"
-	names "github.com/juju/names/v5"
+	names "github.com/juju/names/v6"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -44,17 +45,17 @@ func (m *MockJIMMAPI) EXPECT() *MockJIMMAPIMockRecorder {
 }
 
 // AddCloudToController mocks base method.
-func (m *MockJIMMAPI) AddCloudToController(req *params.AddCloudToControllerRequest) error {
+func (m *MockJIMMAPI) AddCloudToController(ctx context.Context, req *params.AddCloudToControllerRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCloudToController", req)
+	ret := m.ctrl.Call(m, "AddCloudToController", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCloudToController indicates an expected call of AddCloudToController.
-func (mr *MockJIMMAPIMockRecorder) AddCloudToController(req any) *MockJIMMAPIAddCloudToControllerCall {
+func (mr *MockJIMMAPIMockRecorder) AddCloudToController(ctx, req any) *MockJIMMAPIAddCloudToControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCloudToController", reflect.TypeOf((*MockJIMMAPI)(nil).AddCloudToController), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCloudToController", reflect.TypeOf((*MockJIMMAPI)(nil).AddCloudToController), ctx, req)
 	return &MockJIMMAPIAddCloudToControllerCall{Call: call}
 }
 
@@ -70,30 +71,30 @@ func (c *MockJIMMAPIAddCloudToControllerCall) Return(arg0 error) *MockJIMMAPIAdd
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIAddCloudToControllerCall) Do(f func(*params.AddCloudToControllerRequest) error) *MockJIMMAPIAddCloudToControllerCall {
+func (c *MockJIMMAPIAddCloudToControllerCall) Do(f func(context.Context, *params.AddCloudToControllerRequest) error) *MockJIMMAPIAddCloudToControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIAddCloudToControllerCall) DoAndReturn(f func(*params.AddCloudToControllerRequest) error) *MockJIMMAPIAddCloudToControllerCall {
+func (c *MockJIMMAPIAddCloudToControllerCall) DoAndReturn(f func(context.Context, *params.AddCloudToControllerRequest) error) *MockJIMMAPIAddCloudToControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AddController mocks base method.
-func (m *MockJIMMAPI) AddController(req *params.AddControllerRequest) (params.ControllerInfo, error) {
+func (m *MockJIMMAPI) AddController(ctx context.Context, req *params.AddControllerRequest) (params.ControllerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddController", req)
+	ret := m.ctrl.Call(m, "AddController", ctx, req)
 	ret0, _ := ret[0].(params.ControllerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddController indicates an expected call of AddController.
-func (mr *MockJIMMAPIMockRecorder) AddController(req any) *MockJIMMAPIAddControllerCall {
+func (mr *MockJIMMAPIMockRecorder) AddController(ctx, req any) *MockJIMMAPIAddControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddController", reflect.TypeOf((*MockJIMMAPI)(nil).AddController), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddController", reflect.TypeOf((*MockJIMMAPI)(nil).AddController), ctx, req)
 	return &MockJIMMAPIAddControllerCall{Call: call}
 }
 
@@ -109,30 +110,30 @@ func (c *MockJIMMAPIAddControllerCall) Return(arg0 params.ControllerInfo, arg1 e
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIAddControllerCall) Do(f func(*params.AddControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIAddControllerCall {
+func (c *MockJIMMAPIAddControllerCall) Do(f func(context.Context, *params.AddControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIAddControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIAddControllerCall) DoAndReturn(f func(*params.AddControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIAddControllerCall {
+func (c *MockJIMMAPIAddControllerCall) DoAndReturn(f func(context.Context, *params.AddControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIAddControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AddGroup mocks base method.
-func (m *MockJIMMAPI) AddGroup(req *params.AddGroupRequest) (params.AddGroupResponse, error) {
+func (m *MockJIMMAPI) AddGroup(ctx context.Context, req *params.AddGroupRequest) (params.AddGroupResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddGroup", req)
+	ret := m.ctrl.Call(m, "AddGroup", ctx, req)
 	ret0, _ := ret[0].(params.AddGroupResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddGroup indicates an expected call of AddGroup.
-func (mr *MockJIMMAPIMockRecorder) AddGroup(req any) *MockJIMMAPIAddGroupCall {
+func (mr *MockJIMMAPIMockRecorder) AddGroup(ctx, req any) *MockJIMMAPIAddGroupCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddGroup", reflect.TypeOf((*MockJIMMAPI)(nil).AddGroup), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddGroup", reflect.TypeOf((*MockJIMMAPI)(nil).AddGroup), ctx, req)
 	return &MockJIMMAPIAddGroupCall{Call: call}
 }
 
@@ -148,30 +149,30 @@ func (c *MockJIMMAPIAddGroupCall) Return(arg0 params.AddGroupResponse, arg1 erro
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIAddGroupCall) Do(f func(*params.AddGroupRequest) (params.AddGroupResponse, error)) *MockJIMMAPIAddGroupCall {
+func (c *MockJIMMAPIAddGroupCall) Do(f func(context.Context, *params.AddGroupRequest) (params.AddGroupResponse, error)) *MockJIMMAPIAddGroupCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIAddGroupCall) DoAndReturn(f func(*params.AddGroupRequest) (params.AddGroupResponse, error)) *MockJIMMAPIAddGroupCall {
+func (c *MockJIMMAPIAddGroupCall) DoAndReturn(f func(context.Context, *params.AddGroupRequest) (params.AddGroupResponse, error)) *MockJIMMAPIAddGroupCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AddModelToController mocks base method.
-func (m *MockJIMMAPI) AddModelToController(req *params.AddModelToControllerRequest) (params0.ModelInfo, error) {
+func (m *MockJIMMAPI) AddModelToController(ctx context.Context, req *params.AddModelToControllerRequest) (params0.ModelInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddModelToController", req)
+	ret := m.ctrl.Call(m, "AddModelToController", ctx, req)
 	ret0, _ := ret[0].(params0.ModelInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddModelToController indicates an expected call of AddModelToController.
-func (mr *MockJIMMAPIMockRecorder) AddModelToController(req any) *MockJIMMAPIAddModelToControllerCall {
+func (mr *MockJIMMAPIMockRecorder) AddModelToController(ctx, req any) *MockJIMMAPIAddModelToControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddModelToController", reflect.TypeOf((*MockJIMMAPI)(nil).AddModelToController), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddModelToController", reflect.TypeOf((*MockJIMMAPI)(nil).AddModelToController), ctx, req)
 	return &MockJIMMAPIAddModelToControllerCall{Call: call}
 }
 
@@ -187,29 +188,29 @@ func (c *MockJIMMAPIAddModelToControllerCall) Return(arg0 params0.ModelInfo, arg
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIAddModelToControllerCall) Do(f func(*params.AddModelToControllerRequest) (params0.ModelInfo, error)) *MockJIMMAPIAddModelToControllerCall {
+func (c *MockJIMMAPIAddModelToControllerCall) Do(f func(context.Context, *params.AddModelToControllerRequest) (params0.ModelInfo, error)) *MockJIMMAPIAddModelToControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIAddModelToControllerCall) DoAndReturn(f func(*params.AddModelToControllerRequest) (params0.ModelInfo, error)) *MockJIMMAPIAddModelToControllerCall {
+func (c *MockJIMMAPIAddModelToControllerCall) DoAndReturn(f func(context.Context, *params.AddModelToControllerRequest) (params0.ModelInfo, error)) *MockJIMMAPIAddModelToControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AddRelation mocks base method.
-func (m *MockJIMMAPI) AddRelation(req *params.AddRelationRequest) error {
+func (m *MockJIMMAPI) AddRelation(ctx context.Context, req *params.AddRelationRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddRelation", req)
+	ret := m.ctrl.Call(m, "AddRelation", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddRelation indicates an expected call of AddRelation.
-func (mr *MockJIMMAPIMockRecorder) AddRelation(req any) *MockJIMMAPIAddRelationCall {
+func (mr *MockJIMMAPIMockRecorder) AddRelation(ctx, req any) *MockJIMMAPIAddRelationCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRelation", reflect.TypeOf((*MockJIMMAPI)(nil).AddRelation), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRelation", reflect.TypeOf((*MockJIMMAPI)(nil).AddRelation), ctx, req)
 	return &MockJIMMAPIAddRelationCall{Call: call}
 }
 
@@ -225,30 +226,30 @@ func (c *MockJIMMAPIAddRelationCall) Return(arg0 error) *MockJIMMAPIAddRelationC
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIAddRelationCall) Do(f func(*params.AddRelationRequest) error) *MockJIMMAPIAddRelationCall {
+func (c *MockJIMMAPIAddRelationCall) Do(f func(context.Context, *params.AddRelationRequest) error) *MockJIMMAPIAddRelationCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIAddRelationCall) DoAndReturn(f func(*params.AddRelationRequest) error) *MockJIMMAPIAddRelationCall {
+func (c *MockJIMMAPIAddRelationCall) DoAndReturn(f func(context.Context, *params.AddRelationRequest) error) *MockJIMMAPIAddRelationCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AddRole mocks base method.
-func (m *MockJIMMAPI) AddRole(req *params.AddRoleRequest) (params.AddRoleResponse, error) {
+func (m *MockJIMMAPI) AddRole(ctx context.Context, req *params.AddRoleRequest) (params.AddRoleResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddRole", req)
+	ret := m.ctrl.Call(m, "AddRole", ctx, req)
 	ret0, _ := ret[0].(params.AddRoleResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddRole indicates an expected call of AddRole.
-func (mr *MockJIMMAPIMockRecorder) AddRole(req any) *MockJIMMAPIAddRoleCall {
+func (mr *MockJIMMAPIMockRecorder) AddRole(ctx, req any) *MockJIMMAPIAddRoleCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRole", reflect.TypeOf((*MockJIMMAPI)(nil).AddRole), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRole", reflect.TypeOf((*MockJIMMAPI)(nil).AddRole), ctx, req)
 	return &MockJIMMAPIAddRoleCall{Call: call}
 }
 
@@ -264,30 +265,30 @@ func (c *MockJIMMAPIAddRoleCall) Return(arg0 params.AddRoleResponse, arg1 error)
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIAddRoleCall) Do(f func(*params.AddRoleRequest) (params.AddRoleResponse, error)) *MockJIMMAPIAddRoleCall {
+func (c *MockJIMMAPIAddRoleCall) Do(f func(context.Context, *params.AddRoleRequest) (params.AddRoleResponse, error)) *MockJIMMAPIAddRoleCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIAddRoleCall) DoAndReturn(f func(*params.AddRoleRequest) (params.AddRoleResponse, error)) *MockJIMMAPIAddRoleCall {
+func (c *MockJIMMAPIAddRoleCall) DoAndReturn(f func(context.Context, *params.AddRoleRequest) (params.AddRoleResponse, error)) *MockJIMMAPIAddRoleCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // BootstrapInfo mocks base method.
-func (m *MockJIMMAPI) BootstrapInfo(req *params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error) {
+func (m *MockJIMMAPI) BootstrapInfo(ctx context.Context, req *params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BootstrapInfo", req)
+	ret := m.ctrl.Call(m, "BootstrapInfo", ctx, req)
 	ret0, _ := ret[0].(params.GetBootstrapInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BootstrapInfo indicates an expected call of BootstrapInfo.
-func (mr *MockJIMMAPIMockRecorder) BootstrapInfo(req any) *MockJIMMAPIBootstrapInfoCall {
+func (mr *MockJIMMAPIMockRecorder) BootstrapInfo(ctx, req any) *MockJIMMAPIBootstrapInfoCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BootstrapInfo", reflect.TypeOf((*MockJIMMAPI)(nil).BootstrapInfo), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BootstrapInfo", reflect.TypeOf((*MockJIMMAPI)(nil).BootstrapInfo), ctx, req)
 	return &MockJIMMAPIBootstrapInfoCall{Call: call}
 }
 
@@ -303,30 +304,30 @@ func (c *MockJIMMAPIBootstrapInfoCall) Return(arg0 params.GetBootstrapInfoRespon
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIBootstrapInfoCall) Do(f func(*params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error)) *MockJIMMAPIBootstrapInfoCall {
+func (c *MockJIMMAPIBootstrapInfoCall) Do(f func(context.Context, *params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error)) *MockJIMMAPIBootstrapInfoCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIBootstrapInfoCall) DoAndReturn(f func(*params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error)) *MockJIMMAPIBootstrapInfoCall {
+func (c *MockJIMMAPIBootstrapInfoCall) DoAndReturn(f func(context.Context, *params.GetBootstrapInfoRequest) (params.GetBootstrapInfoResponse, error)) *MockJIMMAPIBootstrapInfoCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // CheckRelation mocks base method.
-func (m *MockJIMMAPI) CheckRelation(req *params.CheckRelationRequest) (params.CheckRelationResponse, error) {
+func (m *MockJIMMAPI) CheckRelation(ctx context.Context, req *params.CheckRelationRequest) (params.CheckRelationResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckRelation", req)
+	ret := m.ctrl.Call(m, "CheckRelation", ctx, req)
 	ret0, _ := ret[0].(params.CheckRelationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckRelation indicates an expected call of CheckRelation.
-func (mr *MockJIMMAPIMockRecorder) CheckRelation(req any) *MockJIMMAPICheckRelationCall {
+func (mr *MockJIMMAPIMockRecorder) CheckRelation(ctx, req any) *MockJIMMAPICheckRelationCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckRelation", reflect.TypeOf((*MockJIMMAPI)(nil).CheckRelation), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckRelation", reflect.TypeOf((*MockJIMMAPI)(nil).CheckRelation), ctx, req)
 	return &MockJIMMAPICheckRelationCall{Call: call}
 }
 
@@ -342,13 +343,13 @@ func (c *MockJIMMAPICheckRelationCall) Return(arg0 params.CheckRelationResponse,
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPICheckRelationCall) Do(f func(*params.CheckRelationRequest) (params.CheckRelationResponse, error)) *MockJIMMAPICheckRelationCall {
+func (c *MockJIMMAPICheckRelationCall) Do(f func(context.Context, *params.CheckRelationRequest) (params.CheckRelationResponse, error)) *MockJIMMAPICheckRelationCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPICheckRelationCall) DoAndReturn(f func(*params.CheckRelationRequest) (params.CheckRelationResponse, error)) *MockJIMMAPICheckRelationCall {
+func (c *MockJIMMAPICheckRelationCall) DoAndReturn(f func(context.Context, *params.CheckRelationRequest) (params.CheckRelationResponse, error)) *MockJIMMAPICheckRelationCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -392,18 +393,18 @@ func (c *MockJIMMAPICloseCall) DoAndReturn(f func() error) *MockJIMMAPICloseCall
 }
 
 // CrossModelQuery mocks base method.
-func (m *MockJIMMAPI) CrossModelQuery(req *params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error) {
+func (m *MockJIMMAPI) CrossModelQuery(ctx context.Context, req *params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CrossModelQuery", req)
+	ret := m.ctrl.Call(m, "CrossModelQuery", ctx, req)
 	ret0, _ := ret[0].(*params.CrossModelQueryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CrossModelQuery indicates an expected call of CrossModelQuery.
-func (mr *MockJIMMAPIMockRecorder) CrossModelQuery(req any) *MockJIMMAPICrossModelQueryCall {
+func (mr *MockJIMMAPIMockRecorder) CrossModelQuery(ctx, req any) *MockJIMMAPICrossModelQueryCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CrossModelQuery", reflect.TypeOf((*MockJIMMAPI)(nil).CrossModelQuery), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CrossModelQuery", reflect.TypeOf((*MockJIMMAPI)(nil).CrossModelQuery), ctx, req)
 	return &MockJIMMAPICrossModelQueryCall{Call: call}
 }
 
@@ -419,30 +420,30 @@ func (c *MockJIMMAPICrossModelQueryCall) Return(arg0 *params.CrossModelQueryResp
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPICrossModelQueryCall) Do(f func(*params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error)) *MockJIMMAPICrossModelQueryCall {
+func (c *MockJIMMAPICrossModelQueryCall) Do(f func(context.Context, *params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error)) *MockJIMMAPICrossModelQueryCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPICrossModelQueryCall) DoAndReturn(f func(*params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error)) *MockJIMMAPICrossModelQueryCall {
+func (c *MockJIMMAPICrossModelQueryCall) DoAndReturn(f func(context.Context, *params.CrossModelQueryRequest) (*params.CrossModelQueryResponse, error)) *MockJIMMAPICrossModelQueryCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // FindAuditEvents mocks base method.
-func (m *MockJIMMAPI) FindAuditEvents(req *params.FindAuditEventsRequest) (params.AuditEvents, error) {
+func (m *MockJIMMAPI) FindAuditEvents(ctx context.Context, req *params.FindAuditEventsRequest) (params.AuditEvents, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindAuditEvents", req)
+	ret := m.ctrl.Call(m, "FindAuditEvents", ctx, req)
 	ret0, _ := ret[0].(params.AuditEvents)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindAuditEvents indicates an expected call of FindAuditEvents.
-func (mr *MockJIMMAPIMockRecorder) FindAuditEvents(req any) *MockJIMMAPIFindAuditEventsCall {
+func (mr *MockJIMMAPIMockRecorder) FindAuditEvents(ctx, req any) *MockJIMMAPIFindAuditEventsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAuditEvents", reflect.TypeOf((*MockJIMMAPI)(nil).FindAuditEvents), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAuditEvents", reflect.TypeOf((*MockJIMMAPI)(nil).FindAuditEvents), ctx, req)
 	return &MockJIMMAPIFindAuditEventsCall{Call: call}
 }
 
@@ -458,30 +459,30 @@ func (c *MockJIMMAPIFindAuditEventsCall) Return(arg0 params.AuditEvents, arg1 er
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIFindAuditEventsCall) Do(f func(*params.FindAuditEventsRequest) (params.AuditEvents, error)) *MockJIMMAPIFindAuditEventsCall {
+func (c *MockJIMMAPIFindAuditEventsCall) Do(f func(context.Context, *params.FindAuditEventsRequest) (params.AuditEvents, error)) *MockJIMMAPIFindAuditEventsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIFindAuditEventsCall) DoAndReturn(f func(*params.FindAuditEventsRequest) (params.AuditEvents, error)) *MockJIMMAPIFindAuditEventsCall {
+func (c *MockJIMMAPIFindAuditEventsCall) DoAndReturn(f func(context.Context, *params.FindAuditEventsRequest) (params.AuditEvents, error)) *MockJIMMAPIFindAuditEventsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // FullModelStatus mocks base method.
-func (m *MockJIMMAPI) FullModelStatus(req *params.FullModelStatusRequest) (params0.FullStatus, error) {
+func (m *MockJIMMAPI) FullModelStatus(ctx context.Context, req *params.FullModelStatusRequest) (params0.FullStatus, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FullModelStatus", req)
+	ret := m.ctrl.Call(m, "FullModelStatus", ctx, req)
 	ret0, _ := ret[0].(params0.FullStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FullModelStatus indicates an expected call of FullModelStatus.
-func (mr *MockJIMMAPIMockRecorder) FullModelStatus(req any) *MockJIMMAPIFullModelStatusCall {
+func (mr *MockJIMMAPIMockRecorder) FullModelStatus(ctx, req any) *MockJIMMAPIFullModelStatusCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FullModelStatus", reflect.TypeOf((*MockJIMMAPI)(nil).FullModelStatus), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FullModelStatus", reflect.TypeOf((*MockJIMMAPI)(nil).FullModelStatus), ctx, req)
 	return &MockJIMMAPIFullModelStatusCall{Call: call}
 }
 
@@ -497,30 +498,30 @@ func (c *MockJIMMAPIFullModelStatusCall) Return(arg0 params0.FullStatus, arg1 er
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIFullModelStatusCall) Do(f func(*params.FullModelStatusRequest) (params0.FullStatus, error)) *MockJIMMAPIFullModelStatusCall {
+func (c *MockJIMMAPIFullModelStatusCall) Do(f func(context.Context, *params.FullModelStatusRequest) (params0.FullStatus, error)) *MockJIMMAPIFullModelStatusCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIFullModelStatusCall) DoAndReturn(f func(*params.FullModelStatusRequest) (params0.FullStatus, error)) *MockJIMMAPIFullModelStatusCall {
+func (c *MockJIMMAPIFullModelStatusCall) DoAndReturn(f func(context.Context, *params.FullModelStatusRequest) (params0.FullStatus, error)) *MockJIMMAPIFullModelStatusCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // GetGroup mocks base method.
-func (m *MockJIMMAPI) GetGroup(req *params.GetGroupRequest) (params.GetGroupResponse, error) {
+func (m *MockJIMMAPI) GetGroup(ctx context.Context, req *params.GetGroupRequest) (params.GetGroupResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGroup", req)
+	ret := m.ctrl.Call(m, "GetGroup", ctx, req)
 	ret0, _ := ret[0].(params.GetGroupResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetGroup indicates an expected call of GetGroup.
-func (mr *MockJIMMAPIMockRecorder) GetGroup(req any) *MockJIMMAPIGetGroupCall {
+func (mr *MockJIMMAPIMockRecorder) GetGroup(ctx, req any) *MockJIMMAPIGetGroupCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroup", reflect.TypeOf((*MockJIMMAPI)(nil).GetGroup), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroup", reflect.TypeOf((*MockJIMMAPI)(nil).GetGroup), ctx, req)
 	return &MockJIMMAPIGetGroupCall{Call: call}
 }
 
@@ -536,30 +537,30 @@ func (c *MockJIMMAPIGetGroupCall) Return(arg0 params.GetGroupResponse, arg1 erro
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIGetGroupCall) Do(f func(*params.GetGroupRequest) (params.GetGroupResponse, error)) *MockJIMMAPIGetGroupCall {
+func (c *MockJIMMAPIGetGroupCall) Do(f func(context.Context, *params.GetGroupRequest) (params.GetGroupResponse, error)) *MockJIMMAPIGetGroupCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIGetGroupCall) DoAndReturn(f func(*params.GetGroupRequest) (params.GetGroupResponse, error)) *MockJIMMAPIGetGroupCall {
+func (c *MockJIMMAPIGetGroupCall) DoAndReturn(f func(context.Context, *params.GetGroupRequest) (params.GetGroupResponse, error)) *MockJIMMAPIGetGroupCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // GetRole mocks base method.
-func (m *MockJIMMAPI) GetRole(req *params.GetRoleRequest) (params.GetRoleResponse, error) {
+func (m *MockJIMMAPI) GetRole(ctx context.Context, req *params.GetRoleRequest) (params.GetRoleResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRole", req)
+	ret := m.ctrl.Call(m, "GetRole", ctx, req)
 	ret0, _ := ret[0].(params.GetRoleResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRole indicates an expected call of GetRole.
-func (mr *MockJIMMAPIMockRecorder) GetRole(req any) *MockJIMMAPIGetRoleCall {
+func (mr *MockJIMMAPIMockRecorder) GetRole(ctx, req any) *MockJIMMAPIGetRoleCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRole", reflect.TypeOf((*MockJIMMAPI)(nil).GetRole), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRole", reflect.TypeOf((*MockJIMMAPI)(nil).GetRole), ctx, req)
 	return &MockJIMMAPIGetRoleCall{Call: call}
 }
 
@@ -575,29 +576,29 @@ func (c *MockJIMMAPIGetRoleCall) Return(arg0 params.GetRoleResponse, arg1 error)
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIGetRoleCall) Do(f func(*params.GetRoleRequest) (params.GetRoleResponse, error)) *MockJIMMAPIGetRoleCall {
+func (c *MockJIMMAPIGetRoleCall) Do(f func(context.Context, *params.GetRoleRequest) (params.GetRoleResponse, error)) *MockJIMMAPIGetRoleCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIGetRoleCall) DoAndReturn(f func(*params.GetRoleRequest) (params.GetRoleResponse, error)) *MockJIMMAPIGetRoleCall {
+func (c *MockJIMMAPIGetRoleCall) DoAndReturn(f func(context.Context, *params.GetRoleRequest) (params.GetRoleResponse, error)) *MockJIMMAPIGetRoleCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // GrantAuditLogAccess mocks base method.
-func (m *MockJIMMAPI) GrantAuditLogAccess(req *params.AuditLogAccessRequest) error {
+func (m *MockJIMMAPI) GrantAuditLogAccess(ctx context.Context, req *params.AuditLogAccessRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GrantAuditLogAccess", req)
+	ret := m.ctrl.Call(m, "GrantAuditLogAccess", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // GrantAuditLogAccess indicates an expected call of GrantAuditLogAccess.
-func (mr *MockJIMMAPIMockRecorder) GrantAuditLogAccess(req any) *MockJIMMAPIGrantAuditLogAccessCall {
+func (mr *MockJIMMAPIMockRecorder) GrantAuditLogAccess(ctx, req any) *MockJIMMAPIGrantAuditLogAccessCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantAuditLogAccess", reflect.TypeOf((*MockJIMMAPI)(nil).GrantAuditLogAccess), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GrantAuditLogAccess", reflect.TypeOf((*MockJIMMAPI)(nil).GrantAuditLogAccess), ctx, req)
 	return &MockJIMMAPIGrantAuditLogAccessCall{Call: call}
 }
 
@@ -613,29 +614,29 @@ func (c *MockJIMMAPIGrantAuditLogAccessCall) Return(arg0 error) *MockJIMMAPIGran
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIGrantAuditLogAccessCall) Do(f func(*params.AuditLogAccessRequest) error) *MockJIMMAPIGrantAuditLogAccessCall {
+func (c *MockJIMMAPIGrantAuditLogAccessCall) Do(f func(context.Context, *params.AuditLogAccessRequest) error) *MockJIMMAPIGrantAuditLogAccessCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIGrantAuditLogAccessCall) DoAndReturn(f func(*params.AuditLogAccessRequest) error) *MockJIMMAPIGrantAuditLogAccessCall {
+func (c *MockJIMMAPIGrantAuditLogAccessCall) DoAndReturn(f func(context.Context, *params.AuditLogAccessRequest) error) *MockJIMMAPIGrantAuditLogAccessCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ImportModel mocks base method.
-func (m *MockJIMMAPI) ImportModel(req *params.ImportModelRequest) error {
+func (m *MockJIMMAPI) ImportModel(ctx context.Context, req *params.ImportModelRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ImportModel", req)
+	ret := m.ctrl.Call(m, "ImportModel", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ImportModel indicates an expected call of ImportModel.
-func (mr *MockJIMMAPIMockRecorder) ImportModel(req any) *MockJIMMAPIImportModelCall {
+func (mr *MockJIMMAPIMockRecorder) ImportModel(ctx, req any) *MockJIMMAPIImportModelCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportModel", reflect.TypeOf((*MockJIMMAPI)(nil).ImportModel), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportModel", reflect.TypeOf((*MockJIMMAPI)(nil).ImportModel), ctx, req)
 	return &MockJIMMAPIImportModelCall{Call: call}
 }
 
@@ -651,30 +652,30 @@ func (c *MockJIMMAPIImportModelCall) Return(arg0 error) *MockJIMMAPIImportModelC
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIImportModelCall) Do(f func(*params.ImportModelRequest) error) *MockJIMMAPIImportModelCall {
+func (c *MockJIMMAPIImportModelCall) Do(f func(context.Context, *params.ImportModelRequest) error) *MockJIMMAPIImportModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIImportModelCall) DoAndReturn(f func(*params.ImportModelRequest) error) *MockJIMMAPIImportModelCall {
+func (c *MockJIMMAPIImportModelCall) DoAndReturn(f func(context.Context, *params.ImportModelRequest) error) *MockJIMMAPIImportModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListControllers mocks base method.
-func (m *MockJIMMAPI) ListControllers() ([]params.ControllerInfo, error) {
+func (m *MockJIMMAPI) ListControllers(ctx context.Context) ([]params.ControllerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListControllers")
+	ret := m.ctrl.Call(m, "ListControllers", ctx)
 	ret0, _ := ret[0].([]params.ControllerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListControllers indicates an expected call of ListControllers.
-func (mr *MockJIMMAPIMockRecorder) ListControllers() *MockJIMMAPIListControllersCall {
+func (mr *MockJIMMAPIMockRecorder) ListControllers(ctx any) *MockJIMMAPIListControllersCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListControllers", reflect.TypeOf((*MockJIMMAPI)(nil).ListControllers))
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListControllers", reflect.TypeOf((*MockJIMMAPI)(nil).ListControllers), ctx)
 	return &MockJIMMAPIListControllersCall{Call: call}
 }
 
@@ -690,30 +691,30 @@ func (c *MockJIMMAPIListControllersCall) Return(arg0 []params.ControllerInfo, ar
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListControllersCall) Do(f func() ([]params.ControllerInfo, error)) *MockJIMMAPIListControllersCall {
+func (c *MockJIMMAPIListControllersCall) Do(f func(context.Context) ([]params.ControllerInfo, error)) *MockJIMMAPIListControllersCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListControllersCall) DoAndReturn(f func() ([]params.ControllerInfo, error)) *MockJIMMAPIListControllersCall {
+func (c *MockJIMMAPIListControllersCall) DoAndReturn(f func(context.Context) ([]params.ControllerInfo, error)) *MockJIMMAPIListControllersCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListGroups mocks base method.
-func (m *MockJIMMAPI) ListGroups(req *params.ListGroupsRequest) ([]params.Group, error) {
+func (m *MockJIMMAPI) ListGroups(ctx context.Context, req *params.ListGroupsRequest) ([]params.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListGroups", req)
+	ret := m.ctrl.Call(m, "ListGroups", ctx, req)
 	ret0, _ := ret[0].([]params.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListGroups indicates an expected call of ListGroups.
-func (mr *MockJIMMAPIMockRecorder) ListGroups(req any) *MockJIMMAPIListGroupsCall {
+func (mr *MockJIMMAPIMockRecorder) ListGroups(ctx, req any) *MockJIMMAPIListGroupsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGroups", reflect.TypeOf((*MockJIMMAPI)(nil).ListGroups), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGroups", reflect.TypeOf((*MockJIMMAPI)(nil).ListGroups), ctx, req)
 	return &MockJIMMAPIListGroupsCall{Call: call}
 }
 
@@ -729,30 +730,30 @@ func (c *MockJIMMAPIListGroupsCall) Return(arg0 []params.Group, arg1 error) *Moc
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListGroupsCall) Do(f func(*params.ListGroupsRequest) ([]params.Group, error)) *MockJIMMAPIListGroupsCall {
+func (c *MockJIMMAPIListGroupsCall) Do(f func(context.Context, *params.ListGroupsRequest) ([]params.Group, error)) *MockJIMMAPIListGroupsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListGroupsCall) DoAndReturn(f func(*params.ListGroupsRequest) ([]params.Group, error)) *MockJIMMAPIListGroupsCall {
+func (c *MockJIMMAPIListGroupsCall) DoAndReturn(f func(context.Context, *params.ListGroupsRequest) ([]params.Group, error)) *MockJIMMAPIListGroupsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListJobs mocks base method.
-func (m *MockJIMMAPI) ListJobs(req *params.ListJobsRequest) (*params.ListJobsResponse, error) {
+func (m *MockJIMMAPI) ListJobs(ctx context.Context, req *params.ListJobsRequest) (*params.ListJobsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListJobs", req)
+	ret := m.ctrl.Call(m, "ListJobs", ctx, req)
 	ret0, _ := ret[0].(*params.ListJobsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListJobs indicates an expected call of ListJobs.
-func (mr *MockJIMMAPIMockRecorder) ListJobs(req any) *MockJIMMAPIListJobsCall {
+func (mr *MockJIMMAPIMockRecorder) ListJobs(ctx, req any) *MockJIMMAPIListJobsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListJobs", reflect.TypeOf((*MockJIMMAPI)(nil).ListJobs), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListJobs", reflect.TypeOf((*MockJIMMAPI)(nil).ListJobs), ctx, req)
 	return &MockJIMMAPIListJobsCall{Call: call}
 }
 
@@ -768,30 +769,30 @@ func (c *MockJIMMAPIListJobsCall) Return(arg0 *params.ListJobsResponse, arg1 err
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListJobsCall) Do(f func(*params.ListJobsRequest) (*params.ListJobsResponse, error)) *MockJIMMAPIListJobsCall {
+func (c *MockJIMMAPIListJobsCall) Do(f func(context.Context, *params.ListJobsRequest) (*params.ListJobsResponse, error)) *MockJIMMAPIListJobsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListJobsCall) DoAndReturn(f func(*params.ListJobsRequest) (*params.ListJobsResponse, error)) *MockJIMMAPIListJobsCall {
+func (c *MockJIMMAPIListJobsCall) DoAndReturn(f func(context.Context, *params.ListJobsRequest) (*params.ListJobsResponse, error)) *MockJIMMAPIListJobsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListMigrationTargets mocks base method.
-func (m *MockJIMMAPI) ListMigrationTargets(req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
+func (m *MockJIMMAPI) ListMigrationTargets(ctx context.Context, req *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListMigrationTargets", req)
+	ret := m.ctrl.Call(m, "ListMigrationTargets", ctx, req)
 	ret0, _ := ret[0].([]params.ControllerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListMigrationTargets indicates an expected call of ListMigrationTargets.
-func (mr *MockJIMMAPIMockRecorder) ListMigrationTargets(req any) *MockJIMMAPIListMigrationTargetsCall {
+func (mr *MockJIMMAPIMockRecorder) ListMigrationTargets(ctx, req any) *MockJIMMAPIListMigrationTargetsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMigrationTargets", reflect.TypeOf((*MockJIMMAPI)(nil).ListMigrationTargets), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMigrationTargets", reflect.TypeOf((*MockJIMMAPI)(nil).ListMigrationTargets), ctx, req)
 	return &MockJIMMAPIListMigrationTargetsCall{Call: call}
 }
 
@@ -807,30 +808,30 @@ func (c *MockJIMMAPIListMigrationTargetsCall) Return(arg0 []params.ControllerInf
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListMigrationTargetsCall) Do(f func(*params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)) *MockJIMMAPIListMigrationTargetsCall {
+func (c *MockJIMMAPIListMigrationTargetsCall) Do(f func(context.Context, *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)) *MockJIMMAPIListMigrationTargetsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListMigrationTargetsCall) DoAndReturn(f func(*params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)) *MockJIMMAPIListMigrationTargetsCall {
+func (c *MockJIMMAPIListMigrationTargetsCall) DoAndReturn(f func(context.Context, *params.ListMigrationTargetsRequest) ([]params.ControllerInfo, error)) *MockJIMMAPIListMigrationTargetsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListRelationshipTuples mocks base method.
-func (m *MockJIMMAPI) ListRelationshipTuples(req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
+func (m *MockJIMMAPI) ListRelationshipTuples(ctx context.Context, req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListRelationshipTuples", req)
+	ret := m.ctrl.Call(m, "ListRelationshipTuples", ctx, req)
 	ret0, _ := ret[0].(*params.ListRelationshipTuplesResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListRelationshipTuples indicates an expected call of ListRelationshipTuples.
-func (mr *MockJIMMAPIMockRecorder) ListRelationshipTuples(req any) *MockJIMMAPIListRelationshipTuplesCall {
+func (mr *MockJIMMAPIMockRecorder) ListRelationshipTuples(ctx, req any) *MockJIMMAPIListRelationshipTuplesCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelationshipTuples", reflect.TypeOf((*MockJIMMAPI)(nil).ListRelationshipTuples), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelationshipTuples", reflect.TypeOf((*MockJIMMAPI)(nil).ListRelationshipTuples), ctx, req)
 	return &MockJIMMAPIListRelationshipTuplesCall{Call: call}
 }
 
@@ -846,30 +847,30 @@ func (c *MockJIMMAPIListRelationshipTuplesCall) Return(arg0 *params.ListRelation
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListRelationshipTuplesCall) Do(f func(*params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error)) *MockJIMMAPIListRelationshipTuplesCall {
+func (c *MockJIMMAPIListRelationshipTuplesCall) Do(f func(context.Context, *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error)) *MockJIMMAPIListRelationshipTuplesCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListRelationshipTuplesCall) DoAndReturn(f func(*params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error)) *MockJIMMAPIListRelationshipTuplesCall {
+func (c *MockJIMMAPIListRelationshipTuplesCall) DoAndReturn(f func(context.Context, *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error)) *MockJIMMAPIListRelationshipTuplesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListRoles mocks base method.
-func (m *MockJIMMAPI) ListRoles(req *params.ListRolesRequest) ([]params.Role, error) {
+func (m *MockJIMMAPI) ListRoles(ctx context.Context, req *params.ListRolesRequest) ([]params.Role, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListRoles", req)
+	ret := m.ctrl.Call(m, "ListRoles", ctx, req)
 	ret0, _ := ret[0].([]params.Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListRoles indicates an expected call of ListRoles.
-func (mr *MockJIMMAPIMockRecorder) ListRoles(req any) *MockJIMMAPIListRolesCall {
+func (mr *MockJIMMAPIMockRecorder) ListRoles(ctx, req any) *MockJIMMAPIListRolesCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRoles", reflect.TypeOf((*MockJIMMAPI)(nil).ListRoles), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRoles", reflect.TypeOf((*MockJIMMAPI)(nil).ListRoles), ctx, req)
 	return &MockJIMMAPIListRolesCall{Call: call}
 }
 
@@ -885,30 +886,30 @@ func (c *MockJIMMAPIListRolesCall) Return(arg0 []params.Role, arg1 error) *MockJ
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListRolesCall) Do(f func(*params.ListRolesRequest) ([]params.Role, error)) *MockJIMMAPIListRolesCall {
+func (c *MockJIMMAPIListRolesCall) Do(f func(context.Context, *params.ListRolesRequest) ([]params.Role, error)) *MockJIMMAPIListRolesCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListRolesCall) DoAndReturn(f func(*params.ListRolesRequest) ([]params.Role, error)) *MockJIMMAPIListRolesCall {
+func (c *MockJIMMAPIListRolesCall) DoAndReturn(f func(context.Context, *params.ListRolesRequest) ([]params.Role, error)) *MockJIMMAPIListRolesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListUserClouds mocks base method.
-func (m *MockJIMMAPI) ListUserClouds(req *params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error) {
+func (m *MockJIMMAPI) ListUserClouds(ctx context.Context, req *params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListUserClouds", req)
+	ret := m.ctrl.Call(m, "ListUserClouds", ctx, req)
 	ret0, _ := ret[0].(map[names.CloudTag]cloud.Cloud)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListUserClouds indicates an expected call of ListUserClouds.
-func (mr *MockJIMMAPIMockRecorder) ListUserClouds(req any) *MockJIMMAPIListUserCloudsCall {
+func (mr *MockJIMMAPIMockRecorder) ListUserClouds(ctx, req any) *MockJIMMAPIListUserCloudsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserClouds", reflect.TypeOf((*MockJIMMAPI)(nil).ListUserClouds), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserClouds", reflect.TypeOf((*MockJIMMAPI)(nil).ListUserClouds), ctx, req)
 	return &MockJIMMAPIListUserCloudsCall{Call: call}
 }
 
@@ -924,30 +925,30 @@ func (c *MockJIMMAPIListUserCloudsCall) Return(arg0 map[names.CloudTag]cloud.Clo
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIListUserCloudsCall) Do(f func(*params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error)) *MockJIMMAPIListUserCloudsCall {
+func (c *MockJIMMAPIListUserCloudsCall) Do(f func(context.Context, *params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error)) *MockJIMMAPIListUserCloudsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIListUserCloudsCall) DoAndReturn(f func(*params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error)) *MockJIMMAPIListUserCloudsCall {
+func (c *MockJIMMAPIListUserCloudsCall) DoAndReturn(f func(context.Context, *params.ListUserCloudsRequest) (map[names.CloudTag]cloud.Cloud, error)) *MockJIMMAPIListUserCloudsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // MigrateModel mocks base method.
-func (m *MockJIMMAPI) MigrateModel(req *params.MigrateModelRequest) (*params0.InitiateMigrationResults, error) {
+func (m *MockJIMMAPI) MigrateModel(ctx context.Context, req *params.MigrateModelRequest) (*params0.InitiateMigrationResults, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MigrateModel", req)
+	ret := m.ctrl.Call(m, "MigrateModel", ctx, req)
 	ret0, _ := ret[0].(*params0.InitiateMigrationResults)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // MigrateModel indicates an expected call of MigrateModel.
-func (mr *MockJIMMAPIMockRecorder) MigrateModel(req any) *MockJIMMAPIMigrateModelCall {
+func (mr *MockJIMMAPIMockRecorder) MigrateModel(ctx, req any) *MockJIMMAPIMigrateModelCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MigrateModel", reflect.TypeOf((*MockJIMMAPI)(nil).MigrateModel), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MigrateModel", reflect.TypeOf((*MockJIMMAPI)(nil).MigrateModel), ctx, req)
 	return &MockJIMMAPIMigrateModelCall{Call: call}
 }
 
@@ -963,30 +964,30 @@ func (c *MockJIMMAPIMigrateModelCall) Return(arg0 *params0.InitiateMigrationResu
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIMigrateModelCall) Do(f func(*params.MigrateModelRequest) (*params0.InitiateMigrationResults, error)) *MockJIMMAPIMigrateModelCall {
+func (c *MockJIMMAPIMigrateModelCall) Do(f func(context.Context, *params.MigrateModelRequest) (*params0.InitiateMigrationResults, error)) *MockJIMMAPIMigrateModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIMigrateModelCall) DoAndReturn(f func(*params.MigrateModelRequest) (*params0.InitiateMigrationResults, error)) *MockJIMMAPIMigrateModelCall {
+func (c *MockJIMMAPIMigrateModelCall) DoAndReturn(f func(context.Context, *params.MigrateModelRequest) (*params0.InitiateMigrationResults, error)) *MockJIMMAPIMigrateModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ModelControllerInfo mocks base method.
-func (m *MockJIMMAPI) ModelControllerInfo(model string) (*params.ModelControllerInfo, error) {
+func (m *MockJIMMAPI) ModelControllerInfo(ctx context.Context, model string) (*params.ModelControllerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ModelControllerInfo", model)
+	ret := m.ctrl.Call(m, "ModelControllerInfo", ctx, model)
 	ret0, _ := ret[0].(*params.ModelControllerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ModelControllerInfo indicates an expected call of ModelControllerInfo.
-func (mr *MockJIMMAPIMockRecorder) ModelControllerInfo(model any) *MockJIMMAPIModelControllerInfoCall {
+func (mr *MockJIMMAPIMockRecorder) ModelControllerInfo(ctx, model any) *MockJIMMAPIModelControllerInfoCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelControllerInfo", reflect.TypeOf((*MockJIMMAPI)(nil).ModelControllerInfo), model)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelControllerInfo", reflect.TypeOf((*MockJIMMAPI)(nil).ModelControllerInfo), ctx, model)
 	return &MockJIMMAPIModelControllerInfoCall{Call: call}
 }
 
@@ -1002,30 +1003,30 @@ func (c *MockJIMMAPIModelControllerInfoCall) Return(arg0 *params.ModelController
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIModelControllerInfoCall) Do(f func(string) (*params.ModelControllerInfo, error)) *MockJIMMAPIModelControllerInfoCall {
+func (c *MockJIMMAPIModelControllerInfoCall) Do(f func(context.Context, string) (*params.ModelControllerInfo, error)) *MockJIMMAPIModelControllerInfoCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIModelControllerInfoCall) DoAndReturn(f func(string) (*params.ModelControllerInfo, error)) *MockJIMMAPIModelControllerInfoCall {
+func (c *MockJIMMAPIModelControllerInfoCall) DoAndReturn(f func(context.Context, string) (*params.ModelControllerInfo, error)) *MockJIMMAPIModelControllerInfoCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // PrepareModelMigration mocks base method.
-func (m *MockJIMMAPI) PrepareModelMigration(req *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error) {
+func (m *MockJIMMAPI) PrepareModelMigration(ctx context.Context, req *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PrepareModelMigration", req)
+	ret := m.ctrl.Call(m, "PrepareModelMigration", ctx, req)
 	ret0, _ := ret[0].(params.PrepareModelMigrationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PrepareModelMigration indicates an expected call of PrepareModelMigration.
-func (mr *MockJIMMAPIMockRecorder) PrepareModelMigration(req any) *MockJIMMAPIPrepareModelMigrationCall {
+func (mr *MockJIMMAPIMockRecorder) PrepareModelMigration(ctx, req any) *MockJIMMAPIPrepareModelMigrationCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareModelMigration", reflect.TypeOf((*MockJIMMAPI)(nil).PrepareModelMigration), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareModelMigration", reflect.TypeOf((*MockJIMMAPI)(nil).PrepareModelMigration), ctx, req)
 	return &MockJIMMAPIPrepareModelMigrationCall{Call: call}
 }
 
@@ -1041,30 +1042,30 @@ func (c *MockJIMMAPIPrepareModelMigrationCall) Return(arg0 params.PrepareModelMi
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIPrepareModelMigrationCall) Do(f func(*params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)) *MockJIMMAPIPrepareModelMigrationCall {
+func (c *MockJIMMAPIPrepareModelMigrationCall) Do(f func(context.Context, *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)) *MockJIMMAPIPrepareModelMigrationCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIPrepareModelMigrationCall) DoAndReturn(f func(*params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)) *MockJIMMAPIPrepareModelMigrationCall {
+func (c *MockJIMMAPIPrepareModelMigrationCall) DoAndReturn(f func(context.Context, *params.PrepareModelMigrationRequest) (params.PrepareModelMigrationResponse, error)) *MockJIMMAPIPrepareModelMigrationCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // PurgeLogs mocks base method.
-func (m *MockJIMMAPI) PurgeLogs(req *params.PurgeLogsRequest) (*params.PurgeLogsResponse, error) {
+func (m *MockJIMMAPI) PurgeLogs(ctx context.Context, req *params.PurgeLogsRequest) (*params.PurgeLogsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PurgeLogs", req)
+	ret := m.ctrl.Call(m, "PurgeLogs", ctx, req)
 	ret0, _ := ret[0].(*params.PurgeLogsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PurgeLogs indicates an expected call of PurgeLogs.
-func (mr *MockJIMMAPIMockRecorder) PurgeLogs(req any) *MockJIMMAPIPurgeLogsCall {
+func (mr *MockJIMMAPIMockRecorder) PurgeLogs(ctx, req any) *MockJIMMAPIPurgeLogsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PurgeLogs", reflect.TypeOf((*MockJIMMAPI)(nil).PurgeLogs), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PurgeLogs", reflect.TypeOf((*MockJIMMAPI)(nil).PurgeLogs), ctx, req)
 	return &MockJIMMAPIPurgeLogsCall{Call: call}
 }
 
@@ -1080,29 +1081,29 @@ func (c *MockJIMMAPIPurgeLogsCall) Return(arg0 *params.PurgeLogsResponse, arg1 e
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIPurgeLogsCall) Do(f func(*params.PurgeLogsRequest) (*params.PurgeLogsResponse, error)) *MockJIMMAPIPurgeLogsCall {
+func (c *MockJIMMAPIPurgeLogsCall) Do(f func(context.Context, *params.PurgeLogsRequest) (*params.PurgeLogsResponse, error)) *MockJIMMAPIPurgeLogsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIPurgeLogsCall) DoAndReturn(f func(*params.PurgeLogsRequest) (*params.PurgeLogsResponse, error)) *MockJIMMAPIPurgeLogsCall {
+func (c *MockJIMMAPIPurgeLogsCall) DoAndReturn(f func(context.Context, *params.PurgeLogsRequest) (*params.PurgeLogsResponse, error)) *MockJIMMAPIPurgeLogsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RemoveCloudFromController mocks base method.
-func (m *MockJIMMAPI) RemoveCloudFromController(req *params.RemoveCloudFromControllerRequest) error {
+func (m *MockJIMMAPI) RemoveCloudFromController(ctx context.Context, req *params.RemoveCloudFromControllerRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveCloudFromController", req)
+	ret := m.ctrl.Call(m, "RemoveCloudFromController", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveCloudFromController indicates an expected call of RemoveCloudFromController.
-func (mr *MockJIMMAPIMockRecorder) RemoveCloudFromController(req any) *MockJIMMAPIRemoveCloudFromControllerCall {
+func (mr *MockJIMMAPIMockRecorder) RemoveCloudFromController(ctx, req any) *MockJIMMAPIRemoveCloudFromControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCloudFromController", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveCloudFromController), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCloudFromController", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveCloudFromController), ctx, req)
 	return &MockJIMMAPIRemoveCloudFromControllerCall{Call: call}
 }
 
@@ -1118,30 +1119,30 @@ func (c *MockJIMMAPIRemoveCloudFromControllerCall) Return(arg0 error) *MockJIMMA
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRemoveCloudFromControllerCall) Do(f func(*params.RemoveCloudFromControllerRequest) error) *MockJIMMAPIRemoveCloudFromControllerCall {
+func (c *MockJIMMAPIRemoveCloudFromControllerCall) Do(f func(context.Context, *params.RemoveCloudFromControllerRequest) error) *MockJIMMAPIRemoveCloudFromControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRemoveCloudFromControllerCall) DoAndReturn(f func(*params.RemoveCloudFromControllerRequest) error) *MockJIMMAPIRemoveCloudFromControllerCall {
+func (c *MockJIMMAPIRemoveCloudFromControllerCall) DoAndReturn(f func(context.Context, *params.RemoveCloudFromControllerRequest) error) *MockJIMMAPIRemoveCloudFromControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RemoveController mocks base method.
-func (m *MockJIMMAPI) RemoveController(req *params.RemoveControllerRequest) (params.ControllerInfo, error) {
+func (m *MockJIMMAPI) RemoveController(ctx context.Context, req *params.RemoveControllerRequest) (params.ControllerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveController", req)
+	ret := m.ctrl.Call(m, "RemoveController", ctx, req)
 	ret0, _ := ret[0].(params.ControllerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // RemoveController indicates an expected call of RemoveController.
-func (mr *MockJIMMAPIMockRecorder) RemoveController(req any) *MockJIMMAPIRemoveControllerCall {
+func (mr *MockJIMMAPIMockRecorder) RemoveController(ctx, req any) *MockJIMMAPIRemoveControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveController", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveController), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveController", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveController), ctx, req)
 	return &MockJIMMAPIRemoveControllerCall{Call: call}
 }
 
@@ -1157,29 +1158,29 @@ func (c *MockJIMMAPIRemoveControllerCall) Return(arg0 params.ControllerInfo, arg
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRemoveControllerCall) Do(f func(*params.RemoveControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIRemoveControllerCall {
+func (c *MockJIMMAPIRemoveControllerCall) Do(f func(context.Context, *params.RemoveControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIRemoveControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRemoveControllerCall) DoAndReturn(f func(*params.RemoveControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIRemoveControllerCall {
+func (c *MockJIMMAPIRemoveControllerCall) DoAndReturn(f func(context.Context, *params.RemoveControllerRequest) (params.ControllerInfo, error)) *MockJIMMAPIRemoveControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RemoveGroup mocks base method.
-func (m *MockJIMMAPI) RemoveGroup(req *params.RemoveGroupRequest) error {
+func (m *MockJIMMAPI) RemoveGroup(ctx context.Context, req *params.RemoveGroupRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveGroup", req)
+	ret := m.ctrl.Call(m, "RemoveGroup", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveGroup indicates an expected call of RemoveGroup.
-func (mr *MockJIMMAPIMockRecorder) RemoveGroup(req any) *MockJIMMAPIRemoveGroupCall {
+func (mr *MockJIMMAPIMockRecorder) RemoveGroup(ctx, req any) *MockJIMMAPIRemoveGroupCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveGroup", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveGroup), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveGroup", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveGroup), ctx, req)
 	return &MockJIMMAPIRemoveGroupCall{Call: call}
 }
 
@@ -1195,29 +1196,29 @@ func (c *MockJIMMAPIRemoveGroupCall) Return(arg0 error) *MockJIMMAPIRemoveGroupC
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRemoveGroupCall) Do(f func(*params.RemoveGroupRequest) error) *MockJIMMAPIRemoveGroupCall {
+func (c *MockJIMMAPIRemoveGroupCall) Do(f func(context.Context, *params.RemoveGroupRequest) error) *MockJIMMAPIRemoveGroupCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRemoveGroupCall) DoAndReturn(f func(*params.RemoveGroupRequest) error) *MockJIMMAPIRemoveGroupCall {
+func (c *MockJIMMAPIRemoveGroupCall) DoAndReturn(f func(context.Context, *params.RemoveGroupRequest) error) *MockJIMMAPIRemoveGroupCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RemoveRelation mocks base method.
-func (m *MockJIMMAPI) RemoveRelation(req *params.RemoveRelationRequest) error {
+func (m *MockJIMMAPI) RemoveRelation(ctx context.Context, req *params.RemoveRelationRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveRelation", req)
+	ret := m.ctrl.Call(m, "RemoveRelation", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveRelation indicates an expected call of RemoveRelation.
-func (mr *MockJIMMAPIMockRecorder) RemoveRelation(req any) *MockJIMMAPIRemoveRelationCall {
+func (mr *MockJIMMAPIMockRecorder) RemoveRelation(ctx, req any) *MockJIMMAPIRemoveRelationCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRelation", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveRelation), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRelation", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveRelation), ctx, req)
 	return &MockJIMMAPIRemoveRelationCall{Call: call}
 }
 
@@ -1233,29 +1234,29 @@ func (c *MockJIMMAPIRemoveRelationCall) Return(arg0 error) *MockJIMMAPIRemoveRel
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRemoveRelationCall) Do(f func(*params.RemoveRelationRequest) error) *MockJIMMAPIRemoveRelationCall {
+func (c *MockJIMMAPIRemoveRelationCall) Do(f func(context.Context, *params.RemoveRelationRequest) error) *MockJIMMAPIRemoveRelationCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRemoveRelationCall) DoAndReturn(f func(*params.RemoveRelationRequest) error) *MockJIMMAPIRemoveRelationCall {
+func (c *MockJIMMAPIRemoveRelationCall) DoAndReturn(f func(context.Context, *params.RemoveRelationRequest) error) *MockJIMMAPIRemoveRelationCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RemoveRole mocks base method.
-func (m *MockJIMMAPI) RemoveRole(req *params.RemoveRoleRequest) error {
+func (m *MockJIMMAPI) RemoveRole(ctx context.Context, req *params.RemoveRoleRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveRole", req)
+	ret := m.ctrl.Call(m, "RemoveRole", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveRole indicates an expected call of RemoveRole.
-func (mr *MockJIMMAPIMockRecorder) RemoveRole(req any) *MockJIMMAPIRemoveRoleCall {
+func (mr *MockJIMMAPIMockRecorder) RemoveRole(ctx, req any) *MockJIMMAPIRemoveRoleCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRole", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveRole), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRole", reflect.TypeOf((*MockJIMMAPI)(nil).RemoveRole), ctx, req)
 	return &MockJIMMAPIRemoveRoleCall{Call: call}
 }
 
@@ -1271,29 +1272,29 @@ func (c *MockJIMMAPIRemoveRoleCall) Return(arg0 error) *MockJIMMAPIRemoveRoleCal
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRemoveRoleCall) Do(f func(*params.RemoveRoleRequest) error) *MockJIMMAPIRemoveRoleCall {
+func (c *MockJIMMAPIRemoveRoleCall) Do(f func(context.Context, *params.RemoveRoleRequest) error) *MockJIMMAPIRemoveRoleCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRemoveRoleCall) DoAndReturn(f func(*params.RemoveRoleRequest) error) *MockJIMMAPIRemoveRoleCall {
+func (c *MockJIMMAPIRemoveRoleCall) DoAndReturn(f func(context.Context, *params.RemoveRoleRequest) error) *MockJIMMAPIRemoveRoleCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RenameGroup mocks base method.
-func (m *MockJIMMAPI) RenameGroup(req *params.RenameGroupRequest) error {
+func (m *MockJIMMAPI) RenameGroup(ctx context.Context, req *params.RenameGroupRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenameGroup", req)
+	ret := m.ctrl.Call(m, "RenameGroup", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RenameGroup indicates an expected call of RenameGroup.
-func (mr *MockJIMMAPIMockRecorder) RenameGroup(req any) *MockJIMMAPIRenameGroupCall {
+func (mr *MockJIMMAPIMockRecorder) RenameGroup(ctx, req any) *MockJIMMAPIRenameGroupCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameGroup", reflect.TypeOf((*MockJIMMAPI)(nil).RenameGroup), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameGroup", reflect.TypeOf((*MockJIMMAPI)(nil).RenameGroup), ctx, req)
 	return &MockJIMMAPIRenameGroupCall{Call: call}
 }
 
@@ -1309,29 +1310,29 @@ func (c *MockJIMMAPIRenameGroupCall) Return(arg0 error) *MockJIMMAPIRenameGroupC
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRenameGroupCall) Do(f func(*params.RenameGroupRequest) error) *MockJIMMAPIRenameGroupCall {
+func (c *MockJIMMAPIRenameGroupCall) Do(f func(context.Context, *params.RenameGroupRequest) error) *MockJIMMAPIRenameGroupCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRenameGroupCall) DoAndReturn(f func(*params.RenameGroupRequest) error) *MockJIMMAPIRenameGroupCall {
+func (c *MockJIMMAPIRenameGroupCall) DoAndReturn(f func(context.Context, *params.RenameGroupRequest) error) *MockJIMMAPIRenameGroupCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RenameRole mocks base method.
-func (m *MockJIMMAPI) RenameRole(req *params.RenameRoleRequest) error {
+func (m *MockJIMMAPI) RenameRole(ctx context.Context, req *params.RenameRoleRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenameRole", req)
+	ret := m.ctrl.Call(m, "RenameRole", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RenameRole indicates an expected call of RenameRole.
-func (mr *MockJIMMAPIMockRecorder) RenameRole(req any) *MockJIMMAPIRenameRoleCall {
+func (mr *MockJIMMAPIMockRecorder) RenameRole(ctx, req any) *MockJIMMAPIRenameRoleCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameRole", reflect.TypeOf((*MockJIMMAPI)(nil).RenameRole), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameRole", reflect.TypeOf((*MockJIMMAPI)(nil).RenameRole), ctx, req)
 	return &MockJIMMAPIRenameRoleCall{Call: call}
 }
 
@@ -1347,29 +1348,29 @@ func (c *MockJIMMAPIRenameRoleCall) Return(arg0 error) *MockJIMMAPIRenameRoleCal
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRenameRoleCall) Do(f func(*params.RenameRoleRequest) error) *MockJIMMAPIRenameRoleCall {
+func (c *MockJIMMAPIRenameRoleCall) Do(f func(context.Context, *params.RenameRoleRequest) error) *MockJIMMAPIRenameRoleCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRenameRoleCall) DoAndReturn(f func(*params.RenameRoleRequest) error) *MockJIMMAPIRenameRoleCall {
+func (c *MockJIMMAPIRenameRoleCall) DoAndReturn(f func(context.Context, *params.RenameRoleRequest) error) *MockJIMMAPIRenameRoleCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RevokeAuditLogAccess mocks base method.
-func (m *MockJIMMAPI) RevokeAuditLogAccess(req *params.AuditLogAccessRequest) error {
+func (m *MockJIMMAPI) RevokeAuditLogAccess(ctx context.Context, req *params.AuditLogAccessRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RevokeAuditLogAccess", req)
+	ret := m.ctrl.Call(m, "RevokeAuditLogAccess", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RevokeAuditLogAccess indicates an expected call of RevokeAuditLogAccess.
-func (mr *MockJIMMAPIMockRecorder) RevokeAuditLogAccess(req any) *MockJIMMAPIRevokeAuditLogAccessCall {
+func (mr *MockJIMMAPIMockRecorder) RevokeAuditLogAccess(ctx, req any) *MockJIMMAPIRevokeAuditLogAccessCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAuditLogAccess", reflect.TypeOf((*MockJIMMAPI)(nil).RevokeAuditLogAccess), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAuditLogAccess", reflect.TypeOf((*MockJIMMAPI)(nil).RevokeAuditLogAccess), ctx, req)
 	return &MockJIMMAPIRevokeAuditLogAccessCall{Call: call}
 }
 
@@ -1385,30 +1386,30 @@ func (c *MockJIMMAPIRevokeAuditLogAccessCall) Return(arg0 error) *MockJIMMAPIRev
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIRevokeAuditLogAccessCall) Do(f func(*params.AuditLogAccessRequest) error) *MockJIMMAPIRevokeAuditLogAccessCall {
+func (c *MockJIMMAPIRevokeAuditLogAccessCall) Do(f func(context.Context, *params.AuditLogAccessRequest) error) *MockJIMMAPIRevokeAuditLogAccessCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIRevokeAuditLogAccessCall) DoAndReturn(f func(*params.AuditLogAccessRequest) error) *MockJIMMAPIRevokeAuditLogAccessCall {
+func (c *MockJIMMAPIRevokeAuditLogAccessCall) DoAndReturn(f func(context.Context, *params.AuditLogAccessRequest) error) *MockJIMMAPIRevokeAuditLogAccessCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // SetControllerDeprecated mocks base method.
-func (m *MockJIMMAPI) SetControllerDeprecated(req *params.SetControllerDeprecatedRequest) (params.ControllerInfo, error) {
+func (m *MockJIMMAPI) SetControllerDeprecated(ctx context.Context, req *params.SetControllerDeprecatedRequest) (params.ControllerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetControllerDeprecated", req)
+	ret := m.ctrl.Call(m, "SetControllerDeprecated", ctx, req)
 	ret0, _ := ret[0].(params.ControllerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SetControllerDeprecated indicates an expected call of SetControllerDeprecated.
-func (mr *MockJIMMAPIMockRecorder) SetControllerDeprecated(req any) *MockJIMMAPISetControllerDeprecatedCall {
+func (mr *MockJIMMAPIMockRecorder) SetControllerDeprecated(ctx, req any) *MockJIMMAPISetControllerDeprecatedCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetControllerDeprecated", reflect.TypeOf((*MockJIMMAPI)(nil).SetControllerDeprecated), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetControllerDeprecated", reflect.TypeOf((*MockJIMMAPI)(nil).SetControllerDeprecated), ctx, req)
 	return &MockJIMMAPISetControllerDeprecatedCall{Call: call}
 }
 
@@ -1424,30 +1425,30 @@ func (c *MockJIMMAPISetControllerDeprecatedCall) Return(arg0 params.ControllerIn
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPISetControllerDeprecatedCall) Do(f func(*params.SetControllerDeprecatedRequest) (params.ControllerInfo, error)) *MockJIMMAPISetControllerDeprecatedCall {
+func (c *MockJIMMAPISetControllerDeprecatedCall) Do(f func(context.Context, *params.SetControllerDeprecatedRequest) (params.ControllerInfo, error)) *MockJIMMAPISetControllerDeprecatedCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPISetControllerDeprecatedCall) DoAndReturn(f func(*params.SetControllerDeprecatedRequest) (params.ControllerInfo, error)) *MockJIMMAPISetControllerDeprecatedCall {
+func (c *MockJIMMAPISetControllerDeprecatedCall) DoAndReturn(f func(context.Context, *params.SetControllerDeprecatedRequest) (params.ControllerInfo, error)) *MockJIMMAPISetControllerDeprecatedCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // StartBootstrap mocks base method.
-func (m *MockJIMMAPI) StartBootstrap(req *params.BootstrapParams) (*params.StartBootstrapResponse, error) {
+func (m *MockJIMMAPI) StartBootstrap(ctx context.Context, req *params.BootstrapParams) (*params.StartBootstrapResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StartBootstrap", req)
+	ret := m.ctrl.Call(m, "StartBootstrap", ctx, req)
 	ret0, _ := ret[0].(*params.StartBootstrapResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // StartBootstrap indicates an expected call of StartBootstrap.
-func (mr *MockJIMMAPIMockRecorder) StartBootstrap(req any) *MockJIMMAPIStartBootstrapCall {
+func (mr *MockJIMMAPIMockRecorder) StartBootstrap(ctx, req any) *MockJIMMAPIStartBootstrapCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartBootstrap", reflect.TypeOf((*MockJIMMAPI)(nil).StartBootstrap), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartBootstrap", reflect.TypeOf((*MockJIMMAPI)(nil).StartBootstrap), ctx, req)
 	return &MockJIMMAPIStartBootstrapCall{Call: call}
 }
 
@@ -1463,30 +1464,30 @@ func (c *MockJIMMAPIStartBootstrapCall) Return(arg0 *params.StartBootstrapRespon
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIStartBootstrapCall) Do(f func(*params.BootstrapParams) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartBootstrapCall {
+func (c *MockJIMMAPIStartBootstrapCall) Do(f func(context.Context, *params.BootstrapParams) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartBootstrapCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIStartBootstrapCall) DoAndReturn(f func(*params.BootstrapParams) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartBootstrapCall {
+func (c *MockJIMMAPIStartBootstrapCall) DoAndReturn(f func(context.Context, *params.BootstrapParams) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartBootstrapCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // StartDestroyController mocks base method.
-func (m *MockJIMMAPI) StartDestroyController(req *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error) {
+func (m *MockJIMMAPI) StartDestroyController(ctx context.Context, req *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StartDestroyController", req)
+	ret := m.ctrl.Call(m, "StartDestroyController", ctx, req)
 	ret0, _ := ret[0].(*params.StartBootstrapResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // StartDestroyController indicates an expected call of StartDestroyController.
-func (mr *MockJIMMAPIMockRecorder) StartDestroyController(req any) *MockJIMMAPIStartDestroyControllerCall {
+func (mr *MockJIMMAPIMockRecorder) StartDestroyController(ctx, req any) *MockJIMMAPIStartDestroyControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartDestroyController", reflect.TypeOf((*MockJIMMAPI)(nil).StartDestroyController), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartDestroyController", reflect.TypeOf((*MockJIMMAPI)(nil).StartDestroyController), ctx, req)
 	return &MockJIMMAPIStartDestroyControllerCall{Call: call}
 }
 
@@ -1502,29 +1503,29 @@ func (c *MockJIMMAPIStartDestroyControllerCall) Return(arg0 *params.StartBootstr
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIStartDestroyControllerCall) Do(f func(*params.DestroyControllerRequest) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartDestroyControllerCall {
+func (c *MockJIMMAPIStartDestroyControllerCall) Do(f func(context.Context, *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartDestroyControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIStartDestroyControllerCall) DoAndReturn(f func(*params.DestroyControllerRequest) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartDestroyControllerCall {
+func (c *MockJIMMAPIStartDestroyControllerCall) DoAndReturn(f func(context.Context, *params.DestroyControllerRequest) (*params.StartBootstrapResponse, error)) *MockJIMMAPIStartDestroyControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // StopBootstrap mocks base method.
-func (m *MockJIMMAPI) StopBootstrap(req *params.StopBootstrapRequest) error {
+func (m *MockJIMMAPI) StopBootstrap(ctx context.Context, req *params.StopBootstrapRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StopBootstrap", req)
+	ret := m.ctrl.Call(m, "StopBootstrap", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StopBootstrap indicates an expected call of StopBootstrap.
-func (mr *MockJIMMAPIMockRecorder) StopBootstrap(req any) *MockJIMMAPIStopBootstrapCall {
+func (mr *MockJIMMAPIMockRecorder) StopBootstrap(ctx, req any) *MockJIMMAPIStopBootstrapCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopBootstrap", reflect.TypeOf((*MockJIMMAPI)(nil).StopBootstrap), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopBootstrap", reflect.TypeOf((*MockJIMMAPI)(nil).StopBootstrap), ctx, req)
 	return &MockJIMMAPIStopBootstrapCall{Call: call}
 }
 
@@ -1540,29 +1541,29 @@ func (c *MockJIMMAPIStopBootstrapCall) Return(arg0 error) *MockJIMMAPIStopBootst
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIStopBootstrapCall) Do(f func(*params.StopBootstrapRequest) error) *MockJIMMAPIStopBootstrapCall {
+func (c *MockJIMMAPIStopBootstrapCall) Do(f func(context.Context, *params.StopBootstrapRequest) error) *MockJIMMAPIStopBootstrapCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIStopBootstrapCall) DoAndReturn(f func(*params.StopBootstrapRequest) error) *MockJIMMAPIStopBootstrapCall {
+func (c *MockJIMMAPIStopBootstrapCall) DoAndReturn(f func(context.Context, *params.StopBootstrapRequest) error) *MockJIMMAPIStopBootstrapCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // UpdateMigratedModel mocks base method.
-func (m *MockJIMMAPI) UpdateMigratedModel(req *params.UpdateMigratedModelRequest) error {
+func (m *MockJIMMAPI) UpdateMigratedModel(ctx context.Context, req *params.UpdateMigratedModelRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateMigratedModel", req)
+	ret := m.ctrl.Call(m, "UpdateMigratedModel", ctx, req)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateMigratedModel indicates an expected call of UpdateMigratedModel.
-func (mr *MockJIMMAPIMockRecorder) UpdateMigratedModel(req any) *MockJIMMAPIUpdateMigratedModelCall {
+func (mr *MockJIMMAPIMockRecorder) UpdateMigratedModel(ctx, req any) *MockJIMMAPIUpdateMigratedModelCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMigratedModel", reflect.TypeOf((*MockJIMMAPI)(nil).UpdateMigratedModel), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMigratedModel", reflect.TypeOf((*MockJIMMAPI)(nil).UpdateMigratedModel), ctx, req)
 	return &MockJIMMAPIUpdateMigratedModelCall{Call: call}
 }
 
@@ -1578,30 +1579,30 @@ func (c *MockJIMMAPIUpdateMigratedModelCall) Return(arg0 error) *MockJIMMAPIUpda
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIUpdateMigratedModelCall) Do(f func(*params.UpdateMigratedModelRequest) error) *MockJIMMAPIUpdateMigratedModelCall {
+func (c *MockJIMMAPIUpdateMigratedModelCall) Do(f func(context.Context, *params.UpdateMigratedModelRequest) error) *MockJIMMAPIUpdateMigratedModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIUpdateMigratedModelCall) DoAndReturn(f func(*params.UpdateMigratedModelRequest) error) *MockJIMMAPIUpdateMigratedModelCall {
+func (c *MockJIMMAPIUpdateMigratedModelCall) DoAndReturn(f func(context.Context, *params.UpdateMigratedModelRequest) error) *MockJIMMAPIUpdateMigratedModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // UpgradeTo mocks base method.
-func (m *MockJIMMAPI) UpgradeTo(req *params.UpgradeToRequest) (params.UpgradeToResponse, error) {
+func (m *MockJIMMAPI) UpgradeTo(ctx context.Context, req *params.UpgradeToRequest) (params.UpgradeToResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpgradeTo", req)
+	ret := m.ctrl.Call(m, "UpgradeTo", ctx, req)
 	ret0, _ := ret[0].(params.UpgradeToResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpgradeTo indicates an expected call of UpgradeTo.
-func (mr *MockJIMMAPIMockRecorder) UpgradeTo(req any) *MockJIMMAPIUpgradeToCall {
+func (mr *MockJIMMAPIMockRecorder) UpgradeTo(ctx, req any) *MockJIMMAPIUpgradeToCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeTo", reflect.TypeOf((*MockJIMMAPI)(nil).UpgradeTo), req)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeTo", reflect.TypeOf((*MockJIMMAPI)(nil).UpgradeTo), ctx, req)
 	return &MockJIMMAPIUpgradeToCall{Call: call}
 }
 
@@ -1617,13 +1618,13 @@ func (c *MockJIMMAPIUpgradeToCall) Return(arg0 params.UpgradeToResponse, arg1 er
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockJIMMAPIUpgradeToCall) Do(f func(*params.UpgradeToRequest) (params.UpgradeToResponse, error)) *MockJIMMAPIUpgradeToCall {
+func (c *MockJIMMAPIUpgradeToCall) Do(f func(context.Context, *params.UpgradeToRequest) (params.UpgradeToResponse, error)) *MockJIMMAPIUpgradeToCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockJIMMAPIUpgradeToCall) DoAndReturn(f func(*params.UpgradeToRequest) (params.UpgradeToResponse, error)) *MockJIMMAPIUpgradeToCall {
+func (c *MockJIMMAPIUpgradeToCall) DoAndReturn(f func(context.Context, *params.UpgradeToRequest) (params.UpgradeToResponse, error)) *MockJIMMAPIUpgradeToCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1653,17 +1654,17 @@ func (m *MockAddModelCloudAPI) EXPECT() *MockAddModelCloudAPIMockRecorder {
 }
 
 // AddCredential mocks base method.
-func (m *MockAddModelCloudAPI) AddCredential(tag string, credential cloud.Credential) error {
+func (m *MockAddModelCloudAPI) AddCredential(ctx context.Context, tag string, credential cloud.Credential) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCredential", tag, credential)
+	ret := m.ctrl.Call(m, "AddCredential", ctx, tag, credential)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCredential indicates an expected call of AddCredential.
-func (mr *MockAddModelCloudAPIMockRecorder) AddCredential(tag, credential any) *MockAddModelCloudAPIAddCredentialCall {
+func (mr *MockAddModelCloudAPIMockRecorder) AddCredential(ctx, tag, credential any) *MockAddModelCloudAPIAddCredentialCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCredential", reflect.TypeOf((*MockAddModelCloudAPI)(nil).AddCredential), tag, credential)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCredential", reflect.TypeOf((*MockAddModelCloudAPI)(nil).AddCredential), ctx, tag, credential)
 	return &MockAddModelCloudAPIAddCredentialCall{Call: call}
 }
 
@@ -1679,30 +1680,30 @@ func (c *MockAddModelCloudAPIAddCredentialCall) Return(arg0 error) *MockAddModel
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAddModelCloudAPIAddCredentialCall) Do(f func(string, cloud.Credential) error) *MockAddModelCloudAPIAddCredentialCall {
+func (c *MockAddModelCloudAPIAddCredentialCall) Do(f func(context.Context, string, cloud.Credential) error) *MockAddModelCloudAPIAddCredentialCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAddModelCloudAPIAddCredentialCall) DoAndReturn(f func(string, cloud.Credential) error) *MockAddModelCloudAPIAddCredentialCall {
+func (c *MockAddModelCloudAPIAddCredentialCall) DoAndReturn(f func(context.Context, string, cloud.Credential) error) *MockAddModelCloudAPIAddCredentialCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // Cloud mocks base method.
-func (m *MockAddModelCloudAPI) Cloud(arg0 names.CloudTag) (cloud.Cloud, error) {
+func (m *MockAddModelCloudAPI) Cloud(ctx context.Context, tag names.CloudTag) (cloud.Cloud, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Cloud", arg0)
+	ret := m.ctrl.Call(m, "Cloud", ctx, tag)
 	ret0, _ := ret[0].(cloud.Cloud)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Cloud indicates an expected call of Cloud.
-func (mr *MockAddModelCloudAPIMockRecorder) Cloud(arg0 any) *MockAddModelCloudAPICloudCall {
+func (mr *MockAddModelCloudAPIMockRecorder) Cloud(ctx, tag any) *MockAddModelCloudAPICloudCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cloud", reflect.TypeOf((*MockAddModelCloudAPI)(nil).Cloud), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cloud", reflect.TypeOf((*MockAddModelCloudAPI)(nil).Cloud), ctx, tag)
 	return &MockAddModelCloudAPICloudCall{Call: call}
 }
 
@@ -1718,30 +1719,30 @@ func (c *MockAddModelCloudAPICloudCall) Return(arg0 cloud.Cloud, arg1 error) *Mo
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAddModelCloudAPICloudCall) Do(f func(names.CloudTag) (cloud.Cloud, error)) *MockAddModelCloudAPICloudCall {
+func (c *MockAddModelCloudAPICloudCall) Do(f func(context.Context, names.CloudTag) (cloud.Cloud, error)) *MockAddModelCloudAPICloudCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAddModelCloudAPICloudCall) DoAndReturn(f func(names.CloudTag) (cloud.Cloud, error)) *MockAddModelCloudAPICloudCall {
+func (c *MockAddModelCloudAPICloudCall) DoAndReturn(f func(context.Context, names.CloudTag) (cloud.Cloud, error)) *MockAddModelCloudAPICloudCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // UserCredentials mocks base method.
-func (m *MockAddModelCloudAPI) UserCredentials(arg0 names.UserTag, arg1 names.CloudTag) ([]names.CloudCredentialTag, error) {
+func (m *MockAddModelCloudAPI) UserCredentials(ctx context.Context, userTag names.UserTag, cloudTag names.CloudTag) ([]names.CloudCredentialTag, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UserCredentials", arg0, arg1)
+	ret := m.ctrl.Call(m, "UserCredentials", ctx, userTag, cloudTag)
 	ret0, _ := ret[0].([]names.CloudCredentialTag)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UserCredentials indicates an expected call of UserCredentials.
-func (mr *MockAddModelCloudAPIMockRecorder) UserCredentials(arg0, arg1 any) *MockAddModelCloudAPIUserCredentialsCall {
+func (mr *MockAddModelCloudAPIMockRecorder) UserCredentials(ctx, userTag, cloudTag any) *MockAddModelCloudAPIUserCredentialsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserCredentials", reflect.TypeOf((*MockAddModelCloudAPI)(nil).UserCredentials), arg0, arg1)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserCredentials", reflect.TypeOf((*MockAddModelCloudAPI)(nil).UserCredentials), ctx, userTag, cloudTag)
 	return &MockAddModelCloudAPIUserCredentialsCall{Call: call}
 }
 
@@ -1757,13 +1758,13 @@ func (c *MockAddModelCloudAPIUserCredentialsCall) Return(arg0 []names.CloudCrede
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAddModelCloudAPIUserCredentialsCall) Do(f func(names.UserTag, names.CloudTag) ([]names.CloudCredentialTag, error)) *MockAddModelCloudAPIUserCredentialsCall {
+func (c *MockAddModelCloudAPIUserCredentialsCall) Do(f func(context.Context, names.UserTag, names.CloudTag) ([]names.CloudCredentialTag, error)) *MockAddModelCloudAPIUserCredentialsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAddModelCloudAPIUserCredentialsCall) DoAndReturn(f func(names.UserTag, names.CloudTag) ([]names.CloudCredentialTag, error)) *MockAddModelCloudAPIUserCredentialsCall {
+func (c *MockAddModelCloudAPIUserCredentialsCall) DoAndReturn(f func(context.Context, names.UserTag, names.CloudTag) ([]names.CloudCredentialTag, error)) *MockAddModelCloudAPIUserCredentialsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

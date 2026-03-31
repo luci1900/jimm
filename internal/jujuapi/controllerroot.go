@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/rogpeppe/fastuuid"
 	"golang.org/x/oauth2"
 

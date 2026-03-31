@@ -16,7 +16,7 @@ import (
 	"github.com/frankban/quicktest/qtsuite"
 	gliderssh "github.com/gliderlabs/ssh"
 	"github.com/juju/juju/core/virtualhostname"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	gossh "golang.org/x/crypto/ssh"
 	"google.golang.org/grpc/test/bufconn"
 

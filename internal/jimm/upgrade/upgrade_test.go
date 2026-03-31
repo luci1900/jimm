@@ -13,9 +13,9 @@ import (
 	qt "github.com/frankban/quicktest"
 	jujuerrors "github.com/juju/errors"
 	"github.com/juju/juju/api/base"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 	"github.com/riverqueue/river/rivertype"
 	"go.uber.org/mock/gomock"
 
@@ -97,7 +97,7 @@ func TestUpgradeTo_Success(t *testing.T) {
 	// Migration expectations.
 	s.enqueuer.EXPECT().EnqueueUpgradeTo(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, uta rivertypes.UpgradeToArgs) (*rivertype.JobInsertResult, error) {
 		c.Check(uta.ModelUUID, qt.Equals, modelUUID)
-		c.Check(uta.TargetVersion, qt.Equals, version.Number{Major: 4, Minor: 1, Patch: 0})
+		c.Check(uta.TargetVersion, qt.Equals, semversion.Number{Major: 4, Minor: 1, Patch: 0})
 		c.Check(uta.TargetControllerName, qt.Equals, targetController)
 		c.Check(uta.Username, qt.Equals, user.Name)
 		// Don't check target controller name since that is currently generated based on the current time.
@@ -378,7 +378,7 @@ func TestUpgradeModel_RejectsZeroTargetVersion(t *testing.T) {
 	)
 	c.Assert(err, qt.IsNil)
 
-	err = upgradeMgr.UpgradeModel(c.Context(), "some-model-uuid", version.Zero)
+	err = upgradeMgr.UpgradeModel(c.Context(), "some-model-uuid", semversion.Zero)
 	c.Assert(err, qt.ErrorMatches, ".*target version cannot be zero.*")
 }
 
@@ -388,7 +388,7 @@ func TestUpgradeModel_ModelNotFound(t *testing.T) {
 
 	ctx := c.Context()
 	modelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	targetVersion, err := version.Parse("4.1.0")
+	targetVersion, err := semversion.Parse("4.1.0")
 	c.Assert(err, qt.IsNil)
 
 	upgradeMgr, err := upgrade.NewUpgradeManager(
@@ -411,7 +411,7 @@ func TestUpgradeModel_AlreadyAtTargetDoesNotCallUpgrade(t *testing.T) {
 
 	ctx := c.Context()
 	modelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	targetVersion, err := version.Parse("4.1.0")
+	targetVersion, err := semversion.Parse("4.1.0")
 	c.Assert(err, qt.IsNil)
 
 	upgradeMgr, err := upgrade.NewUpgradeManager(
@@ -450,9 +450,9 @@ func TestUpgradeModel_RetriesUntilModelReportsTargetVersion(t *testing.T) {
 
 	ctx := c.Context()
 	modelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	targetVersion, err := version.Parse("4.1.0")
+	targetVersion, err := semversion.Parse("4.1.0")
 	c.Assert(err, qt.IsNil)
-	oldVersion, err := version.Parse("4.0.0")
+	oldVersion, err := semversion.Parse("4.0.0")
 	c.Assert(err, qt.IsNil)
 
 	upgradeMgr, err := upgrade.NewUpgradeManager(
@@ -487,7 +487,7 @@ func TestUpgradeModel_RetriesUntilModelReportsTargetVersion(t *testing.T) {
 		return mi, nil
 	}).Times(2)
 
-	s.api.EXPECT().UpgradeModel(modelUUID, targetVersion, "", false, false).Return(targetVersion, nil)
+	s.api.EXPECT().UpgradeModel(gomock.Any(), modelUUID, targetVersion, "", false, false).Return(targetVersion, nil)
 
 	// Wrap the test in a synctest so that time advances instantly.
 	synctest.Test(t, (func(t *testing.T) {
@@ -505,9 +505,9 @@ func TestUpgradeModel_AlreadyUpgraded(t *testing.T) {
 
 	ctx := c.Context()
 	modelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	targetVersion, err := version.Parse("4.1.0")
+	targetVersion, err := semversion.Parse("4.1.0")
 	c.Assert(err, qt.IsNil)
-	oldVersion, err := version.Parse("4.0.0")
+	oldVersion, err := semversion.Parse("4.0.0")
 	c.Assert(err, qt.IsNil)
 
 	upgradeMgr, err := upgrade.NewUpgradeManager(
@@ -536,7 +536,7 @@ func TestUpgradeModel_AlreadyUpgraded(t *testing.T) {
 		}, nil
 	})
 
-	s.api.EXPECT().UpgradeModel(modelUUID, targetVersion, "", false, false).Return(version.Number{}, jujuerrors.AlreadyExists)
+	s.api.EXPECT().UpgradeModel(gomock.Any(), modelUUID, targetVersion, "", false, false).Return(semversion.Number{}, jujuerrors.AlreadyExists)
 
 	err = upgradeMgr.UpgradeModel(ctx, modelUUID, targetVersion)
 	c.Assert(err, qt.IsNil)

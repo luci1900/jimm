@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	cofga "github.com/canonical/ofga"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"

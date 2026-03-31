@@ -13,11 +13,11 @@ import (
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
-	"github.com/juju/charm/v12"
 	"github.com/juju/juju/core/crossmodel"
 	"github.com/juju/juju/core/permission"
+	"github.com/juju/juju/domain/deployment/charm"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"gopkg.in/macaroon.v2"
 	"gorm.io/gorm"
 
@@ -1878,8 +1878,8 @@ func TestListApplicationOffers(t *testing.T) {
 	c.Assert(err, qt.ErrorMatches, `at least one filter must be specified`)
 
 	filters := []crossmodel.ApplicationOfferFilter{{
-		OwnerName: "bob@canonical.com",
-		ModelName: "model-1",
+		ModelQualifier: "bob@canonical.com",
+		ModelName:      "model-1",
 	}, {
 		ModelName: "model-2",
 	}}
@@ -2070,9 +2070,9 @@ func TestFindApplicationOffers_MultipleControllers(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	filters := []crossmodel.ApplicationOfferFilter{{
-		OfferName: "test-offer",
-		ModelName: "model-1",
-		OwnerName: "bob@canonical.com",
+		OfferName:      "test-offer",
+		ModelName:      "model-1",
+		ModelQualifier: "bob@canonical.com",
 	}}
 
 	offers, err := j.FindApplicationOffers(ctx, openfga.NewUser(user, j.OpenFGAClient), filters...)

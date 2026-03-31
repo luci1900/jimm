@@ -7,7 +7,7 @@ import (
 	"testing/synctest"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
@@ -17,7 +17,7 @@ func TestBootstrapStatus(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().BootstrapInfo(gomock.Any()).Return(params.GetBootstrapInfoResponse{
+	s.client.EXPECT().BootstrapInfo(gomock.Any(), gomock.Any()).Return(params.GetBootstrapInfoResponse{
 		Status: params.StatusSuccessful,
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
@@ -38,7 +38,7 @@ func TestBootstrapStatus_Failed(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().BootstrapInfo(gomock.Any()).Return(params.GetBootstrapInfoResponse{
+	s.client.EXPECT().BootstrapInfo(gomock.Any(), gomock.Any()).Return(params.GetBootstrapInfoResponse{
 		Status: params.StatusFailed,
 		Error:  "Job failed",
 	}, nil)
@@ -60,7 +60,7 @@ func TestBootstrapStatus_Running(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().BootstrapInfo(gomock.Any()).Return(params.GetBootstrapInfoResponse{
+	s.client.EXPECT().BootstrapInfo(gomock.Any(), gomock.Any()).Return(params.GetBootstrapInfoResponse{
 		Status:    params.StatusRunning,
 		Logs:      []string{"log1", "log2"},
 		Watermark: 2,
@@ -68,7 +68,7 @@ func TestBootstrapStatus_Running(t *testing.T) {
 	s.client.EXPECT().Close().Return(nil)
 
 	s.client.EXPECT().
-		BootstrapInfo(&params.GetBootstrapInfoRequest{
+		BootstrapInfo(gomock.Any(), &params.GetBootstrapInfoRequest{
 			JobID:     "test-job-id",
 			Watermark: 2,
 		}).
@@ -79,7 +79,7 @@ func TestBootstrapStatus_Running(t *testing.T) {
 		}, nil)
 
 	s.client.EXPECT().
-		BootstrapInfo(&params.GetBootstrapInfoRequest{
+		BootstrapInfo(gomock.Any(), &params.GetBootstrapInfoRequest{
 			JobID:     "test-job-id",
 			Watermark: 3,
 		}).
@@ -108,7 +108,7 @@ func TestBootstrapStatus_NoFollow(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().BootstrapInfo(gomock.Any()).Return(params.GetBootstrapInfoResponse{
+	s.client.EXPECT().BootstrapInfo(gomock.Any(), gomock.Any()).Return(params.GetBootstrapInfoResponse{
 		Status:    params.StatusRunning,
 		Logs:      []string{"log1", "log2"},
 		Watermark: 2,
@@ -135,7 +135,7 @@ func TestBootstrapStatus_AfterCompletion(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().BootstrapInfo(gomock.Any()).Return(params.GetBootstrapInfoResponse{
+	s.client.EXPECT().BootstrapInfo(gomock.Any(), gomock.Any()).Return(params.GetBootstrapInfoResponse{
 		Status:    params.StatusSuccessful,
 		Logs:      []string{"log1", "log2"},
 		Watermark: 2,

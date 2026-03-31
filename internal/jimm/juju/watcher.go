@@ -7,7 +7,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
@@ -144,7 +144,7 @@ func (w *Watcher) watchAllModelSummaries(ctx context.Context, ctl *dbmodel.Contr
 		return err
 	}
 	defer func() {
-		if err := watcher.Stop(); err != nil {
+		if err := watcher.Stop(ctx); err != nil {
 			zapctx.Error(ctx, "failed to stop model summary watcher", zap.Error(err))
 		}
 	}()
@@ -156,7 +156,7 @@ func (w *Watcher) watchAllModelSummaries(ctx context.Context, ctl *dbmodel.Contr
 		default:
 		}
 		// wait for updates from the all model summary watcher.
-		modelSummaries, err := watcher.Next()
+		modelSummaries, err := watcher.Next(ctx)
 		if err != nil {
 			return err
 		}

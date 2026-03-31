@@ -3,10 +3,12 @@
 package jujuapi
 
 import (
+	"fmt"
+
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/cloud"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"gopkg.in/yaml.v3"
 
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -70,17 +72,14 @@ func toAddModelArgs(args jujuparams.ModelCreateArgs, authenticatedUser names.Use
 		}
 		a.Cloud = ct
 	}
-
-	if args.OwnerTag != "" {
-		ot, err := names.ParseUserTag(args.OwnerTag)
-		if err != nil {
-			return nil, errors.E(err, errors.CodeBadRequest)
+	if args.Qualifier != "" {
+		if !names.IsValidUser(args.Qualifier) {
+			return nil, errors.New(fmt.Sprintf("%q is not a valid user", args.Qualifier))
 		}
-		a.Owner = ot
+		a.Owner = names.NewUserTag(args.Qualifier)
 	} else {
 		a.Owner = authenticatedUser
 	}
-
 	if args.CloudCredentialTag != "" {
 		ct, err := names.ParseCloudCredentialTag(args.CloudCredentialTag)
 		if err != nil {
@@ -112,7 +111,7 @@ func toModelStatusParams(modelStatus base.ModelStatus) jujuparams.ModelStatus {
 		HostedMachineCount: modelStatus.HostedMachineCount,
 		ApplicationCount:   modelStatus.ApplicationCount,
 		UnitCount:          modelStatus.UnitCount,
-		OwnerTag:           names.NewUserTag(modelStatus.Owner).String(),
+		Qualifier:          modelStatus.Qualifier.String(),
 	}
 	for _, app := range modelStatus.Applications {
 		st.Applications = append(st.Applications, jujuparams.ModelApplicationInfo{
@@ -137,12 +136,9 @@ func toModelStatusParams(modelStatus base.ModelStatus) jujuparams.ModelStatus {
 			Id:          machine.Id,
 			InstanceId:  machine.InstanceId,
 			DisplayName: machine.DisplayName,
-			HasVote:     machine.HasVote,
-			WantsVote:   machine.WantsVote,
 			Status:      machine.Status,
 			Message:     machine.Message,
 			Hardware:    hardware,
-			HAPrimary:   machine.HAPrimary,
 		})
 	}
 	for _, volume := range modelStatus.Volumes {
@@ -186,11 +182,10 @@ func toModelSummariesParams(modelSummaries []base.UserModelSummary) jujuparams.M
 			ControllerUUID:     ms.ControllerUUID,
 			IsController:       ms.IsController,
 			ProviderType:       ms.ProviderType,
-			DefaultSeries:      ms.DefaultSeries,
 			CloudTag:           names.NewCloudTag(ms.Cloud).String(),
 			CloudRegion:        ms.CloudRegion,
 			CloudCredentialTag: names.NewCloudCredentialTag(ms.CloudCredential).String(),
-			OwnerTag:           names.NewUserTag(ms.Owner).String(),
+			Qualifier:          ms.Qualifier.String(),
 			Life:               ms.Life,
 			Status: jujuparams.EntityStatus{
 				Status: ms.Status.Status,
@@ -199,12 +194,6 @@ func toModelSummariesParams(modelSummaries []base.UserModelSummary) jujuparams.M
 				Since:  ms.Status.Since,
 			},
 			UserAccess: jujuparams.UserAccessPermission(ms.ModelUserAccess),
-		}
-		if ms.SLA != nil {
-			summaryParams.SLA = &jujuparams.ModelSLAInfo{
-				Level: ms.SLA.Level,
-				Owner: ms.SLA.Owner,
-			}
 		}
 		if ms.UserLastConnection != nil {
 			summaryParams.UserLastConnection = ms.UserLastConnection
@@ -246,14 +235,12 @@ func toModelInfo(modelInfo base.ModelInfo) jujuparams.ModelInfo {
 		ControllerUUID:     modelInfo.ControllerUUID,
 		IsController:       modelInfo.IsController,
 		Type:               modelInfo.Type.String(),
-		DefaultSeries:      modelInfo.DefaultSeries,
 		CloudTag:           names.NewCloudTag(modelInfo.Cloud).String(),
 		CloudRegion:        modelInfo.CloudRegion,
 		CloudCredentialTag: names.NewCloudCredentialTag(modelInfo.CloudCredential).String(),
-		OwnerTag:           names.NewUserTag(modelInfo.Owner).String(),
+		Qualifier:          modelInfo.Qualifier.String(),
 		Life:               modelInfo.Life,
 		ProviderType:       modelInfo.ProviderType,
-		DefaultBase:        modelInfo.DefaultSeries,
 		AgentVersion:       modelInfo.AgentVersion,
 		Status: jujuparams.EntityStatus{
 			Status: modelInfo.Status.Status,
@@ -291,9 +278,6 @@ func toModelInfo(modelInfo base.ModelInfo) jujuparams.ModelInfo {
 			Status:      machine.Status,
 			Message:     machine.Message,
 			Hardware:    hardwareInfo,
-			HAPrimary:   machine.HAPrimary,
-			HasVote:     machine.HasVote,
-			WantsVote:   machine.WantsVote,
 		})
 	}
 	return mi

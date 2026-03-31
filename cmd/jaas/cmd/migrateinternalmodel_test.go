@@ -4,11 +4,12 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"go.uber.org/mock/gomock"
 
@@ -21,8 +22,8 @@ func TestMigrateInternalModelCommand_BuildsRequestAndWritesOutput(t *testing.T) 
 	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
-		MigrateModel(gomock.Any()).
-		DoAndReturn(func(req *apiparams.MigrateModelRequest) (*jujuparams.InitiateMigrationResults, error) {
+		MigrateModel(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.MigrateModelRequest) (*jujuparams.InitiateMigrationResults, error) {
 			c.Assert(req, qt.Not(qt.IsNil))
 			c.Assert(req.Specs, qt.HasLen, 2)
 			c.Assert(req.Specs[0].TargetController, qt.Equals, "controller-1")

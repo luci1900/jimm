@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -77,13 +77,13 @@ func (c *grantAuditLogAccessCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *grantAuditLogAccessCommand) Run(ctxt *cmd.Context) error {
-	api, err := c.getJIMMAPI()
+	api, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer api.Close()
 
-	err = api.GrantAuditLogAccess(&apiparams.AuditLogAccessRequest{
+	err = api.GrantAuditLogAccess(ctxt, &apiparams.AuditLogAccessRequest{
 		UserTag: names.NewUserTag(c.username).String(),
 	})
 	if err != nil {

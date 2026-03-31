@@ -13,10 +13,10 @@ import (
 
 	"github.com/juju/clock"
 	jujuerrors "github.com/juju/errors"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/retry"
-	"github.com/juju/version/v2"
 	"github.com/juju/zaputil/zapctx"
 	"github.com/riverqueue/river/rivertype"
 	"go.uber.org/zap"
@@ -87,12 +87,13 @@ func NewUpgradeManager(
 }
 
 // UpgradeModel upgrades the model to the provided agent version.
-func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, targetVersion version.Number) error {
+func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, targetVersion semversion.Number) error {
 	ctx = zapctx.WithFields(ctx, zap.String("model_uuid", modelUUID), zap.String("target_version", targetVersion.String()))
 
 	// Forbid a zero target version as this complicates checking for whether
 	// the upgrade was successful.
-	if targetVersion == version.Zero {
+	if targetVersion == semversion.Zero {
+
 		return errors.E(errors.CodeBadRequest, "target version cannot be zero")
 	}
 
@@ -125,7 +126,7 @@ func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, tar
 				}
 
 				// UpgradeModel is safe to call multiple times.
-				_, err = api.UpgradeModel(modelUUID, targetVersion, "", false, false)
+				_, err = api.UpgradeModel(ctx, modelUUID, targetVersion, "", false, false)
 				if jujuparams.IsCodeUpgradeInProgress(err) {
 					err = errors.New("upgrade in progress")
 				}
@@ -179,7 +180,7 @@ func (u *UpgradeManager) UpgradeTo(ctx context.Context, user *openfga.User, mode
 		return 0, errors.E(errors.CodeBadRequest, fmt.Sprintf("target controller %s is not a valid migration target for this model", targetControllerName))
 	}
 
-	targetVersion, err := version.Parse(targetController.AgentVersion)
+	targetVersion, err := semversion.Parse(targetController.AgentVersion)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse target controller version: %w", err)
 	}

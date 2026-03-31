@@ -9,13 +9,13 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
-	"github.com/juju/charm/v12"
 	"github.com/juju/juju/core/crossmodel"
 	"github.com/juju/juju/core/permission"
 	"github.com/juju/juju/core/relation"
 	jujustatus "github.com/juju/juju/core/status"
+	"github.com/juju/juju/domain/deployment/charm"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
@@ -162,7 +162,7 @@ func TestListAndFindApplicationOffers(t *testing.T) {
 
 	args := jujuparams.OfferFilters{
 		Filters: []jujuparams.OfferFilter{{
-			OwnerName:              "owner@canonical.com",
+			ModelQualifier:         "owner@canonical.com",
 			ModelName:              "test-model",
 			OfferName:              "test-offer",
 			ApplicationName:        "test-app",

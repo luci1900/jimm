@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -95,13 +95,13 @@ func (c *addGroupCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *addGroupCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
 	defer client.Close()
 
-	resp, err := client.AddGroup(&apiparams.AddGroupRequest{
+	resp, err := client.AddGroup(ctxt, &apiparams.AddGroupRequest{
 		Name: c.name,
 	})
 	if err != nil {
@@ -156,7 +156,7 @@ func (c *renameGroupCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *renameGroupCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
@@ -167,7 +167,7 @@ func (c *renameGroupCommand) Run(ctxt *cmd.Context) error {
 		NewName: c.newName,
 	}
 
-	err = client.RenameGroup(&params)
+	err = client.RenameGroup(ctxt, &params)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (c *removeGroupCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
@@ -253,7 +253,7 @@ func (c *removeGroupCommand) Run(ctxt *cmd.Context) error {
 		Name: c.name,
 	}
 
-	err = client.RemoveGroup(&params)
+	err = client.RemoveGroup(ctxt, &params)
 	if err != nil {
 		return err
 	}
@@ -310,14 +310,14 @@ func (c *listGroupsCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listGroupsCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %w", err)
 	}
 	defer client.Close()
 
 	req := apiparams.ListGroupsRequest{Limit: c.limit, Offset: c.offset}
-	groups, err := client.ListGroups(&req)
+	groups, err := client.ListGroups(ctxt, &req)
 	if err != nil {
 		return err
 	}

@@ -9,11 +9,11 @@ import (
 	"fmt"
 
 	"github.com/itchyny/gojq"
-	jujucmd "github.com/juju/cmd/v3"
+	jujucmd "github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/juju/status"
 	"github.com/juju/juju/cmd/juju/storage"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
@@ -213,17 +213,17 @@ func newStorageListAPI(ctx context.Context, api API) storageListAPI {
 }
 
 // ListStorageDetails implements storage.StorageListAPI. (From Juju)
-func (s *storageListAPI) ListStorageDetails() ([]jujuparams.StorageDetails, error) {
+func (s *storageListAPI) ListStorageDetails(ctx context.Context) ([]jujuparams.StorageDetails, error) {
 	return s.api.ListStorageDetails(s.ctx)
 }
 
 // ListFilesystems implements storage.StorageListAPI. (From Juju)
-func (s *storageListAPI) ListFilesystems(machines []string) ([]jujuparams.FilesystemDetailsListResult, error) {
+func (s *storageListAPI) ListFilesystems(ctx context.Context, machines []string) ([]jujuparams.FilesystemDetailsListResult, error) {
 	return s.api.ListFilesystems(s.ctx, machines)
 }
 
 // ListVolumes implements storage.StorageListAPI. (From Juju)
-func (s *storageListAPI) ListVolumes(machines []string) ([]jujuparams.VolumeDetailsListResult, error) {
+func (s *storageListAPI) ListVolumes(ctx context.Context, machines []string) ([]jujuparams.VolumeDetailsListResult, error) {
 	return s.api.ListVolumes(s.ctx, machines)
 }
 

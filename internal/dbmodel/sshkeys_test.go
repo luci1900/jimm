@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 )
@@ -26,7 +26,7 @@ func TestSSHKeyUniqueConstraint(t *testing.T) {
 		Controller:      ctl,
 		CloudRegion:     cl.Regions[0],
 		CloudCredential: cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.Create(&m).Error, qt.IsNil)
 	key := dbmodel.SSHKey{

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"github.com/juju/juju/rpc/params"
 	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v3"
@@ -26,18 +26,18 @@ func TestModelStatusSuperuser(t *testing.T) {
 				Data: map[string]any{},
 			},
 		},
-		Machines:           map[string]params.MachineStatus{},
-		Applications:       map[string]params.ApplicationStatus{},
-		RemoteApplications: map[string]params.RemoteApplicationStatus{},
-		Offers:             map[string]params.ApplicationOfferStatus{},
-		Branches:           map[string]params.BranchStatus{},
-		Storage:            []params.StorageDetails{},
-		Filesystems:        []params.FilesystemDetails{},
-		Volumes:            []params.VolumeDetails{},
-		Relations:          []params.RelationStatus{},
+		Machines:                  map[string]params.MachineStatus{},
+		Applications:              map[string]params.ApplicationStatus{},
+		RemoteApplicationOfferers: map[string]params.RemoteApplicationStatus{},
+		Offers:                    map[string]params.ApplicationOfferStatus{},
+		Branches:                  map[string]params.BranchStatus{},
+		Storage:                   []params.StorageDetails{},
+		Filesystems:               []params.FilesystemDetails{},
+		Volumes:                   []params.VolumeDetails{},
+		Relations:                 []params.RelationStatus{},
 	}
 
-	s.client.EXPECT().FullModelStatus(gomock.Any()).
+	s.client.EXPECT().FullModelStatus(gomock.Any(), gomock.Any()).
 		Return(fullStatus, nil)
 	s.client.EXPECT().Close()
 

@@ -9,11 +9,11 @@ import (
 	"io"
 
 	"github.com/gosuri/uitable"
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -86,13 +86,13 @@ func (c *listAuditEventsCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *listAuditEventsCommand) Run(ctxt *cmd.Context) error {
-	api, err := c.getJIMMAPI()
+	api, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer api.Close()
 
-	events, err := api.FindAuditEvents(&c.args)
+	events, err := api.FindAuditEvents(ctxt, &c.args)
 	if err != nil {
 		return err
 	}

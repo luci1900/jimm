@@ -12,7 +12,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/juju/core/instance"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"sigs.k8s.io/yaml"
 
 	"github.com/canonical/jimm/v3/internal/db"
@@ -491,16 +491,15 @@ type Model struct {
 	CloudCredential     string       `json:"cloud-credential"`
 	Users               []UserAccess `json:"users"`
 
-	Type          string                   `json:"type"`
-	DefaultSeries string                   `json:"default-series"`
-	Life          string                   `json:"life"`
-	MigrationMode dbmodel.MigrationMode    `json:"migration-mode"`
-	Status        jujuparams.EntityStatus  `json:"status"`
-	SLA           *jujuparams.ModelSLAInfo `json:"sla"`
-	AgentVersion  string                   `json:"agent-version"`
-	Cores         int64                    `json:"cores"`
-	Machines      int64                    `json:"machines"`
-	Units         int64                    `json:"units"`
+	Type          string                  `json:"type"`
+	DefaultSeries string                  `json:"default-series"`
+	Life          string                  `json:"life"`
+	MigrationMode dbmodel.MigrationMode   `json:"migration-mode"`
+	Status        jujuparams.EntityStatus `json:"status"`
+	AgentVersion  string                  `json:"agent-version"`
+	Cores         int64                   `json:"cores"`
+	Machines      int64                   `json:"machines"`
+	Units         int64                   `json:"units"`
 
 	env *Environment
 	dbo dbmodel.Model

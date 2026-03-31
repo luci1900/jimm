@@ -42,7 +42,7 @@ func TestRPC(t *testing.T) {
 	}
 	var res AddResult
 	err := cl.Call(t.Context(), req, params, &res)
-	c.Assert(err, qt.ErrorMatches, `no such request - method Calc\(1\).Add is not implemented \(not implemented\)`)
+	c.Assert(err, qt.ErrorMatches, `unknown method "Add" at version 1 for facade type "Calc" \(not implemented\)`)
 
 	r.AddMethod("Calc", 1, "Add", rpc.Method(add))
 	err = cl.Call(t.Context(), req, params, &res)
@@ -51,7 +51,7 @@ func TestRPC(t *testing.T) {
 
 	r.RemoveMethod("Calc", 1, "Add")
 	err = cl.Call(t.Context(), req, params, &res)
-	c.Assert(err, qt.ErrorMatches, `no such request - method Calc\(1\).Add is not implemented \(not implemented\)`)
+	c.Assert(err, qt.ErrorMatches, `unknown method "Add" at version 1 for facade type "Calc" \(not implemented\)`)
 }
 
 func TestKill(t *testing.T) {

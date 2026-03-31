@@ -12,7 +12,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"gorm.io/gorm/clause"
 
 	"github.com/canonical/jimm/v3/internal/db"
@@ -461,14 +461,13 @@ func TestFullModelStatus(t *testing.T) {
 				Info:   "",
 				Data:   map[string]interface{}{},
 			},
-			SLA: "unsupported",
 		},
-		Machines:           map[string]jujuparams.MachineStatus{},
-		Applications:       map[string]jujuparams.ApplicationStatus{},
-		RemoteApplications: map[string]jujuparams.RemoteApplicationStatus{},
-		Offers:             map[string]jujuparams.ApplicationOfferStatus{},
-		Relations:          []jujuparams.RelationStatus(nil),
-		Branches:           map[string]jujuparams.BranchStatus{},
+		Machines:                  map[string]jujuparams.MachineStatus{},
+		Applications:              map[string]jujuparams.ApplicationStatus{},
+		RemoteApplicationOfferers: map[string]jujuparams.RemoteApplicationStatus{},
+		Offers:                    map[string]jujuparams.ApplicationOfferStatus{},
+		Relations:                 []jujuparams.RelationStatus(nil),
+		Branches:                  map[string]jujuparams.BranchStatus{},
 	}
 
 	tests := []struct {

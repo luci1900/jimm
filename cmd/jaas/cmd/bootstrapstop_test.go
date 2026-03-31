@@ -17,7 +17,7 @@ func TestBootstrapStop(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	jobId := "test-job-id"
-	s.client.EXPECT().StopBootstrap(gomock.Any()).Return(nil)
+	s.client.EXPECT().StopBootstrap(gomock.Any(), gomock.Any()).Return(nil)
 
 	command := &bootstrapStopCommand{}
 	command.setJIMMAPI(s.client)
@@ -37,7 +37,7 @@ func TestBootstrapStopError(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	jobId := "test-job-id"
-	s.client.EXPECT().StopBootstrap(gomock.Any()).Return(errors.New("an error"))
+	s.client.EXPECT().StopBootstrap(gomock.Any(), gomock.Any()).Return(errors.New("an error"))
 
 	command := &bootstrapStopCommand{
 		jobId: jobId,

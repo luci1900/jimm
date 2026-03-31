@@ -10,11 +10,13 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	descriptionv9 "github.com/juju/description/v9"
+	"github.com/juju/juju/core/life"
 	"github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/model"
+	"github.com/juju/juju/core/semversion"
 	"github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	namesv5 "github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -79,7 +81,7 @@ func TestAbortMigration_Success(t *testing.T) {
 	abortCalled := false
 	// Validate that the API request to Juju is made.
 	api := &jimmtest.API{
-		Abort_: func(uuid string) error {
+		Abort_: func(_ context.Context, uuid string) error {
 			abortCalled = true
 			c.Check(uuid, qt.Equals, migratingModelUUID)
 			return nil
@@ -154,7 +156,7 @@ func TestCheckMachines_Success(t *testing.T) {
 	checkMachinesCalled := false
 	// Validate that the API request to Juju is made.
 	api := &jimmtest.API{
-		CheckMachines_: func(uuid string) ([]error, error) {
+		CheckMachines_: func(_ context.Context, uuid string) ([]error, error) {
 			checkMachinesCalled = true
 			c.Check(uuid, qt.Equals, migratingModelUUID)
 			return nil, nil
@@ -230,7 +232,7 @@ func toJimmMigratingInfo(c *qt.C, modelInfo migration.ModelInfo, desc descriptio
 	c.Assert(err, qt.IsNil)
 	return juju.MigratingModelInfo{
 		UUID:                   modelInfo.UUID,
-		Owner:                  modelInfo.Owner,
+		Owner:                  modelInfo.Qualifier.String(),
 		Name:                   modelInfo.Name,
 		AgentVersion:           modelInfo.AgentVersion,
 		ControllerAgentVersion: modelInfo.ControllerAgentVersion,
@@ -243,7 +245,7 @@ func TestPreChecks_NoUsersWithAccess(t *testing.T) {
 	ctx := context.Background()
 
 	api := &jimmtest.API{
-		Prechecks_: func(mi params.MigrationModelInfo) error {
+		Prechecks_: func(_ context.Context, mi params.MigrationModelInfo) error {
 			return nil
 		},
 	}
@@ -271,9 +273,9 @@ func TestPreChecks_NoUsersWithAccess(t *testing.T) {
 	modelDescription.SetUsers(nil)
 
 	modelDescription.SetCloudCredential(descriptionv9.CloudCredentialArgs{
-		Owner: names.NewUserTag("bob"),
+		Owner: namesv5.NewUserTag("bob"),
 		Name:  "test-cred",
-		Cloud: names.NewCloudTag("test"),
+		Cloud: namesv5.NewCloudTag("test"),
 	})
 
 	rawDescription, err := descriptionv9.Serialize(modelDescription)
@@ -281,10 +283,10 @@ func TestPreChecks_NoUsersWithAccess(t *testing.T) {
 
 	modelInfo := juju.MigratingModelInfo{
 		UUID:                   migratingModelUUID,
-		Owner:                  names.NewUserTag("bob"),
+		Owner:                  "bob",
 		Name:                   "test-model",
-		AgentVersion:           version.MustParse("3.6.9"),
-		ControllerAgentVersion: version.MustParse("3.6.9"),
+		AgentVersion:           semversion.MustParse("3.6.9"),
+		ControllerAgentVersion: semversion.MustParse("3.6.9"),
 		RawModelDescription:    rawDescription,
 	}
 	err = j.Prechecks(ctx, user, modelInfo)
@@ -319,18 +321,18 @@ func modelInfoWithUnmappedUsers(c *qt.C) juju.MigratingModelInfo {
 
 	// Add a user with admin access that is not mapped.
 	userArgs := descriptionv9.UserArgs{
-		Name:        names.NewUserTag("jane"),
+		Name:        namesv5.NewUserTag("jane"),
 		DisplayName: "jane",
 		Access:      "admin",
 	}
 	modelDescription.AddUser(userArgs)
 	modelDescription.SetCloudCredential(descriptionv9.CloudCredentialArgs{
-		Owner: names.NewUserTag("bob"),
+		Owner: namesv5.NewUserTag("bob"),
 		Name:  "test-cred",
-		Cloud: names.NewCloudTag("test"),
+		Cloud: namesv5.NewCloudTag("test"),
 	})
 	appArgs := descriptionv9.ApplicationArgs{
-		Tag: names.NewApplicationTag("foo"),
+		Tag: namesv5.NewApplicationTag("foo"),
 	}
 	app := modelDescription.AddApplication(appArgs)
 	app.SetStatus(descriptionv9.StatusArgs{
@@ -353,10 +355,10 @@ func modelInfoWithUnmappedUsers(c *qt.C) juju.MigratingModelInfo {
 
 	modelInfo := juju.MigratingModelInfo{
 		UUID:                   migratingModelUUID,
-		Owner:                  names.NewUserTag("bob"),
+		Owner:                  "bob",
 		Name:                   "test-model",
-		AgentVersion:           version.MustParse("3.6.9"),
-		ControllerAgentVersion: version.MustParse("3.6.9"),
+		AgentVersion:           semversion.MustParse("3.6.9"),
+		ControllerAgentVersion: semversion.MustParse("3.6.9"),
 		RawModelDescription:    rawDescription,
 	}
 	return modelInfo
@@ -367,7 +369,7 @@ func TestPreChecks_SkipsEveryoneUser(t *testing.T) {
 	ctx := context.Background()
 
 	api := &jimmtest.API{
-		Prechecks_: func(mmi params.MigrationModelInfo) error {
+		Prechecks_: func(_ context.Context, mmi params.MigrationModelInfo) error {
 			return nil
 		},
 	}
@@ -392,13 +394,13 @@ func TestPreChecks_SkipsEveryoneUser(t *testing.T) {
 		CloudRegionName:     "test-region",
 	})
 	everyoneUserArgs := descriptionv9.UserArgs{
-		Name:   names.NewUserTag("everyone@external"),
+		Name:   namesv5.NewUserTag("everyone@external"),
 		Access: "read",
 	}
 	desc.AddUser(everyoneUserArgs)
 
 	appArgs := descriptionv9.ApplicationArgs{
-		Tag: names.NewApplicationTag("foo"),
+		Tag: namesv5.NewApplicationTag("foo"),
 	}
 	app := desc.AddApplication(appArgs)
 	app.SetStatus(descriptionv9.StatusArgs{
@@ -427,9 +429,9 @@ func TestPrechecks_ModifiesModelDescription(t *testing.T) {
 	// Validate that the API request to Juju is made with a modified version
 	// of the model description, where the owner is replaced with an external user.
 	api := &jimmtest.API{
-		Prechecks_: func(mmi params.MigrationModelInfo) error {
+		Prechecks_: func(_ context.Context, mmi params.MigrationModelInfo) error {
 			c.Check(mmi.UUID, qt.Equals, migratingModelUUID)
-			c.Check(mmi.OwnerTag, qt.Equals, "user-alice@canonical.com")
+			c.Check(mmi.Qualifier, qt.Equals, "alice@canonical.com")
 			// Deserialize the model description and validate its contents.
 			modelDescription, err := descriptionv9.Deserialize(mmi.ModelDescription)
 			c.Check(err, qt.IsNil)
@@ -560,7 +562,7 @@ func TestPrechecks_ControllerUnreachable(t *testing.T) {
 	ctx := context.Background()
 
 	api := &jimmtest.API{
-		Prechecks_: func(mmi params.MigrationModelInfo) error {
+		Prechecks_: func(_ context.Context, mmi params.MigrationModelInfo) error {
 			return errors.New("controller unreachable")
 		},
 	}
@@ -670,13 +672,13 @@ func TestAdoptResources_Success(t *testing.T) {
 	// has been activated so the incoming model migration
 	// row was deleted and the model has been created.
 
-	controllerVersion := version.MustParse("3.6.9")
+	controllerVersion := semversion.MustParse("3.6.9")
 	modelUUID := "00000002-0000-0000-0000-000000000001"
 
 	// Validate that the API request to Juju is made with a modified version
 	// of the model description, where the owner is replaced with an external user.
 	api := &jimmtest.API{
-		AdoptResources_: func(uuid string, v version.Number) error {
+		AdoptResources_: func(_ context.Context, uuid string, v semversion.Number) error {
 			c.Check(uuid, qt.Equals, modelUUID)
 			c.Check(v, qt.DeepEquals, controllerVersion)
 			return nil
@@ -705,7 +707,7 @@ func TestAdoptResources_NoModel(t *testing.T) {
 
 	j := newTestJujuManager(c, nil)
 
-	err := j.AdoptResources(ctx, nil, "foo", version.MustParse("3.6.9"))
+	err := j.AdoptResources(ctx, nil, "foo", semversion.MustParse("3.6.9"))
 	c.Assert(err, qt.ErrorMatches, `.*model not found`)
 }
 
@@ -770,7 +772,7 @@ func TestActivate_Success(t *testing.T) {
 
 	// Validate that the API request to Juju is made with the correct parameters.
 	api := &jimmtest.API{
-		Activate_: func(modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error {
+		Activate_: func(_ context.Context, modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error {
 			c.Check(modelUUID, qt.Equals, modelUUID)
 			c.Check(sourceInfo.ControllerTag.Id(), qt.Equals, "00000001-0000-0000-0000-000000000002")
 			c.Check(relatedModels, qt.DeepEquals, []string{"related-model-1", "related-model-2"})
@@ -830,7 +832,7 @@ func TestActivate_Success(t *testing.T) {
 	err = j.Database.GetModel(ctx, model)
 	c.Assert(err, qt.IsNil)
 	c.Assert(model.MigrationMode, qt.Equals, dbmodel.MigrationModeNone)
-	c.Assert(model.Life, qt.Equals, state.Alive.String())
+	c.Assert(model.Life, qt.Equals, string(life.Alive))
 }
 
 func TestActivate_APIFailure(t *testing.T) {
@@ -842,7 +844,7 @@ func TestActivate_APIFailure(t *testing.T) {
 
 	// Simulate an API failure.
 	api := &jimmtest.API{
-		Activate_: func(modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error {
+		Activate_: func(_ context.Context, modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error {
 			return errors.New("API failure")
 		},
 	}
@@ -900,7 +902,7 @@ type modelDescriptionArgs struct {
 func newModelDescription(args modelDescriptionArgs) descriptionv9.Model {
 	descriptionArgs := descriptionv9.ModelArgs{
 		AgentVersion: "3.6.9",
-		Owner:        names.NewUserTag(args.Owner),
+		Owner:        namesv5.NewUserTag(args.Owner),
 		Type:         descriptionv9.IAAS,
 		Cloud:        args.CloudName,
 		Config: map[string]interface{}{
@@ -911,15 +913,15 @@ func newModelDescription(args modelDescriptionArgs) descriptionv9.Model {
 	}
 	modelDescription := descriptionv9.NewModel(descriptionArgs)
 	userArgs := descriptionv9.UserArgs{
-		Name:        names.NewUserTag(args.Owner),
+		Name:        namesv5.NewUserTag(args.Owner),
 		DisplayName: args.Owner,
 		Access:      "admin",
 	}
 	modelDescription.AddUser(userArgs)
 	modelDescription.SetCloudCredential(descriptionv9.CloudCredentialArgs{
-		Owner: names.NewUserTag(args.Owner),
+		Owner: namesv5.NewUserTag(args.Owner),
 		Name:  args.CloudCredentialName,
-		Cloud: names.NewCloudTag(args.CloudName),
+		Cloud: namesv5.NewCloudTag(args.CloudName),
 	})
 	modelDescription.SetStatus(descriptionv9.StatusArgs{Value: "available"})
 	return modelDescription
@@ -928,10 +930,10 @@ func newModelDescription(args modelDescriptionArgs) descriptionv9.Model {
 func newMigrationInfo(args modelDescriptionArgs) (migration.ModelInfo, descriptionv9.Model) {
 	modelInfo := migration.ModelInfo{
 		UUID:                   migratingModelUUID,
-		Owner:                  names.NewUserTag(args.Owner),
+		Qualifier:              model.Qualifier(args.Owner),
 		Name:                   "test-model",
-		AgentVersion:           version.MustParse("3.6.9"),
-		ControllerAgentVersion: version.MustParse("3.6.9"),
+		AgentVersion:           semversion.MustParse("3.6.9"),
+		ControllerAgentVersion: semversion.MustParse("3.6.9"),
 	}
 
 	return modelInfo, newModelDescription(args)
@@ -971,7 +973,7 @@ func TestLatestLogTime_Success(t *testing.T) {
 	latestLogTimeCalled := false
 	// Validate that the API request to Juju is made.
 	api := &jimmtest.API{
-		LatestLogTime_: func(s string) (time.Time, error) {
+		LatestLogTime_: func(_ context.Context, s string) (time.Time, error) {
 			latestLogTimeCalled = true
 			c.Check(s, qt.Equals, modelUUID)
 			return time.Now(), nil
@@ -1040,11 +1042,11 @@ func TestImport_Success(t *testing.T) {
 	// Validate that the API request to Juju is made with a modified version
 	// of the model description, where the owner is replaced with an external user.
 	api := &jimmtest.API{
-		Import_: func(bytes []byte) error {
+		Import_: func(_ context.Context, bytes []byte) error {
 			desc, err := descriptionv9.Deserialize(bytes)
 			c.Check(err, qt.IsNil)
 			c.Check(desc.Tag().Id(), qt.Equals, migratingModelUUID)
-			c.Check(desc.Owner(), qt.Equals, names.NewUserTag("alice@canonical.com"))
+			c.Check(desc.Owner(), qt.Equals, namesv5.NewUserTag("alice@canonical.com"))
 			c.Check(desc.Users(), qt.HasLen, 0)
 			c.Check(desc.CloudCredential(), qt.Not(qt.IsNil))
 			c.Check(desc.CloudCredential().Name(), qt.Equals, "test-cred")
@@ -1074,7 +1076,7 @@ func TestImport_Success(t *testing.T) {
 	})
 
 	app := desc.AddApplication(descriptionv9.ApplicationArgs{
-		Tag: names.NewApplicationTag("test-app"),
+		Tag: namesv5.NewApplicationTag("test-app"),
 	})
 	appOfferUUID := "00000000-0000-0000-0000-000000000001"
 	app.SetStatus(descriptionv9.StatusArgs{
@@ -1264,7 +1266,7 @@ func TestImport_APIFailure(t *testing.T) {
 	// Validate that the API request to Juju is made with a modified version
 	// of the model description, where the owner is replaced with an external user.
 	api := &jimmtest.API{
-		Import_: func(bytes []byte) error {
+		Import_: func(_ context.Context, bytes []byte) error {
 			return errors.New("API failure")
 		},
 	}

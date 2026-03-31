@@ -1,21 +1,17 @@
 module github.com/canonical/jimm/v3
 
-go 1.25.8
+go 1.26.1
 
 // Juju based dependencies
 require (
-	github.com/juju/charm/v12 v12.1.1
-	github.com/juju/cmd/v3 v3.2.2
 	github.com/juju/description/v9 v9.0.0
 	github.com/juju/errors v1.0.0
 	github.com/juju/gnuflag v1.0.0
 	github.com/juju/http/v2 v2.0.1
-	github.com/juju/juju v0.0.0-20260325121537-78832a31ad6b // Tip of 3.6
+	github.com/juju/juju v0.0.0-20260327084305-c6e78115d656
 	github.com/juju/loggo v1.0.0 // indirect
 	github.com/juju/names/v4 v4.0.0
-	github.com/juju/names/v5 v5.0.0
-	github.com/juju/rpcreflect v1.2.0
-	github.com/juju/testing v1.2.0 // indirect
+	github.com/juju/names/v6 v6.0.0-20250512075813-b50ca77a4137
 	github.com/juju/utils/v4 v4.0.5
 	github.com/juju/version/v2 v2.0.1
 	github.com/juju/zaputil v0.0.0-20190326175239-ef53049637ac
@@ -33,7 +29,7 @@ require (
 	github.com/gliderlabs/ssh v0.3.8
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/render v1.0.2
-	github.com/go-macaroon-bakery/macaroon-bakery/v3 v3.0.1
+	github.com/go-macaroon-bakery/macaroon-bakery/v3 v3.0.2
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
@@ -59,7 +55,6 @@ require (
 	go.uber.org/zap v1.27.1
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/errgo.v1 v1.0.1
 	gopkg.in/httprequest.v1 v1.2.1
 	gopkg.in/macaroon.v2 v2.1.0
@@ -72,8 +67,6 @@ require (
 
 // Indirect
 require (
-	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/adrg/xdg v0.3.3 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
@@ -96,19 +89,15 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/creack/pty v1.1.24 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
-	github.com/distribution/reference v0.6.0 // indirect
+	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
-	github.com/gdamore/encoding v1.0.0 // indirect
-	github.com/gdamore/tcell/v2 v2.5.1 // indirect
 	github.com/getkin/kin-openapi v0.131.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -120,7 +109,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.30.1 // indirect
-	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -151,36 +139,26 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ansiterm v1.0.0 // indirect
-	github.com/juju/blobstore/v3 v3.2.2 // indirect
 	github.com/juju/clock v1.1.1
 	github.com/juju/collections v1.0.4 // indirect
-	github.com/juju/featureflag v1.0.0 // indirect
 	github.com/juju/go4 v0.0.0-20160222163258-40d72ab9641a // indirect
 	github.com/juju/gojsonpointer v0.0.0-20150204194629-afe8b77aa08f // indirect
 	github.com/juju/gojsonreference v0.0.0-20150204194633-f0d24ac5ee33 // indirect
 	github.com/juju/gojsonschema v1.0.0 // indirect
-	github.com/juju/idmclient/v2 v2.0.0 // indirect
+	github.com/juju/idmclient/v2 v2.0.1 // indirect
 	github.com/juju/jsonschema v1.0.0 // indirect
 	github.com/juju/loggo/v2 v2.2.0 // indirect
-	github.com/juju/lru v1.0.0 // indirect
 	github.com/juju/lumberjack/v2 v2.0.2 // indirect
 	github.com/juju/mgo/v3 v3.0.9 // indirect
 	github.com/juju/mutex/v2 v2.0.0 // indirect
 	github.com/juju/os/v2 v2.2.5 // indirect
 	github.com/juju/persistent-cookiejar v1.0.0
 	github.com/juju/proxy v1.0.0 // indirect
-	github.com/juju/pubsub/v2 v2.0.0 // indirect
-	github.com/juju/replicaset/v3 v3.0.1 // indirect
 	github.com/juju/retry v1.0.1
-	github.com/juju/rfc/v2 v2.0.0 // indirect
-	github.com/juju/romulus v1.0.0 // indirect
 	github.com/juju/schema v1.2.0 // indirect
-	github.com/juju/txn/v3 v3.2.1 // indirect
 	github.com/juju/usso v1.0.1 // indirect
 	github.com/juju/utils/v3 v3.2.3 // indirect
-	github.com/juju/viddy v0.0.0-beta5 // indirect
 	github.com/juju/webbrowser v1.0.0 // indirect
-	github.com/juju/worker/v3 v3.5.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -196,7 +174,6 @@ require (
 	github.com/lestrrat/go-pdebug v0.0.0-20160817063333-2e6eaaa5717f // indirect
 	github.com/lestrrat/go-structinfo v0.0.0-20160308131105-f74c056fe41f // indirect
 	github.com/lib/pq v1.10.9 // indirect
-	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -207,7 +184,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/spdystream v0.5.0 // indirect
 	github.com/moby/sys/mountinfo v0.7.1 // indirect
-	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
@@ -216,33 +192,23 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/openfga/api/proto v0.0.0-20251105142303-feed3db3d69d // indirect
-	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
-	github.com/rivo/tview v0.0.0-20220610163003-691f46d6f500 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
-	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/afero v1.15.0 // indirect
-	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/spf13/viper v1.21.0 // indirect
-	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
-	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/otel v1.38.0 // indirect
-	go.opentelemetry.io/otel/metric v1.38.0 // indirect
-	go.opentelemetry.io/otel/trace v1.38.0 // indirect
+	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.40.0 // indirect
+	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.6.0
 	go.uber.org/multierr v1.11.0 // indirect
@@ -257,7 +223,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.10 // indirect
-	gopkg.in/gobwas/glob.v0 v0.2.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/juju/environschema.v1 v1.0.1 // indirect
 	gopkg.in/retry.v1 v1.0.3 // indirect
@@ -275,6 +240,8 @@ require (
 
 require (
 	github.com/juju/description/v10 v10.0.0
+	github.com/juju/description/v11 v11.0.0-20260205224702-ea6d3105b20c
+	github.com/juju/names/v5 v5.0.0
 	github.com/riverqueue/river v0.30.0
 	github.com/riverqueue/river/riverdriver/riverdatabasesql v0.30.0
 	github.com/riverqueue/river/rivertype v0.30.0
@@ -282,13 +249,20 @@ require (
 )
 
 require (
+	github.com/Rican7/retry v0.3.1 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
+	github.com/canonical/go-dqlite/v3 v3.0.3 // indirect
+	github.com/canonical/sqlair v0.0.0-20260218132926-bd54c4999dea // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/juju/packaging/v4 v4.0.0 // indirect
+	github.com/google/renameio v1.0.1 // indirect
+	github.com/juju/tc v0.0.0-20251023013639-77c6a1d20e5a // indirect
+	github.com/juju/worker/v4 v4.3.0 // indirect
+	github.com/mittwald/vaultgo v0.1.4 // indirect
+	github.com/moby/patternmatcher v0.6.0 // indirect
+	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect

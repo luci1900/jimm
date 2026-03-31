@@ -11,7 +11,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/juju/api/base"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -506,7 +506,7 @@ func TestAddModelToController(t *testing.T) {
 						c.Check(args.ControllerName, qt.Equals, "controller-1")
 						return base.ModelInfo{
 							Cloud:           "openstack",
-							Owner:           "alice@canonical.com",
+							Qualifier:       "alice@canonical.com",
 							CloudCredential: "openstack/alice@canonical.com/mycred",
 						}, nil
 					},
@@ -519,7 +519,7 @@ func TestAddModelToController(t *testing.T) {
 	req := apiparams.AddModelToControllerRequest{
 		ModelCreateArgs: jujuparams.ModelCreateArgs{
 			Name:               "mymodel",
-			OwnerTag:           "user-alice@canonical.com",
+			Qualifier:          "alice@canonical.com",
 			CloudTag:           "cloud-openstack",
 			CloudRegion:        "region-1",
 			CloudCredentialTag: "cloudcred-openstack/alice/mycred",

@@ -7,9 +7,9 @@ import (
 	"fmt"
 
 	jujucontroller "github.com/juju/juju/controller"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -33,31 +33,19 @@ func init() {
 		watchAllModelSummariesMethod := rpc.Method(r.WatchAllModelSummaries)
 		initiateMigrationMethod := rpc.Method(r.InitiateMigration)
 
-		r.AddMethod("Controller", 11, "AllModels", allModelsMethod)
-		r.AddMethod("Controller", 11, "ConfigSet", configSetMethod)
-		r.AddMethod("Controller", 11, "ControllerConfig", controllerConfigMethod)
-		r.AddMethod("Controller", 11, "ControllerVersion", controllerVersionMethod)
-		r.AddMethod("Controller", 11, "GetControllerAccess", getControllerAccessMethod)
-		r.AddMethod("Controller", 11, "IdentityProviderURL", identityProviderURLMethod)
-		r.AddMethod("Controller", 11, "ModelStatus", modelStatusMethod)
-		r.AddMethod("Controller", 11, "MongoVersion", mongoVersionMethod)
-		r.AddMethod("Controller", 11, "WatchModelSummaries", watchModelSummariesMethod)
-		r.AddMethod("Controller", 11, "WatchAllModelSummaries", watchAllModelSummariesMethod)
-		r.AddMethod("Controller", 11, "InitiateMigration", initiateMigrationMethod)
+		r.AddMethod("Controller", 14, "AllModels", allModelsMethod)
+		r.AddMethod("Controller", 14, "ConfigSet", configSetMethod)
+		r.AddMethod("Controller", 14, "ControllerConfig", controllerConfigMethod)
+		r.AddMethod("Controller", 14, "ControllerVersion", controllerVersionMethod)
+		r.AddMethod("Controller", 14, "GetControllerAccess", getControllerAccessMethod)
+		r.AddMethod("Controller", 14, "IdentityProviderURL", identityProviderURLMethod)
+		r.AddMethod("Controller", 14, "ModelStatus", modelStatusMethod)
+		r.AddMethod("Controller", 14, "MongoVersion", mongoVersionMethod)
+		r.AddMethod("Controller", 14, "WatchModelSummaries", watchModelSummariesMethod)
+		r.AddMethod("Controller", 14, "WatchAllModelSummaries", watchAllModelSummariesMethod)
+		r.AddMethod("Controller", 14, "InitiateMigration", initiateMigrationMethod)
 
-		r.AddMethod("Controller", 12, "AllModels", allModelsMethod)
-		r.AddMethod("Controller", 12, "ConfigSet", configSetMethod)
-		r.AddMethod("Controller", 12, "ControllerConfig", controllerConfigMethod)
-		r.AddMethod("Controller", 12, "ControllerVersion", controllerVersionMethod)
-		r.AddMethod("Controller", 12, "GetControllerAccess", getControllerAccessMethod)
-		r.AddMethod("Controller", 12, "IdentityProviderURL", identityProviderURLMethod)
-		r.AddMethod("Controller", 12, "ModelStatus", modelStatusMethod)
-		r.AddMethod("Controller", 12, "MongoVersion", mongoVersionMethod)
-		r.AddMethod("Controller", 12, "WatchModelSummaries", watchModelSummariesMethod)
-		r.AddMethod("Controller", 12, "WatchAllModelSummaries", watchAllModelSummariesMethod)
-		r.AddMethod("Controller", 12, "InitiateMigration", initiateMigrationMethod)
-
-		return []int{11, 12}
+		return []int{14}
 	}
 }
 
@@ -65,7 +53,7 @@ func init() {
 type ControllerService interface {
 	AddController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, creds juju.ControllerCreds) error
 	ControllerInfo(ctx context.Context, name string) (*dbmodel.Controller, error)
-	EarliestControllerVersion(ctx context.Context) (version.Number, error)
+	EarliestControllerVersion(ctx context.Context) (semversion.Number, error)
 	ListControllers(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
 	RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error

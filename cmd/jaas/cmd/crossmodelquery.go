@@ -3,12 +3,12 @@
 package cmd
 
 import (
-	"github.com/juju/cmd/v3"
 	"github.com/juju/errors"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -85,7 +85,7 @@ func (c *crossModelQueryCommand) Info() *cmd.Info {
 
 // Run implements modelcmd.Command.
 func (c *crossModelQueryCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return errors.Annotate(err, "could not create JIMM client")
 	}
@@ -95,7 +95,7 @@ func (c *crossModelQueryCommand) Run(ctxt *cmd.Context) error {
 		Type:  c.queryType,
 		Query: c.query,
 	}
-	resp, err := client.CrossModelQuery(&req)
+	resp, err := client.CrossModelQuery(ctxt, &req)
 	if err != nil {
 		return errors.Mask(err)
 	}

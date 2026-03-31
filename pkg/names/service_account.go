@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 )
 
 // Service accounts interact with JIMM in the same way as users but in

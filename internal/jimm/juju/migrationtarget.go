@@ -11,11 +11,13 @@ import (
 	"time"
 
 	jujucrossmodel "github.com/juju/juju/core/crossmodel"
+	"github.com/juju/juju/core/life"
 	coremigration "github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/semversion"
 	"github.com/juju/juju/environs/config"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	namesv5 "github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/version/v2"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
@@ -53,7 +55,7 @@ func (j *JujuManager) AbortMigration(ctx context.Context, user *openfga.User, mo
 	}
 	defer api.Close()
 
-	err = api.Abort(modelUUID)
+	err = api.Abort(ctx, modelUUID)
 	if err != nil {
 		return fmt.Errorf("failed to abort migration: %w", err)
 	}
@@ -106,7 +108,7 @@ func (j *JujuManager) CheckMachines(ctx context.Context, user *openfga.User, mod
 	}
 	defer api.Close()
 
-	machineErrors, err := api.CheckMachines(modelUUID)
+	machineErrors, err := api.CheckMachines(ctx, modelUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check machines: %w", err)
 	}
@@ -208,9 +210,9 @@ func (j *JujuManager) Prechecks(ctx context.Context, user *openfga.User, model M
 	if err != nil {
 		return fmt.Errorf("failed to serialize model description: %w", err)
 	}
-	err = api.Prechecks(jujuparams.MigrationModelInfo{
+	err = api.Prechecks(ctx, jujuparams.MigrationModelInfo{
 		UUID:                   model.UUID,
-		OwnerTag:               model.Owner.String(),
+		Qualifier:              model.Owner,
 		Name:                   model.Name,
 		AgentVersion:           model.AgentVersion,
 		ControllerAgentVersion: model.AgentVersion,
@@ -263,7 +265,7 @@ func (j *JujuManager) validateUserMapping(modelDescription description.Model, us
 //
 // Adopt resources is called after the model has been activated so the
 // incoming model migration does not exist and the model is used instead.
-func (j *JujuManager) AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error {
+func (j *JujuManager) AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion semversion.Number) error {
 
 	model := dbmodel.Model{
 		UUID: sql.NullString{
@@ -282,7 +284,7 @@ func (j *JujuManager) AdoptResources(ctx context.Context, user *openfga.User, mo
 	}
 	defer api.Close()
 
-	err = api.AdoptResources(modelUUID, sourceControllerVersion)
+	err = api.AdoptResources(ctx, modelUUID, sourceControllerVersion)
 	if err != nil {
 		return fmt.Errorf("failed to adopt resources: %w", err)
 	}
@@ -292,30 +294,29 @@ func (j *JujuManager) AdoptResources(ctx context.Context, user *openfga.User, mo
 // modifyMigrationInfo modifies the description of the model migration
 // to replace any local user references with their external mapping.
 // It returns the new owner of the model after modification.
-func (j *JujuManager) modifyMigrationInfo(model description.Model, userMapping dbmodel.StringMap) (names.UserTag, error) {
+func (j *JujuManager) modifyMigrationInfo(model description.Model, userMapping dbmodel.StringMap) (string, error) {
 	if !model.Owner().IsLocal() {
 		// If the owner is not a local user, we do not modify it.
 		// This is useful when migrating a model from one JIMM
 		// controller to another, where the owner is already an external user.
-		return model.Owner(), nil
+		return model.Owner().String(), nil
 	}
 
 	newOwner, ok := userMapping[model.Owner().Id()]
 	if !ok {
 		// If the owner is not found in the user mappings, we return an error.
 		// This is to ensure that the migration does not proceed with an invalid owner.
-		return names.UserTag{}, fmt.Errorf("no external user mapping found for local user %q", model.Owner().Id())
+		return "", fmt.Errorf("no external user mapping found for local user %q", model.Owner().Id())
 	}
-	if !names.IsValidUser(newOwner) {
-		return names.UserTag{}, fmt.Errorf("invalid external user mapping %q for local user %q", newOwner, model.Owner().Id())
+	if !namesv5.IsValidUser(newOwner) {
+		return "", fmt.Errorf("invalid external user mapping %q for local user %q", newOwner, model.Owner().Id())
 	}
 
-	newOwnerTag := names.NewUserTag(newOwner)
 	err := modifyModelDescription(model, userMapping)
 	if err != nil {
-		return names.UserTag{}, fmt.Errorf("failed to modify model description: %w", err)
+		return "", fmt.Errorf("failed to modify model description: %w", err)
 	}
-	return newOwnerTag, nil
+	return newOwner, nil
 }
 
 // modifyModelDescription modifies the model description to replace local user references
@@ -328,7 +329,7 @@ func modifyModelDescription(modelDescription description.Model, userMapping dbmo
 		if !ok {
 			return fmt.Errorf("no external user mapping found for local user %q", modelDescription.Owner().Id())
 		}
-		modelDescription.SetOwner(names.NewUserTag(newOwner))
+		modelDescription.SetOwner(namesv5.NewUserTag(newOwner))
 	}
 
 	modelDescription.ClearUsers()
@@ -341,18 +342,18 @@ func modifyModelDescription(modelDescription description.Model, userMapping dbmo
 	if !names.IsValidCloud(credentials.Cloud()) {
 		return fmt.Errorf("invalid cloud name %q", credentials.Cloud())
 	}
-	cloudTag := names.NewCloudTag(credentials.Cloud())
+	cloudTag := namesv5.NewCloudTag(credentials.Cloud())
 
 	if !names.IsValidUser(credentials.Owner()) {
 		return fmt.Errorf("invalid cloud credential owner %q", credentials.Owner())
 	}
-	ownerTag := names.NewUserTag(credentials.Owner())
+	ownerTag := namesv5.NewUserTag(credentials.Owner())
 	if ownerTag.IsLocal() {
 		newOwner, ok := userMapping[ownerTag.Id()]
 		if !ok {
 			return fmt.Errorf("no external user mapping found for cloud credential local user %q", modelDescription.Owner().Id())
 		}
-		ownerTag = names.NewUserTag(newOwner)
+		ownerTag = namesv5.NewUserTag(newOwner)
 	}
 
 	modelDescription.SetCloudCredential(description.CloudCredentialArgs{
@@ -386,7 +387,7 @@ func (j *JujuManager) LatestLogTime(ctx context.Context, user *openfga.User, mod
 	}
 	defer api.Close()
 
-	t, err := api.LatestLogTime(modelUUID)
+	t, err := api.LatestLogTime(ctx, modelUUID)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get latest log time for model %q: %w", modelUUID, err)
 	}
@@ -413,7 +414,7 @@ func (j *JujuManager) Activate(ctx context.Context, user *openfga.User, modelTag
 	}
 	defer api.Close()
 
-	err = api.Activate(modelTag.Id(), migrationInfo, relatedModels)
+	err = api.Activate(ctx, modelTag.Id(), migrationInfo, relatedModels)
 	if err != nil {
 		return fmt.Errorf("failed to activate model %q: %w", modelTag.Id(), err)
 	}
@@ -448,7 +449,7 @@ func (j *JujuManager) Activate(ctx context.Context, user *openfga.User, modelTag
 			return fmt.Errorf("failed to get model %q: %w", modelTag.Id(), err)
 		}
 		model.MigrationMode = dbmodel.MigrationModeNone
-		model.Life = state.Alive.String()
+		model.Life = string(life.Alive)
 
 		err = db.UpdateModel(ctx, &model)
 		if err != nil {
@@ -551,7 +552,7 @@ func (j *JujuManager) Import(ctx context.Context, user *openfga.User, serialized
 	if err != nil {
 		return fmt.Errorf("failed to serialize model description: %w", err)
 	}
-	err = api.Import(serializedDescrition)
+	err = api.Import(ctx, serializedDescrition)
 	if err != nil {
 		// TODO: handle migration failure in a cleanup routine.
 		return fmt.Errorf("failed to import model: %w", err)

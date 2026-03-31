@@ -10,7 +10,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -81,7 +81,7 @@ func initTestEnvironment(c *qt.C, db *db.Database) testEnvironment {
 		Controller:      env.controller,
 		CloudRegion:     env.cloud.Regions[0],
 		CloudCredential: env.cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.DB.Create(&env.model).Error, qt.IsNil)
 
@@ -95,7 +95,7 @@ func initTestEnvironment(c *qt.C, db *db.Database) testEnvironment {
 		Controller:      env.controller,
 		CloudRegion:     env.cloud.Regions[0],
 		CloudCredential: env.cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.DB.Create(&env.model1).Error, qt.IsNil)
 

@@ -5,7 +5,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 )
 
 // OfferAuthorizer is a mock implementation of the OfferAuthorizer interface.

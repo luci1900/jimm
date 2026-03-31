@@ -10,7 +10,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/google/uuid"
 	"github.com/juju/juju/core/crossmodel"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -92,7 +92,7 @@ func CreateTestControllerEnvironment(ctx context.Context, c *qt.C, db *db.Databa
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 
 	err = db.AddModel(ctx, &model)

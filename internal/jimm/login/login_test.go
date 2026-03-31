@@ -13,7 +13,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/frankban/quicktest/qtsuite"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/oauth2"

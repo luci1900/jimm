@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/description/v10"
+	"github.com/juju/description/v11"
 	"github.com/juju/juju/api/controller/migrationtarget"
 	"github.com/juju/juju/core/migration"
+	coremodel "github.com/juju/juju/core/model"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/pkg/api"
@@ -27,7 +28,7 @@ func TestAbort(t *testing.T) {
 
 	modelUUID := "00000001-0000-0000-0000-000000000001"
 	client := migrationtarget.NewClient(conn)
-	err := client.Abort(modelUUID)
+	err := client.Abort(t.Context(), modelUUID)
 	c.Assert(err, qt.ErrorMatches, `.*model migration not found.*`)
 }
 
@@ -40,7 +41,7 @@ func TestCheckMachines(t *testing.T) {
 
 	modelUUID := "00000001-0000-0000-0000-000000000001"
 	client := migrationtarget.NewClient(conn)
-	_, err := client.CheckMachines(modelUUID)
+	_, err := client.CheckMachines(t.Context(), modelUUID)
 	c.Assert(err, qt.ErrorMatches, `.*model migration not found.*`)
 }
 
@@ -58,28 +59,27 @@ func TestPrechecks(t *testing.T) {
 
 	modelDescriptionArgs := description.ModelArgs{
 		Type:        description.IAAS,
-		Owner:       names.NewUserTag("alice"),
+		Owner:       names.NewUserTag("alice").String(),
 		Cloud:       jimmtest.TestE2ECloudName,
 		CloudRegion: jimmtest.TestE2ECloudRegionName,
 	}
 	modelUUID := "00000001-0000-0000-0000-000000000001"
 	modelDescription := description.NewModel(modelDescriptionArgs)
-	modelDescription.SetStatus(description.StatusArgs{Value: "available"})
 	modelDescription.SetCloudCredential(description.CloudCredentialArgs{
 		Name:  "cred",
-		Cloud: names.NewCloudTag(jimmtest.TestE2ECloudName),
-		Owner: names.NewUserTag("alice@canonical.com"),
+		Cloud: names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		Owner: names.NewUserTag("alice@canonical.com").String(),
 	})
 	model := migration.ModelInfo{
 		UUID:                   modelUUID,
-		Owner:                  names.NewUserTag("alice"),
+		Qualifier:              coremodel.Qualifier("alice"),
 		Name:                   "test-model",
-		ControllerAgentVersion: version.MustParse("3.6.9"),
-		AgentVersion:           version.MustParse("3.6.9"),
+		ControllerAgentVersion: semversion.MustParse("3.6.9"),
+		AgentVersion:           semversion.MustParse("3.6.9"),
 		ModelDescription:       modelDescription,
 	}
 	client := migrationtarget.NewClient(conn)
-	err := client.Prechecks(model)
+	err := client.Prechecks(t.Context(), model)
 	c.Assert(err, qt.ErrorMatches, `.*model migration not found.*`)
 
 	controllerName, _ := s.GetOneControllerConfig(c)
@@ -90,11 +90,11 @@ func TestPrechecks(t *testing.T) {
 		UserMapping:           map[string]string{"alice": "alice@canonical.com"},
 	}
 	jimmClient := api.NewClient(conn)
-	migrationToken, err := jimmClient.PrepareModelMigration(&prepareModelMigration)
+	migrationToken, err := jimmClient.PrepareModelMigration(t.Context(), &prepareModelMigration)
 	c.Assert(err, qt.IsNil)
 	c.Assert(migrationToken, qt.Not(qt.Equals), "")
 
-	err = client.Prechecks(model)
+	err = client.Prechecks(t.Context(), model)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -106,7 +106,7 @@ func TestCACert(t *testing.T) {
 	defer conn.Close()
 
 	client := migrationtarget.NewClient(conn)
-	cert, err := client.CACert()
+	cert, err := client.CACert(t.Context())
 	c.Assert(err, qt.IsNil)
 	c.Assert(cert, qt.Equals, "")
 }
@@ -120,7 +120,7 @@ func TestAdoptResources(t *testing.T) {
 
 	modelUUID := "00000001-0000-0000-0000-000000000001"
 	client := migrationtarget.NewClient(conn)
-	err := client.AdoptResources(modelUUID)
+	err := client.AdoptResources(t.Context(), modelUUID)
 	c.Assert(err, qt.ErrorMatches, `.*model not found.*`)
 }
 
@@ -138,7 +138,7 @@ func TestActivate(t *testing.T) {
 	relatedModels := []string{"related-model-1", "related-model-2"}
 
 	client := migrationtarget.NewClient(conn)
-	err := client.Activate(modelUUID, sourceInfo, relatedModels)
+	err := client.Activate(t.Context(), modelUUID, sourceInfo, relatedModels)
 	c.Assert(err, qt.ErrorMatches, `.*model migration not found.*`)
 }
 
@@ -151,7 +151,7 @@ func TestLatestLogTime(t *testing.T) {
 	defer conn.Close()
 
 	client := migrationtarget.NewClient(conn)
-	_, err := client.LatestLogTime(model.UUID.String)
+	_, err := client.LatestLogTime(t.Context(), model.UUID.String)
 	c.Assert(err, qt.IsNil)
 }
 
@@ -163,6 +163,6 @@ func TestImport(t *testing.T) {
 	defer conn.Close()
 
 	client := migrationtarget.NewClient(conn)
-	err := client.Import([]byte{})
+	err := client.Import(t.Context(), []byte{})
 	c.Assert(err, qt.ErrorMatches, `^failed to import model.*`)
 }

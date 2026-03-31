@@ -8,7 +8,7 @@ import (
 	"time"
 
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
@@ -38,37 +38,22 @@ func init() {
 		unsetModelDefaultsMethod := rpc.Method(r.UnsetModelDefaults)
 		modelDefaultsForCloudsMethod := rpc.Method(r.ModelDefaultsForClouds)
 
-		r.AddMethod("ModelManager", 9, "ChangeModelCredential", changeModelCredentialMethod)
-		r.AddMethod("ModelManager", 9, "CreateModel", createModelMethod)
-		r.AddMethod("ModelManager", 9, "DestroyModels", destroyModelsMethod)
-		r.AddMethod("ModelManager", 9, "DumpModels", dumpModelsMethod)
-		r.AddMethod("ModelManager", 9, "DumpModelsDB", dumpModelsDBMethod)
-		r.AddMethod("ModelManager", 9, "ListModelSummaries", listModelSummariesMethod)
-		r.AddMethod("ModelManager", 9, "ListModels", listModelsMethod)
-		r.AddMethod("ModelManager", 9, "ModelInfo", modelInfoMethod)
-		r.AddMethod("ModelManager", 9, "ModelStatus", modelStatusMethod)
-		r.AddMethod("ModelManager", 9, "ModifyModelAccess", modifyModelAccessMethod)
-		r.AddMethod("ModelManager", 9, "ValidateModelUpgrades", validateModelUpgradesMethod)
-		r.AddMethod("ModelManager", 9, "SetModelDefaults", setModelDefaultsMethod)
-		r.AddMethod("ModelManager", 9, "UnsetModelDefaults", unsetModelDefaultsMethod)
-		r.AddMethod("ModelManager", 9, "ModelDefaultsForClouds", modelDefaultsForCloudsMethod)
+		r.AddMethod("ModelManager", 11, "ChangeModelCredential", changeModelCredentialMethod)
+		r.AddMethod("ModelManager", 11, "CreateModel", createModelMethod)
+		r.AddMethod("ModelManager", 11, "DestroyModels", destroyModelsMethod)
+		r.AddMethod("ModelManager", 11, "DumpModels", dumpModelsMethod)
+		r.AddMethod("ModelManager", 11, "DumpModelsDB", dumpModelsDBMethod)
+		r.AddMethod("ModelManager", 11, "ListModelSummaries", listModelSummariesMethod)
+		r.AddMethod("ModelManager", 11, "ListModels", listModelsMethod)
+		r.AddMethod("ModelManager", 11, "ModelInfo", modelInfoMethod)
+		r.AddMethod("ModelManager", 11, "ModelStatus", modelStatusMethod)
+		r.AddMethod("ModelManager", 11, "ModifyModelAccess", modifyModelAccessMethod)
+		r.AddMethod("ModelManager", 11, "ValidateModelUpgrades", validateModelUpgradesMethod)
+		r.AddMethod("ModelManager", 11, "SetModelDefaults", setModelDefaultsMethod)
+		r.AddMethod("ModelManager", 11, "UnsetModelDefaults", unsetModelDefaultsMethod)
+		r.AddMethod("ModelManager", 11, "ModelDefaultsForClouds", modelDefaultsForCloudsMethod)
 
-		r.AddMethod("ModelManager", 10, "ChangeModelCredential", changeModelCredentialMethod)
-		r.AddMethod("ModelManager", 10, "CreateModel", createModelMethod)
-		r.AddMethod("ModelManager", 10, "DestroyModels", destroyModelsMethod)
-		r.AddMethod("ModelManager", 10, "DumpModels", dumpModelsMethod)
-		r.AddMethod("ModelManager", 10, "DumpModelsDB", dumpModelsDBMethod)
-		r.AddMethod("ModelManager", 10, "ListModelSummaries", listModelSummariesMethod)
-		r.AddMethod("ModelManager", 10, "ListModels", listModelsMethod)
-		r.AddMethod("ModelManager", 10, "ModelInfo", modelInfoMethod)
-		r.AddMethod("ModelManager", 10, "ModelStatus", modelStatusMethod)
-		r.AddMethod("ModelManager", 10, "ModifyModelAccess", modifyModelAccessMethod)
-		r.AddMethod("ModelManager", 10, "ValidateModelUpgrades", validateModelUpgradesMethod)
-		r.AddMethod("ModelManager", 10, "SetModelDefaults", setModelDefaultsMethod)
-		r.AddMethod("ModelManager", 10, "UnsetModelDefaults", unsetModelDefaultsMethod)
-		r.AddMethod("ModelManager", 10, "ModelDefaultsForClouds", modelDefaultsForCloudsMethod)
-
-		return []int{9, 10}
+		return []int{11}
 	}
 }
 
@@ -151,17 +136,12 @@ func (r *controllerRoot) ListModels(ctx context.Context, _ jujuparams.Entity) (j
 	}
 
 	for _, m := range models {
-		if !names.IsValidUser(m.Owner) {
-			zapctx.Error(ctx, fmt.Sprintf("%s is not a valid user", m.Owner))
-		}
-		ownerTag := names.NewUserTag(m.Owner)
-
 		res.UserModels = append(res.UserModels, jujuparams.UserModel{
 			Model: jujuparams.Model{
-				Name:     m.Name,
-				UUID:     m.UUID,
-				Type:     string(m.Type),
-				OwnerTag: ownerTag.String(),
+				Name:      m.Name,
+				UUID:      m.UUID,
+				Type:      string(m.Type),
+				Qualifier: m.Qualifier.String(),
 			},
 			LastConnection: m.LastConnection,
 		})

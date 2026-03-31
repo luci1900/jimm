@@ -3,11 +3,11 @@
 package cmd
 
 import (
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 )
 
 const (
@@ -56,13 +56,13 @@ func (c *listControllersCommand) SetFlags(f *gnuflag.FlagSet) {
 
 // Run implements Command.Run.
 func (c *listControllersCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	controllers, err := client.ListControllers()
+	controllers, err := client.ListControllers(ctxt)
 	if err != nil {
 		return err
 	}

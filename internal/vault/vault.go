@@ -15,7 +15,7 @@ import (
 
 	"github.com/hashicorp/vault/api"
 	auth "github.com/hashicorp/vault/api/auth/approle"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 

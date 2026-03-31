@@ -1,5 +1,4 @@
-(command-jaas-add-cloud)=
-# jaas add-cloud
+# ADD-CLOUD
 
 ## Summary
 Add cloud to specific controller in jimm
@@ -31,8 +30,7 @@ flag. If the flag is missing, the command will assume the cloud definition
 is already known and will error otherwise.
 
 
-(command-jaas-add-group)=
-# jaas add-group
+# ADD-GROUP
 
 ## Summary
 Add group to jimm.
@@ -57,8 +55,7 @@ Add group to jimm.
 Adds a group.
 
 
-(command-jaas-add-model)=
-# jaas add-model
+# ADD-MODEL
 
 ## Summary
 Adds a model to a specific controller.
@@ -90,8 +87,7 @@ Adds a model to a specific controller.
 
 This command creates a new hosted model on the specified controller.
 
-(command-jaas-add-permission)=
-# jaas add-permission
+# ADD-PERMISSION
 
 ## Summary
 Add relation to JIMM.
@@ -150,10 +146,10 @@ Resources may be one of:
 
     user tag                = "user-<name>"
     group tag               = "group-<name>"
-	role tag 			    = "role-&lt;name&gt;"
+	role tag 			    = "role-<name>"
     controller tag          = "controller-<name>"
     model tag               = "model-<name>"
-	cloud tag			    = "cloud-&lt;name&gt;"
+	cloud tag			    = "cloud-<name>"
     application-offer tag   = "applicationoffer-<name>"
 
 If target_object is a group, the relation can only be:
@@ -197,8 +193,7 @@ Similarly if the object is a role, a userset must be applied by adding #member a
 	role-Auditor#assignee audit_log_viewer controller-MyController
 
 
-(command-jaas-add-role)=
-# jaas add-role
+# ADD-ROLE
 
 ## Summary
 Add role to jimm.
@@ -223,8 +218,41 @@ Add role to jimm.
 Adds a role.
 
 
-(command-jaas-bootstrap)=
-# jaas bootstrap
+# AUDIT-EVENTS
+
+**Aliases:** audit-events
+
+## Summary
+Displays audit events
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--after` |  | display events that happened after a specified time, formatted as RFC3339 |
+| `--before` |  | display events that happened before specified time, formatted as RFC3339 |
+| `--format` | yaml | Specify output format (json&#x7c;tabular&#x7c;yaml) |
+| `--limit` | 0 | limit the maximum number of returned audit events |
+| `--method` |  | display events for a specific method call |
+| `--model` |  | display events for a specific model (model name is controller/model) |
+| `-o`, `--output` |  | Specify an output file |
+| `--offset` | 0 | offset the set of returned audit events |
+| `--reverse` | false | reverse the order of logs, showing the most recent first |
+| `--user-tag` |  | display events performed by authenticated user |
+
+## Examples
+
+    juju list-audit-events --after 2020-01-01T15:00:00 --before 2020-01-01T15:00:00 --user-tag user@canonical.com --limit 50
+    juju list-audit-events --method CreateModel
+    juju audit-events --after 2020-01-01T15:00:00 --format yaml
+
+
+## Details
+
+Returns audit log events.
+
+
+# BOOTSTRAP
 
 ## Summary
 Bootstrap a Juju controller via JIMM
@@ -300,8 +328,7 @@ Note that JIMM will internally do the following:
 - register the controller with JIMM
 
 
-(command-jaas-bootstrap-status)=
-# jaas bootstrap-status
+# BOOTSTRAP-STATUS
 
 **Aliases:** destroy-status
 
@@ -328,8 +355,7 @@ Displays logs for a bootstrap/destroy job
 Displays logs for a bootstrap or destroy-controller job.
 
 
-(command-jaas-bootstrap-stop)=
-# jaas bootstrap-stop
+# BOOTSTRAP-STOP
 
 ## Summary
 Stop an in-progress bootstrap job
@@ -352,8 +378,7 @@ Stop an in-progress bootstrap job
 Stop a bootstrap job.
 
 
-(command-jaas-check-permission)=
-# jaas check-permission
+# CHECK-PERMISSION
 
 ## Summary
 Check access to a resource.
@@ -378,16 +403,12 @@ Check access to a resource.
 Verifies access to a resource.
 
 
-(command-jaas-controllers)=
-# jaas controllers
+# CONTROLLERS
 
 **Aliases:** list-controllers
 
 ## Summary
 Lists all controllers known to JIMM.
-
-## Usage
-```juju jaas controllers [options] ```
 
 ### Options
 | Flag | Default | Usage |
@@ -407,8 +428,7 @@ Lists all controllers known to JIMM.
 Displays controller information for all controllers known to JIMM.
 
 
-(command-jaas-destroy-controller)=
-# jaas destroy-controller
+# DESTROY-CONTROLLER
 
 ## Summary
 Destroy a Juju controller via JIMM
@@ -458,8 +478,34 @@ As a workaround, you can first unregister the controller and then destroy
 it separately.
 
 
-(command-jaas-documentation)=
-# jaas documentation
+# DESTROY-STATUS
+
+**Aliases:** destroy-status
+
+## Summary
+Displays logs for a bootstrap/destroy job
+
+## Usage
+```juju jaas bootstrap-status [options] <job id>```
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `-f` | false | follow the logs |
+
+## Examples
+
+    juju bootstrap-status <id>
+    juju destroy-status <id>
+
+
+## Details
+
+Displays logs for a bootstrap or destroy-controller job.
+
+
+# DOCUMENTATION
 
 ## Summary
 Generate the documentation for all commands
@@ -479,7 +525,7 @@ Generate the documentation for all commands
 ## Examples
 
     juju documentation
-    juju documentation --split 
+    juju documentation --split
     juju documentation --split --no-index --out /tmp/docs
 
 To render markdown documentation using a list of existing
@@ -506,8 +552,7 @@ in the file above.
 This command generates a markdown formatted document with all the commands, their descriptions, arguments, and examples.
 
 
-(command-jaas-grant-audit-log)=
-# jaas grant-audit-log
+# GRANT-AUDIT-LOG
 
 ## Summary
 Grants access to audit logs.
@@ -530,8 +575,33 @@ Grants access to audit logs.
 Grants a user access to read audit logs.
 
 
-(command-jaas-help)=
-# jaas help
+# GROUPS
+
+**Aliases:** groups
+
+## Summary
+List all groups.
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | yaml | Specify output format (json&#x7c;yaml) |
+| `--limit` | 0 | The maximum number of groups to return |
+| `-o`, `--output` |  | Specify an output file |
+| `--offset` | 0 | The offset to use when requesting groups |
+
+## Examples
+
+    juju list-groups
+
+
+## Details
+
+Lists all groups.
+
+
+# HELP
 
 ## Summary
 Show help on a command or other topic.
@@ -544,8 +614,7 @@ Show help on a command or other topic.
 See also: topics
 
 
-(command-jaas-import-model)=
-# jaas import-model
+# IMPORT-MODEL
 
 **Aliases:** register-model
 
@@ -578,16 +647,12 @@ The --owner command is necessary when importing a model created by a
 local user and it will switch the model owner to the desired external user.
 
 
-(command-jaas-jobs)=
-# jaas jobs
+# JOBS
 
 **Aliases:** list-jobs
 
 ## Summary
 Lists all jobs known to JIMM.
-
-## Usage
-```juju jaas jobs [options] ```
 
 ### Options
 | Flag | Default | Usage |
@@ -619,16 +684,12 @@ limit the number of results returned (up to 10,000 jobs).
 Valid job statuses are: running, successful, pending, failed, unknown
 
 
-(command-jaas-list-audit-events)=
-# jaas list-audit-events
+# LIST-AUDIT-EVENTS
 
 **Aliases:** audit-events
 
 ## Summary
 Displays audit events
-
-## Usage
-```juju jaas list-audit-events [options] ```
 
 ### Options
 | Flag | Default | Usage |
@@ -657,16 +718,37 @@ Displays audit events
 Returns audit log events.
 
 
-(command-jaas-list-groups)=
-# jaas list-groups
+# LIST-CONTROLLERS
+
+**Aliases:** list-controllers
+
+## Summary
+Lists all controllers known to JIMM.
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | yaml | Specify output format (json&#x7c;yaml) |
+| `-o`, `--output` |  | Specify an output file |
+
+## Examples
+
+    juju controllers
+    juju controllers --format json
+
+
+## Details
+
+Displays controller information for all controllers known to JIMM.
+
+
+# LIST-GROUPS
 
 **Aliases:** groups
 
 ## Summary
 List all groups.
-
-## Usage
-```juju jaas list-groups [options] ```
 
 ### Options
 | Flag | Default | Usage |
@@ -687,8 +769,44 @@ List all groups.
 Lists all groups.
 
 
-(command-jaas-list-migration-targets)=
-# jaas list-migration-targets
+# LIST-JOBS
+
+**Aliases:** list-jobs
+
+## Summary
+Lists all jobs known to JIMM.
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--count` | 100 | Maximum number of jobs to return (max 10000) |
+| `--format` | yaml | Specify output format (json&#x7c;yaml) |
+| `--kind` |  | Filter jobs by kind (can be specified multiple times) |
+| `-o`, `--output` |  | Specify an output file |
+| `--status` |  | Filter jobs by status (can be specified multiple times) |
+
+## Examples
+
+    juju jobs
+    juju jobs --format json
+    juju jobs --count 500
+    juju jobs --kind backup --kind restore
+    juju jobs --status running --status pending
+    juju jobs --count 1000 --status failed --kind backup
+
+
+## Details
+
+Displays information on long-running jobs.
+
+The command supports filtering by job kind and status, and allows you to
+limit the number of results returned (up to 10,000 jobs).
+
+Valid job statuses are: running, successful, pending, failed, unknown
+
+
+# LIST-MIGRATION-TARGETS
 
 ## Summary
 List migration targets for internal model migration.
@@ -721,16 +839,12 @@ criteria:
   the current controller.
 
 
-(command-jaas-list-permissions)=
-# jaas list-permissions
+# LIST-PERMISSIONS
 
 **Aliases:** permissions
 
 ## Summary
 List relations.
-
-## Usage
-```juju jaas list-permissions [options] ```
 
 ### Options
 | Flag | Default | Usage |
@@ -764,16 +878,12 @@ List permissions known to JIMM. Using the "target", "relation" and "object" flag
 only those permissions matching the filter will be returned.
 
 
-(command-jaas-list-roles)=
-# jaas list-roles
+# LIST-ROLES
 
 **Aliases:** roles
 
 ## Summary
 List all roles.
-
-## Usage
-```juju jaas list-roles [options] ```
 
 ### Options
 | Flag | Default | Usage |
@@ -794,8 +904,7 @@ List all roles.
 Lists all roles.
 
 
-(command-jaas-migrate)=
-# jaas migrate
+# MIGRATE
 
 ## Summary
 Migrate models to JAAS, targetting the desired managed controller.
@@ -866,8 +975,7 @@ Any tools/scripts that refer to models by their full name (owner/name) will need
 updated after migration to use the new external username or refer to models by their UUID.
 
 
-(command-jaas-migrate-internal)=
-# jaas migrate-internal
+# MIGRATE-INTERNAL
 
 ## Summary
 migrate models to another controller within JAAS
@@ -901,8 +1009,7 @@ You may specify a model name (of the form owner/name) or model UUID.
 
 
 
-(command-jaas-model-status)=
-# jaas model-status
+# MODEL-STATUS
 
 ## Summary
 Displays full model status
@@ -928,8 +1035,46 @@ Displays full model status
 Displays full model status.
 
 
-(command-jaas-purge-audit-logs)=
-# jaas purge-audit-logs
+# PERMISSIONS
+
+**Aliases:** permissions
+
+## Summary
+List relations.
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | yaml | Specify output format (json&#x7c;tabular&#x7c;yaml) |
+| `-o`, `--output` |  | Specify an output file |
+| `--object` |  | relation object |
+| `--relation` |  | relation name |
+| `--resolve` | true | resolves UUIDs to human readable tags |
+| `--target` |  | relation target object |
+
+## Examples
+
+List all permissions
+
+    juju list-permissions
+
+List permissions where the target object match
+
+    juju list-permissions --target model-mymodel
+
+List permissions where the target object and relation match
+
+    juju list-permissions --target model-mymodel  --relation admin
+
+
+## Details
+
+List permissions known to JIMM. Using the "target", "relation" and "object" flags,
+only those permissions matching the filter will be returned.
+
+
+# PURGE-AUDIT-LOGS
 
 ## Summary
 purge audit logs from the database before the given date
@@ -958,8 +1103,7 @@ Purges logs from the database before the given date.
 The provided date must be formatted as an ISO8601 date string.
 
 
-(command-jaas-query-models)=
-# jaas query-models
+# QUERY-MODELS
 
 ## Summary
 Query model statuses
@@ -991,8 +1135,7 @@ as such you can format your query against an output like this.
 The queries expect a JQ query string.
 
 
-(command-jaas-register-controller)=
-# jaas register-controller
+# REGISTER-CONTROLLER
 
 ## Summary
 Add controller to jimm
@@ -1042,8 +1185,40 @@ Use the --dry-run flag to generate a sample file without registering the control
 This can be used later as input to register-controller.
 
 
-(command-jaas-remove-cloud)=
-# jaas remove-cloud
+# REGISTER-MODEL
+
+**Aliases:** register-model
+
+## Summary
+Import a model to jimm.
+
+## Usage
+```juju jaas import-model [options] <controller name> <model uuid>```
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--owner` |  | switch the model owner to the desired user |
+
+## Examples
+
+    juju import-model mycontroller ac30d6ae-0bed-4398-bba7-75d49e39f189
+    juju import-model mycontroller ac30d6ae-0bed-4398-bba7-75d49e39f189 --owner user@canonical.com
+
+
+## Details
+
+Imports a model running on a controller into JIMM's state.
+
+When importing, it is necessary for JIMM to contain a set of cloud credentials
+that represent a user's access to the incoming model's cloud.
+
+The --owner command is necessary when importing a model created by a
+local user and it will switch the model owner to the desired external user.
+
+
+# REMOVE-CLOUD
 
 ## Summary
 Remove cloud from specific controller in jimm
@@ -1068,8 +1243,7 @@ Remove cloud from specific controller in jimm
 Removes the specified cloud from the specified controller in JIMM.
 
 
-(command-jaas-remove-group)=
-# jaas remove-group
+# REMOVE-GROUP
 
 ## Summary
 Remove a group.
@@ -1095,8 +1269,7 @@ Remove a group.
 Removes a group.
 
 
-(command-jaas-remove-permission)=
-# jaas remove-permission
+# REMOVE-PERMISSION
 
 ## Summary
 Remove relation from JIMM.
@@ -1155,10 +1328,10 @@ Resources may be one of:
 
     user tag                = "user-<name>"
     group tag               = "group-<name>"
-	role tag 			    = "role-&lt;name&gt;"
+	role tag 			    = "role-<name>"
     controller tag          = "controller-<name>"
     model tag               = "model-<name>"
-	cloud tag			    = "cloud-&lt;name&gt;"
+	cloud tag			    = "cloud-<name>"
     application-offer tag   = "applicationoffer-<name>"
 
 If target_object is a group, the relation can only be:
@@ -1202,8 +1375,7 @@ Similarly if the object is a role, a userset must be applied by adding #member a
 	role-Auditor#assignee audit_log_viewer controller-MyController
 
 
-(command-jaas-remove-role)=
-# jaas remove-role
+# REMOVE-ROLE
 
 ## Summary
 Remove a role.
@@ -1229,8 +1401,7 @@ Remove a role.
 Removes a role.
 
 
-(command-jaas-rename-group)=
-# jaas rename-group
+# RENAME-GROUP
 
 ## Summary
 Rename a group.
@@ -1253,8 +1424,7 @@ Rename a group.
 Renames a group.
 
 
-(command-jaas-rename-role)=
-# jaas rename-role
+# RENAME-ROLE
 
 ## Summary
 Rename a role.
@@ -1277,8 +1447,7 @@ Rename a role.
 Renames a role.
 
 
-(command-jaas-revoke-audit-log)=
-# jaas revoke-audit-log
+# REVOKE-AUDIT-LOG
 
 ## Summary
 revokes access to audit logs.
@@ -1301,8 +1470,33 @@ revokes access to audit logs.
 Revokes user access to audit logs.
 
 
-(command-jaas-set-controller-deprecated)=
-# jaas set-controller-deprecated
+# ROLES
+
+**Aliases:** roles
+
+## Summary
+List all roles.
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | yaml | Specify output format (json&#x7c;yaml) |
+| `--limit` | 0 | The maximum number of roles to return |
+| `-o`, `--output` |  | Specify an output file |
+| `--offset` | 0 | The offset to use when requesting roles |
+
+## Examples
+
+    juju list-roles list
+
+
+## Details
+
+Lists all roles.
+
+
+# SET-CONTROLLER-DEPRECATED
 
 ## Summary
 Sets controller deprecated status.
@@ -1327,8 +1521,7 @@ Sets controller deprecated status.
 Sets the deprecated status of a controller.
 
 
-(command-jaas-show-model)=
-# jaas show-model
+# SHOW-MODEL
 
 ## Summary
 Displays information about a model and its controller
@@ -1362,8 +1555,7 @@ The model can be specified using either:
 The output includes the model name, model UUID, controller name, and controller UUID.
 
 
-(command-jaas-unregister-controller)=
-# jaas unregister-controller
+# UNREGISTER-CONTROLLER
 
 ## Summary
 Remove controller from jimm
@@ -1390,8 +1582,7 @@ Remove controller from jimm
 Deregisters a controller from JIMM.
 
 
-(command-jaas-update-migrated-model)=
-# jaas update-migrated-model
+# UPDATE-MIGRATED-MODEL
 
 ## Summary
 Update the controller running a model.
@@ -1415,8 +1606,7 @@ Updates a model known to JIMM that has been migrated
 externally to a different JAAS controller.
 
 
-(command-jaas-upgrade-to)=
-# jaas upgrade-to
+# UPGRADE-TO
 
 ## Summary
 Upgrades a model

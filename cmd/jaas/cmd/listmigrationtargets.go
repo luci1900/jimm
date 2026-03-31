@@ -5,12 +5,12 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -87,13 +87,13 @@ func (c *listMigrationTargetsCommand) Run(ctxt *cmd.Context) error {
 		ModelTag: c.modelTag,
 	}
 
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}
 	defer client.Close()
 
-	resp, err := client.ListMigrationTargets(&req)
+	resp, err := client.ListMigrationTargets(ctxt, &req)
 	if err != nil {
 		return err
 	}

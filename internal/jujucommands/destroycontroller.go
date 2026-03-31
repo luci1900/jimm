@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/juju/juju/api/jujuclient"
 	"github.com/juju/juju/juju/osenv"
-	"github.com/juju/juju/jujuclient"
 )
 
 // DestroyControllerCmdParams holds the parameters to tear-down a controller.

@@ -4,17 +4,17 @@ package rivertypes
 
 import (
 	jujucloud "github.com/juju/juju/cloud"
-	"github.com/juju/version/v2"
+	"github.com/juju/juju/core/semversion"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
 
 // UpgradeToArgs are the arguments for the upgrade-to worker.
 type UpgradeToArgs struct {
-	ModelUUID            string         `json:"model-uuid" river:"unique"`
-	TargetVersion        version.Number `json:"target-version"`
-	Username             string         `json:"username"`
-	TargetControllerName string         `json:"target_controller_name"`
+	ModelUUID            string            `json:"model-uuid" river:"unique"`
+	TargetVersion        semversion.Number `json:"target-version"`
+	Username             string            `json:"username"`
+	TargetControllerName string            `json:"target_controller_name"`
 }
 
 const UpgradeToJobKind = "upgrade-to"

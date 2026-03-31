@@ -5,7 +5,7 @@ package river
 import (
 	"context"
 
-	"github.com/juju/version/v2"
+	"github.com/juju/juju/core/semversion"
 	"github.com/juju/zaputil/zapctx"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverdatabasesql"
@@ -31,7 +31,7 @@ type UpgradeManager interface {
 	// MigrateModel migrates a model to a new controller without upgrading the model's agent.
 	MigrateModel(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string) error
 	// UpgradeModel upgrades a model to the target version.
-	UpgradeModel(ctx context.Context, modelUUID string, targetVersion version.Number) error
+	UpgradeModel(ctx context.Context, modelUUID string, targetVersion semversion.Number) error
 }
 
 // BootstrapManager defines the methods for the domain logic of bootstrapping and destroying controllers.

@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
@@ -106,7 +106,7 @@ func (s streamModelProxier) ServeWS(ctx context.Context, clientConn *websocket.C
 	}
 	defer api.Close()
 
-	controllerStream, err := api.ConnectStream(finalPath, jimmhttp.QueryParamsFromContext(ctx))
+	controllerStream, err := api.ConnectStream(ctx, finalPath, jimmhttp.QueryParamsFromContext(ctx))
 	if err != nil {
 		zapctx.Error(ctx, "failed to connect stream", zap.Error(err))
 		writeError(fmt.Sprintf("failed to connect stream: %s", err.Error()), errors.CodeConnectionFailed)

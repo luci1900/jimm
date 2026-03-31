@@ -13,8 +13,9 @@ import (
 	jujucloud "github.com/juju/juju/cloud"
 	jujucontroller "github.com/juju/juju/controller"
 	"github.com/juju/juju/core/crossmodel"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/version/v2"
 	"github.com/juju/zaputil"
 	"github.com/juju/zaputil/zapctx"
@@ -33,7 +34,7 @@ import (
 type ControllerClient interface {
 	// InitiateMigration attempts to begin the migration of one or
 	// more models to other controllers.
-	InitiateMigration(controller.MigrationSpec, bool) (string, error)
+	InitiateMigration(context.Context, controller.MigrationSpec, bool) (string, error)
 	// Close closes the connection to the API server.
 	Close() error
 }
@@ -219,7 +220,7 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 	ctl.CloudRegion = cloudSpec.Region
 	// TODO(mhilton) add the controller model?
 
-	clouds, err := api.Clouds()
+	clouds, err := api.Clouds(ctx)
 	if err != nil {
 		return errors.E(err, "failed to fetch controller clouds")
 	}
@@ -296,7 +297,7 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 // that any of the available public controllers is known to be running.
 // If there are no available controllers or none of their versions are
 // known, it returns the zero version.
-func (j *JujuManager) EarliestControllerVersion(ctx context.Context) (version.Number, error) {
+func (j *JujuManager) EarliestControllerVersion(ctx context.Context) (semversion.Number, error) {
 
 	var v *version.Number
 
@@ -321,12 +322,12 @@ func (j *JujuManager) EarliestControllerVersion(ctx context.Context) (version.Nu
 		return nil
 	})
 	if err != nil {
-		return version.Number{}, err
+		return semversion.Number{}, err
 	}
 	if v == nil {
-		return version.Number{}, nil
+		return semversion.Number{}, nil
 	}
-	return *v, nil
+	return semversion.Parse(v.String())
 }
 
 type modelImporter struct {
@@ -370,14 +371,16 @@ func (m *modelImporter) fetchModelInfo(ctx context.Context, user *openfga.User, 
 	if err != nil {
 		return err
 	}
+	if !names.IsValidUser(modelInfo.Qualifier.String()) {
+		return errors.E(errors.CodeBadRequest, "invalid model owner")
+	}
+	m.originalOwner = names.NewUserTag(modelInfo.Qualifier.String())
 	m.modelInfo = modelInfo.ModelInfo
-
-	m.originalOwner = names.NewUserTag(m.modelInfo.Owner)
 
 	listedOffers, err := api.ListApplicationOffers(ctx, []crossmodel.ApplicationOfferFilter{
 		{
-			OwnerName: m.originalOwner.Id(),
-			ModelName: m.modelInfo.Name,
+			ModelQualifier: m.modelInfo.Qualifier,
+			ModelName:      m.modelInfo.Name,
 		},
 	})
 	if err != nil {
@@ -707,16 +710,17 @@ func (j *JujuManager) initiateMigration(ctx context.Context, user *openfga.User,
 	client := newControllerClient(api)
 	defer client.Close()
 
-	result.MigrationId, err = client.InitiateMigration(controller.MigrationSpec{
-		ModelUUID:             mt.Id(),
-		TargetControllerUUID:  targetControllerTag.Id(),
-		TargetControllerAlias: spec.TargetInfo.ControllerAlias,
-		TargetAddrs:           spec.TargetInfo.Addrs,
-		TargetCACert:          spec.TargetInfo.CACert,
-		TargetUser:            targetUserTag.Id(),
-		TargetPassword:        spec.TargetInfo.Password,
-		TargetMacaroons:       targetMacaroons,
-	}, false)
+	result.MigrationId, err = client.InitiateMigration(ctx,
+		controller.MigrationSpec{
+			ModelUUID:             mt.Id(),
+			TargetControllerUUID:  targetControllerTag.Id(),
+			TargetControllerAlias: spec.TargetInfo.ControllerAlias,
+			TargetAddrs:           spec.TargetInfo.Addrs,
+			TargetCACert:          spec.TargetInfo.CACert,
+			TargetUser:            targetUserTag.Id(),
+			TargetPassword:        spec.TargetInfo.Password,
+			TargetMacaroons:       targetMacaroons,
+		}, false)
 	if err != nil {
 		rollbackMigrationMode()
 		return result, err

@@ -17,8 +17,8 @@ func (c Connection) SupportsModelSummaryWatcher() bool {
 
 // SummaryWatcher defines the interface for watching model summaries.
 type SummaryWatcher interface {
-	Stop() error
-	Next() ([]params.ModelAbstract, error)
+	Stop(context.Context) error
+	Next(context.Context) ([]params.ModelAbstract, error)
 }
 
 // WatchAllModelSummaries initialises a new AllModelSummaryWatcher. On
@@ -26,5 +26,5 @@ type SummaryWatcher interface {
 // of type *APIError. This uses the WatchAllModelSummaries method on the
 // Controller facade version 9.
 func (c Connection) WatchAllModelSummaries(ctx context.Context) (SummaryWatcher, error) {
-	return controller.NewClient(&c).WatchAllModelSummaries()
+	return controller.NewClient(&c).WatchAllModelSummaries(ctx)
 }

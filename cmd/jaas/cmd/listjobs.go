@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -98,7 +98,7 @@ func (c *listjobsCommand) Run(ctxt *cmd.Context) error {
 		return fmt.Errorf("count cannot exceed 10000, got %d", c.count)
 	}
 
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (c *listjobsCommand) Run(ctxt *cmd.Context) error {
 		kinds[i] = strings.TrimSpace(k)
 	}
 
-	resp, err := client.ListJobs(&params.ListJobsRequest{
+	resp, err := client.ListJobs(ctxt, &params.ListJobsRequest{
 		Count:    c.count,
 		Kinds:    kinds,
 		Statuses: statuses,

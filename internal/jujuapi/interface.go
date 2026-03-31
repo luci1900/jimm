@@ -13,9 +13,9 @@ import (
 	jujucontroller "github.com/juju/juju/controller"
 	"github.com/juju/juju/core/crossmodel"
 	coremigration "github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
 
@@ -225,7 +225,7 @@ type JujuManager interface {
 
 	AddController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, creds juju.ControllerCreds) error
 	ControllerInfo(ctx context.Context, name string) (*dbmodel.Controller, error)
-	EarliestControllerVersion(ctx context.Context) (version.Number, error)
+	EarliestControllerVersion(ctx context.Context) (semversion.Number, error)
 	ListControllers(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
 	RemoveController(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
@@ -269,7 +269,7 @@ type JujuManager interface {
 	CheckMachines(ctx context.Context, user *openfga.User, modelUUID string) ([]error, error)
 	Import(ctx context.Context, user *openfga.User, serialized jujuparams.SerializedModel) error
 	Activate(ctx context.Context, user *openfga.User, modelTag names.ModelTag, migrationInfo coremigration.SourceControllerInfo, relatedModels []string) error
-	AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion version.Number) error
+	AdoptResources(ctx context.Context, user *openfga.User, modelUUID string, sourceControllerVersion semversion.Number) error
 	LatestLogTime(ctx context.Context, user *openfga.User, modelUUID string) (time.Time, error)
 	AbortMigration(ctx context.Context, user *openfga.User, modelUUID string) error
 	CleanupPartialModelMigrations(ctx context.Context) error

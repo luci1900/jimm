@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	jujucommands "github.com/canonical/jimm/v3/internal/jujucommands"
-	jujuclient "github.com/juju/juju/jujuclient"
+	jujuclient "github.com/juju/juju/api/jujuclient"
 	gomock "go.uber.org/mock/gomock"
 )
 

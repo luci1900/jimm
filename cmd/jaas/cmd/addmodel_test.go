@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
 	"github.com/juju/juju/api"
+	"github.com/juju/juju/api/jujuclient"
 	"github.com/juju/juju/cloud"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	cookiejar "github.com/juju/persistent-cookiejar"
 	"go.uber.org/mock/gomock"
 
@@ -87,7 +87,7 @@ func TestAddModel(t *testing.T) {
 			}, nil).AnyTimes()
 
 			if test.expectCloudCall {
-				s.cloudClient.EXPECT().Cloud(gomock.Any()).Return(cloud.Cloud{
+				s.cloudClient.EXPECT().Cloud(gomock.Any(), gomock.Any()).Return(cloud.Cloud{
 					Name: "test-cloud",
 					Type: "dummy",
 					Regions: []cloud.Region{{
@@ -96,7 +96,7 @@ func TestAddModel(t *testing.T) {
 			}
 
 			if test.expectListUserClouds {
-				s.client.EXPECT().ListUserClouds(&jimmapiparams.ListUserCloudsRequest{
+				s.client.EXPECT().ListUserClouds(gomock.Any(), &jimmapiparams.ListUserCloudsRequest{
 					UserTag: names.NewUserTag("alice@canonical.com").String(),
 				}).Return(map[names.CloudTag]cloud.Cloud{
 					names.NewCloudTag("test-cloud"): {
@@ -109,14 +109,14 @@ func TestAddModel(t *testing.T) {
 				}, nil)
 			}
 
-			s.cloudClient.EXPECT().UserCredentials(names.NewUserTag("alice@canonical.com"), names.NewCloudTag("test-cloud")).Return([]names.CloudCredentialTag{names.NewCloudCredentialTag("test-cloud/alice@canonical.com/credAlice")}, nil)
+			s.cloudClient.EXPECT().UserCredentials(gomock.Any(), names.NewUserTag("alice@canonical.com"), names.NewCloudTag("test-cloud")).Return([]names.CloudCredentialTag{names.NewCloudCredentialTag("test-cloud/alice@canonical.com/credAlice")}, nil)
 			s.store.EXPECT().UpdateModel("test-controller", "alice@canonical.com/"+test.modelName, gomock.Any()).Return(nil)
 			s.store.EXPECT().SetCurrentModel("test-controller", "alice@canonical.com/"+test.modelName).Return(nil)
-			s.client.EXPECT().AddModelToController(gomock.Any()).Return(jujuparams.ModelInfo{
+			s.client.EXPECT().AddModelToController(gomock.Any(), gomock.Any()).Return(jujuparams.ModelInfo{
 				Name:               test.modelName,
 				UUID:               "test-uuid",
 				Type:               "iaas",
-				OwnerTag:           names.NewUserTag("alice@canonical.com").String(),
+				Qualifier:          "alice@canonical.com",
 				CloudTag:           names.NewCloudTag("test-cloud").String(),
 				CloudRegion:        "test-region",
 				CloudCredentialTag: names.NewCloudCredentialTag("test-cloud/alice@canonical.com/credAlice").String(),

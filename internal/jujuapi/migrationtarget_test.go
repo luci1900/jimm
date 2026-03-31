@@ -9,11 +9,11 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/description/v9"
+	"github.com/juju/description/v11"
 	"github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
@@ -131,7 +131,7 @@ func TestPreChecks(t *testing.T) {
 			Prechecks_: func(ctx context.Context, user *openfga.User, model juju.MigratingModelInfo) error {
 				preChecksCalled = true
 				c.Assert(model.UUID, qt.Equals, "00000001-0000-0000-0000-000000000001")
-				c.Assert(model.Owner.Id(), qt.Equals, "bob")
+				c.Assert(model.Owner, qt.Equals, "bob")
 				return nil
 			},
 		}}
@@ -150,11 +150,10 @@ func TestPreChecks(t *testing.T) {
 
 	modelDescription := description.NewModel(description.ModelArgs{
 		Type:        description.IAAS,
-		Owner:       names.NewUserTag("bob"),
+		Owner:       names.NewUserTag("bob").String(),
 		Cloud:       jimmtest.TestCloudName,
 		CloudRegion: jimmtest.TestCloudRegionName,
 	})
-	modelDescription.SetStatus(description.StatusArgs{Value: "available"})
 
 	serialisedDescription, err := description.Serialize(modelDescription)
 	c.Assert(err, qt.IsNil)
@@ -162,8 +161,8 @@ func TestPreChecks(t *testing.T) {
 	args := jujuparams.MigrationModelInfo{
 		UUID:                   "00000001-0000-0000-0000-000000000001",
 		Name:                   "test-model",
-		OwnerTag:               names.NewUserTag("bob").String(),
-		ControllerAgentVersion: version.MustParse("3.6.9"),
+		Qualifier:              "bob",
+		ControllerAgentVersion: semversion.MustParse("3.6.9"),
 		ModelDescription:       serialisedDescription,
 	}
 
@@ -177,11 +176,6 @@ func TestPreChecks(t *testing.T) {
 	err = cr.Prechecks(ctx, args)
 	c.Assert(err, qt.IsNil)
 	c.Assert(preChecksCalled, qt.Equals, true)
-
-	// Validate that an invalid owner tag is rejected.
-	args.OwnerTag = "invalid-owner-tag"
-	err = cr.Prechecks(ctx, args)
-	c.Assert(err, qt.ErrorMatches, `"invalid-owner-tag" is not a valid tag`)
 }
 
 func TestAdoptResources(t *testing.T) {
@@ -191,10 +185,10 @@ func TestAdoptResources(t *testing.T) {
 	adoptResourcesCalled := false
 	jujuManager := mocks.JujuManager{
 		MigrationMocks: mocks.MigrationMocks{
-			AdoptResources_: func(ctx context.Context, user *openfga.User, modelUUID string, controllerVersion version.Number) error {
+			AdoptResources_: func(ctx context.Context, user *openfga.User, modelUUID string, controllerVersion semversion.Number) error {
 				adoptResourcesCalled = true
 				c.Assert(modelUUID, qt.Equals, "00000001-0000-0000-0000-000000000001")
-				c.Assert(controllerVersion, qt.DeepEquals, version.MustParse("3.2.1"))
+				c.Assert(controllerVersion, qt.DeepEquals, semversion.MustParse("3.2.1"))
 				return nil
 			},
 		}}
@@ -213,7 +207,7 @@ func TestAdoptResources(t *testing.T) {
 
 	args := jujuparams.AdoptResourcesArgs{
 		ModelTag:                names.NewModelTag("00000001-0000-0000-0000-000000000001").String(),
-		SourceControllerVersion: version.MustParse("3.2.1"),
+		SourceControllerVersion: semversion.MustParse("3.2.1"),
 	}
 
 	// Validate access denied without JIMM admin permissions.

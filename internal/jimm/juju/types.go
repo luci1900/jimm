@@ -4,9 +4,8 @@ package juju
 
 import (
 	"github.com/juju/juju/core/network"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 )
@@ -14,10 +13,10 @@ import (
 // MigratingModelInfo is used to report basic details about a model.
 type MigratingModelInfo struct {
 	UUID                   string
-	Owner                  names.UserTag
+	Owner                  string
 	Name                   string
-	AgentVersion           version.Number
-	ControllerAgentVersion version.Number
+	AgentVersion           semversion.Number
+	ControllerAgentVersion semversion.Number
 	RawModelDescription    []byte
 }
 

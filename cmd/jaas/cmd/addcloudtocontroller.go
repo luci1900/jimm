@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	"github.com/juju/juju/cloud"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	jujucmdcommon "github.com/juju/juju/cmd/juju/common"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 	"github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	jimmjujuapi "github.com/canonical/jimm/v3/internal/jujuapi"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -133,13 +133,13 @@ func (c *addCloudToControllerCommand) Run(ctxt *cmd.Context) error {
 		newCloud.Regions = []cloud.Region{{Name: cloud.DefaultCloudRegion}}
 	}
 
-	jimmAPI, err := c.getJIMMAPI()
+	jimmAPI, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM API client: %w", err)
 	}
 	defer jimmAPI.Close()
 
-	if err := jimmAPI.AddCloudToController(&apiparams.AddCloudToControllerRequest{
+	if err := jimmAPI.AddCloudToController(ctxt, &apiparams.AddCloudToControllerRequest{
 		ControllerName: c.dstControllerName,
 		AddCloudArgs: params.AddCloudArgs{
 			Name:  c.cloudName,

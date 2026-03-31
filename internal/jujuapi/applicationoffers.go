@@ -8,9 +8,10 @@ import (
 
 	"github.com/go-macaroon-bakery/macaroon-bakery/v3/bakery"
 	"github.com/juju/juju/core/crossmodel"
+	coremodel "github.com/juju/juju/core/model"
 	jujustatus "github.com/juju/juju/core/status"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
@@ -28,15 +29,15 @@ func init() {
 		findOffersMethod := rpc.Method(r.FindApplicationOffers)
 		applicationOffersMethod := rpc.Method(r.ApplicationOffers)
 
-		r.AddMethod("ApplicationOffers", 5, "Offer", offerMethod)
-		r.AddMethod("ApplicationOffers", 5, "GetConsumeDetails", getConsumeDetailsMethod)
-		r.AddMethod("ApplicationOffers", 5, "ListApplicationOffers", listOffersMethod)
-		r.AddMethod("ApplicationOffers", 5, "ModifyOfferAccess", modifyOfferAccessMethod)
-		r.AddMethod("ApplicationOffers", 5, "DestroyOffers", destroyOffersMethod)
-		r.AddMethod("ApplicationOffers", 5, "FindApplicationOffers", findOffersMethod)
-		r.AddMethod("ApplicationOffers", 5, "ApplicationOffers", applicationOffersMethod)
+		r.AddMethod("ApplicationOffers", 6, "Offer", offerMethod)
+		r.AddMethod("ApplicationOffers", 6, "GetConsumeDetails", getConsumeDetailsMethod)
+		r.AddMethod("ApplicationOffers", 6, "ListApplicationOffers", listOffersMethod)
+		r.AddMethod("ApplicationOffers", 6, "ModifyOfferAccess", modifyOfferAccessMethod)
+		r.AddMethod("ApplicationOffers", 6, "DestroyOffers", destroyOffersMethod)
+		r.AddMethod("ApplicationOffers", 6, "FindApplicationOffers", findOffersMethod)
+		r.AddMethod("ApplicationOffers", 6, "ApplicationOffers", applicationOffersMethod)
 
-		return []int{5}
+		return []int{6}
 	}
 }
 
@@ -107,9 +108,9 @@ func (r *controllerRoot) getConsumeDetails(ctx context.Context, user *openfga.Us
 	}
 
 	// Ensure the path is normalised.
-	if ourl.User == "" {
+	if ourl.ModelQualifier == "" {
 		// If the model owner is not specified use the specified user.
-		ourl.User = user.Name
+		ourl.ModelQualifier = user.Name
 	}
 
 	details := jujuparams.ConsumeOfferDetails{
@@ -224,7 +225,7 @@ func filtersToCrossmodel(filters []jujuparams.OfferFilter) []crossmodel.Applicat
 	result := make([]crossmodel.ApplicationOfferFilter, len(filters))
 	for i, f := range filters {
 		result[i] = crossmodel.ApplicationOfferFilter{
-			OwnerName:              f.OwnerName,
+			ModelQualifier:         coremodel.Qualifier(f.ModelQualifier),
 			ModelName:              f.ModelName,
 			OfferName:              f.OfferName,
 			ApplicationName:        f.ApplicationName,

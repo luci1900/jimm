@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"go.uber.org/zap"

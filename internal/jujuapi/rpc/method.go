@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"github.com/juju/juju/apiserver/errors"
-	"github.com/juju/rpcreflect"
+	"github.com/juju/juju/rpc/rpcreflect"
 )
 
 var (

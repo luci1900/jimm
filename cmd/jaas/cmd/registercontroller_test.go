@@ -4,11 +4,12 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/juju/juju/api/jujuclient"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -187,8 +188,8 @@ password: secret
 	ctxt.Stdin = bytes.NewBufferString(payload)
 
 	cmdMocks.client.EXPECT().
-		AddController(gomock.Any()).
-		DoAndReturn(func(req *apiparams.AddControllerRequest) (apiparams.ControllerInfo, error) {
+		AddController(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, req *apiparams.AddControllerRequest) (apiparams.ControllerInfo, error) {
 			c.Assert(req.Name, qt.Equals, "controller-1")
 			c.Assert(req.UUID, qt.Equals, "deadbeef-1bad-500d-9000-4b1d0d06f00d")
 			return apiparams.ControllerInfo{Name: req.Name, UUID: req.UUID}, nil

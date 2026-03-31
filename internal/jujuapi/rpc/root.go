@@ -8,7 +8,9 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/juju/rpcreflect"
+	"github.com/juju/juju/core/flightrecorder"
+	"github.com/juju/juju/core/trace"
+	"github.com/juju/juju/rpc/rpcreflect"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 )
@@ -62,6 +64,16 @@ func (r *Root) FindMethod(rootName string, version int, methodName string) (rpcr
 	}
 }
 
+// FlightRecorder returns a no-op flight recorder.
+func (r *Root) FlightRecorder() flightrecorder.FlightRecorder {
+	return flightrecorder.NoopRecorder{}
+}
+
+// StartTrace returns the context unchanged with a no-op span.
+func (r *Root) StartTrace(ctx context.Context) (context.Context, trace.Span) {
+	return ctx, trace.NoopSpan{}
+}
+
 // Kill implements rpc.Root.
 func (r *Root) Kill() {
 	r.inflightMu.Lock()
@@ -73,6 +85,7 @@ func (r *Root) Kill() {
 }
 
 func (r *Root) start(ctx context.Context) (context.Context, uint64) {
+	//nolint:gosec // the linter complains we don't call cancel, but we do in the end method.
 	ctx, cancel := context.WithCancel(ctx)
 	r.inflightMu.Lock()
 	defer r.inflightMu.Unlock()

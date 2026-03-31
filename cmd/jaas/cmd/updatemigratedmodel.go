@@ -5,11 +5,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/juju/cmd/v3"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -73,13 +73,13 @@ func (c *updateMigratedModelCommand) Init(args []string) error {
 
 // Run implements Command.Run.
 func (c *updateMigratedModelCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	if err := client.UpdateMigratedModel(&c.req); err != nil {
+	if err := client.UpdateMigratedModel(ctxt, &c.req); err != nil {
 		return err
 	}
 	return nil

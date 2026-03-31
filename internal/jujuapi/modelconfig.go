@@ -15,8 +15,8 @@ func init() {
 	facadeInit["ModelConfig"] = func(r *controllerRoot) []int {
 		modelGetMethod := rpc.Method(r.ModelGet)
 
-		r.AddMethod("ModelConfig", 3, "ModelGet", modelGetMethod)
-		return []int{3}
+		r.AddMethod("ModelConfig", 4, "ModelGet", modelGetMethod)
+		return []int{4}
 	}
 }
 

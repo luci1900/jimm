@@ -10,7 +10,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/gorilla/websocket"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"

@@ -7,11 +7,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -81,7 +81,7 @@ func (c *bootstrapStatusCommand) Init(args []string) error {
 
 // Run implements cmd.Command.Run interface.
 func (c *bootstrapStatusCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %v", err)
 	}
@@ -94,7 +94,7 @@ func (c *bootstrapStatusCommand) Run(ctxt *cmd.Context) error {
 		out:                 ctxt.Stdout,
 		follow:              c.follow,
 	}
-	return poller.watchBootstrapLogs()
+	return poller.watchBootstrapLogs(ctxt)
 }
 
 type bootstrapLogPoller struct {
@@ -105,14 +105,16 @@ type bootstrapLogPoller struct {
 	follow              bool
 }
 
-func (p bootstrapLogPoller) watchBootstrapLogs() error {
+func (p bootstrapLogPoller) watchBootstrapLogs(ctxt *cmd.Context) error {
 	watermark := 0
 
 	for {
-		response, err := p.client.BootstrapInfo(&params.GetBootstrapInfoRequest{
-			JobID:     p.jobId,
-			Watermark: watermark,
-		})
+		response, err := p.client.BootstrapInfo(
+			ctxt,
+			&params.GetBootstrapInfoRequest{
+				JobID:     p.jobId,
+				Watermark: watermark,
+			})
 		if err != nil {
 			return fmt.Errorf("failed to get info: %w", err)
 		}

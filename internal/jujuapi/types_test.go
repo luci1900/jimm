@@ -11,9 +11,9 @@ import (
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/core/instance"
 	"github.com/juju/juju/core/life"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
@@ -34,7 +34,7 @@ func TestModelCreateArgs(t *testing.T) {
 		about: "all ok",
 		args: jujuparams.ModelCreateArgs{
 			Name:               "test-model",
-			OwnerTag:           names.NewUserTag("alice@canonical.com").String(),
+			Qualifier:          "alice@canonical.com",
 			CloudTag:           names.NewCloudTag("test-cloud").String(),
 			CloudCredentialTag: names.NewCloudCredentialTag("test-cloud/alice@canonical.com/test-credential-1").String(),
 		},
@@ -47,7 +47,7 @@ func TestModelCreateArgs(t *testing.T) {
 	}, {
 		about: "name not specified",
 		args: jujuparams.ModelCreateArgs{
-			OwnerTag:           names.NewUserTag("alice@canonical.com").String(),
+			Qualifier:          "alice@canonical.com",
 			CloudTag:           names.NewCloudTag("test-cloud").String(),
 			CloudCredentialTag: names.NewCloudCredentialTag("test-cloud/alice/test-credential-1").String(),
 		},
@@ -56,16 +56,16 @@ func TestModelCreateArgs(t *testing.T) {
 		about: "invalid owner tag",
 		args: jujuparams.ModelCreateArgs{
 			Name:               "test-model",
-			OwnerTag:           "alice@canonical.com",
+			Qualifier:          "alice@canonical.com@canonical.com",
 			CloudTag:           names.NewCloudTag("test-cloud").String(),
 			CloudCredentialTag: names.NewCloudCredentialTag("test-cloud/alice/test-credential-1").String(),
 		},
-		expectedError: `"alice@canonical.com" is not a valid tag`,
+		expectedError: `"alice@canonical.com@canonical.com" is not a valid user`,
 	}, {
 		about: "invalid cloud tag",
 		args: jujuparams.ModelCreateArgs{
 			Name:               "test-model",
-			OwnerTag:           names.NewUserTag("alice@canonical.com").String(),
+			Qualifier:          "alice@canonical.com",
 			CloudTag:           "test-cloud",
 			CloudCredentialTag: names.NewCloudCredentialTag("test-cloud/alice/test-credential-1").String(),
 		},
@@ -74,7 +74,7 @@ func TestModelCreateArgs(t *testing.T) {
 		about: "invalid cloud credential tag",
 		args: jujuparams.ModelCreateArgs{
 			Name:               "test-model",
-			OwnerTag:           names.NewUserTag("alice@canonical.com").String(),
+			Qualifier:          "alice@canonical.com",
 			CloudTag:           names.NewCloudTag("test-cloud").String(),
 			CloudCredentialTag: "test-credential-1",
 		},
@@ -83,7 +83,7 @@ func TestModelCreateArgs(t *testing.T) {
 		about: "cloud does not match cloud credential cloud",
 		args: jujuparams.ModelCreateArgs{
 			Name:               "test-model",
-			OwnerTag:           names.NewUserTag("alice@canonical.com").String(),
+			Qualifier:          "alice@canonical.com",
 			CloudTag:           names.NewCloudTag("test-cloud").String(),
 			CloudCredentialTag: names.NewCloudCredentialTag("another-cloud/alice/test-credential-1").String(),
 		},
@@ -138,10 +138,7 @@ func TestToModelInfo(t *testing.T) {
 	availabilityZone := "eu-west-1a"
 	virtType := "kvm"
 	tags := []string{"tag1", "tag2"}
-	haPrimary := true
-	hasVote := true
-	wantsVote := true
-	agentVersion := version.MustParse("3.6.0")
+	agentVersion := semversion.MustParse("3.6.0")
 
 	modelInfo := base.ModelInfo{
 		Name:            "test-model",
@@ -149,11 +146,10 @@ func TestToModelInfo(t *testing.T) {
 		ControllerUUID:  "11111111-2222-3333-4444-555555555555",
 		IsController:    false,
 		Type:            "iaas",
-		DefaultSeries:   "jammy",
 		Cloud:           "aws",
 		CloudRegion:     "eu-west-1",
 		CloudCredential: "aws/alice@canonical.com/main-cred",
-		Owner:           "alice@canonical.com",
+		Qualifier:       "alice@canonical.com",
 		Life:            life.Value("alive"),
 		ProviderType:    "ec2",
 		AgentVersion:    &agentVersion,
@@ -177,9 +173,6 @@ func TestToModelInfo(t *testing.T) {
 			DisplayName: "machine-0",
 			Status:      "running",
 			Message:     "ok",
-			HAPrimary:   &haPrimary,
-			HasVote:     hasVote,
-			WantsVote:   wantsVote,
 			Hardware: &instance.HardwareCharacteristics{
 				Arch:             &arch,
 				CpuCores:         &cores,
@@ -206,12 +199,10 @@ func TestToModelInfo(t *testing.T) {
 	c.Assert(got.ControllerUUID, qt.Equals, modelInfo.ControllerUUID)
 	c.Assert(got.IsController, qt.Equals, modelInfo.IsController)
 	c.Assert(got.Type, qt.Equals, modelInfo.Type.String())
-	c.Assert(got.DefaultSeries, qt.Equals, modelInfo.DefaultSeries)
-	c.Assert(got.DefaultBase, qt.Equals, modelInfo.DefaultSeries)
 	c.Assert(got.CloudTag, qt.Equals, names.NewCloudTag(modelInfo.Cloud).String())
 	c.Assert(got.CloudRegion, qt.Equals, modelInfo.CloudRegion)
 	c.Assert(got.CloudCredentialTag, qt.Equals, names.NewCloudCredentialTag(modelInfo.CloudCredential).String())
-	c.Assert(got.OwnerTag, qt.Equals, names.NewUserTag(modelInfo.Owner).String())
+	c.Assert(got.Qualifier, qt.Equals, modelInfo.Qualifier.String())
 	c.Assert(got.Life, qt.Equals, modelInfo.Life)
 	c.Assert(got.ProviderType, qt.Equals, modelInfo.ProviderType)
 	c.Assert(got.AgentVersion, qt.Equals, modelInfo.AgentVersion)
@@ -246,9 +237,6 @@ func TestToModelInfo(t *testing.T) {
 			AvailabilityZone: &availabilityZone,
 			VirtType:         &virtType,
 		},
-		HAPrimary: &haPrimary,
-		HasVote:   hasVote,
-		WantsVote: wantsVote,
 	})
 	c.Assert(got.Machines[1], qt.DeepEquals, jujuparams.ModelMachineInfo{
 		Id:          "1",
@@ -267,7 +255,7 @@ func TestToModelInfoNilMachineInfo(t *testing.T) {
 		Name:            "test-model",
 		Cloud:           "aws",
 		CloudCredential: "aws/alice@canonical.com/main-cred",
-		Owner:           "alice@canonical.com",
+		Qualifier:       "alice@canonical.com",
 	}
 
 	got := toModelInfo(modelInfo)
@@ -283,7 +271,7 @@ func TestToFullModelInfo(t *testing.T) {
 	end := start.Add(15 * time.Minute)
 	rotateInterval := 30 * time.Minute
 	validity := true
-	agentVersion := version.MustParse("3.6.0")
+	agentVersion := semversion.MustParse("3.6.0")
 
 	modelInfo := jujuclient.ModelInfo{
 		ModelInfo: base.ModelInfo{
@@ -292,11 +280,10 @@ func TestToFullModelInfo(t *testing.T) {
 			ControllerUUID:  "11111111-2222-3333-4444-555555555555",
 			IsController:    false,
 			Type:            "iaas",
-			DefaultSeries:   "jammy",
 			Cloud:           "aws",
 			CloudRegion:     "eu-west-1",
 			CloudCredential: "aws/alice@canonical.com/main-cred",
-			Owner:           "alice@canonical.com",
+			Qualifier:       "alice@canonical.com",
 			Life:            life.Value("alive"),
 			ProviderType:    "ec2",
 			AgentVersion:    &agentVersion,
@@ -372,7 +359,7 @@ func TestToFullModelInfoNilSecretBackendError(t *testing.T) {
 			Name:            "test-model",
 			Cloud:           "aws",
 			CloudCredential: "aws/alice@canonical.com/main-cred",
-			Owner:           "alice@canonical.com",
+			Qualifier:       "alice@canonical.com",
 		},
 		SecretBackends: []jujuclient.SecretBackendResult{{
 			Result: jujuclient.SecretBackend{
@@ -410,7 +397,7 @@ func TestToFullModelInfoNonNilSecretBackendError(t *testing.T) {
 			Name:            "test-model",
 			Cloud:           "aws",
 			CloudCredential: "aws/alice@canonical.com/main-cred",
-			Owner:           "alice@canonical.com",
+			Qualifier:       "alice@canonical.com",
 		},
 		SecretBackends: []jujuclient.SecretBackendResult{{
 			Result: jujuclient.SecretBackend{

@@ -18,7 +18,7 @@ func TestGrantAuditLogAccessRun_Success(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
-		GrantAuditLogAccess(&apiparams.AuditLogAccessRequest{UserTag: "user-bob@canonical.com"}).
+		GrantAuditLogAccess(gomock.Any(), &apiparams.AuditLogAccessRequest{UserTag: "user-bob@canonical.com"}).
 		Return(nil).
 		Times(1)
 
@@ -39,7 +39,7 @@ func TestGrantAuditLogAccessRun_APIError(t *testing.T) {
 	cmdMocks := setupCmdMocks(c)
 
 	cmdMocks.client.EXPECT().
-		GrantAuditLogAccess(gomock.Any()).
+		GrantAuditLogAccess(gomock.Any(), gomock.Any()).
 		Return(errors.New("unauthorised access")).
 		Times(1)
 

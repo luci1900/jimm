@@ -12,8 +12,7 @@ import (
 	"github.com/juju/juju/core/instance"
 	"github.com/juju/juju/core/life"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"gorm.io/gorm"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -81,7 +80,7 @@ func TestModel(t *testing.T) {
 		Controller:      ctl,
 		CloudRegion:     cl.Regions[0],
 		CloudCredential: cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.Create(&m).Error, qt.IsNil)
 
@@ -134,7 +133,7 @@ func TestModelUniqueConstraint(t *testing.T) {
 		Controller:      ctl1,
 		CloudRegion:     cl1.Regions[0],
 		CloudCredential: cred1,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.Create(&m1).Error, qt.IsNil)
 
@@ -148,7 +147,7 @@ func TestModelUniqueConstraint(t *testing.T) {
 		Controller:      ctl2,
 		CloudRegion:     cl2.Regions[0],
 		CloudCredential: cred2,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.Create(&m2).Error, qt.ErrorMatches, `ERROR: duplicate key value violates unique constraint .*`)
 
@@ -181,7 +180,7 @@ func TestModelSetMigrationModeEnumType(t *testing.T) {
 		Controller:      ctl1,
 		CloudRegion:     cl1.Regions[0],
 		CloudCredential: cred1,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	c.Assert(db.Create(&m1).Error, qt.IsNil)
 	// Check default migration mode is set to empty string.
@@ -202,7 +201,7 @@ func TestModelSetMigrationModeEnumType(t *testing.T) {
 		Controller:      ctl1,
 		CloudRegion:     cl1.Regions[0],
 		CloudCredential: cred1,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 		MigrationMode:   dbmodel.MigrationModeNone,
 	}
 	c.Assert(db.Create(&m2).Error, qt.IsNil)
@@ -218,7 +217,7 @@ func TestModelSetMigrationModeEnumType(t *testing.T) {
 		Controller:      ctl1,
 		CloudRegion:     cl1.Regions[0],
 		CloudCredential: cred1,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 		MigrationMode:   "random-mode",
 	}
 	c.Assert(db.Create(&m3).Error, qt.ErrorMatches, `.*invalid input value for enum migration_mode_type: "random-mode".*`)
@@ -239,15 +238,16 @@ func TestToJujuModel(t *testing.T) {
 		Controller:        ctl,
 		CloudRegion:       cl.Regions[0],
 		CloudCredential:   cred,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	m.CloudRegion.Cloud = cl
 
 	jm := m.ToJujuModel()
 	c.Check(jm, qt.DeepEquals, jujuparams.Model{
-		Name:     "test-model",
-		UUID:     "00000001-0000-0000-0000-0000-000000000001",
-		OwnerTag: "user-bob@canonical.com",
+		Name:      "test-model",
+		UUID:      "00000001-0000-0000-0000-0000-000000000001",
+		Qualifier: "bob@canonical.com",
+		Type:      "test-provider",
 	})
 }
 
@@ -266,7 +266,7 @@ func TestToJujuModelSummary(t *testing.T) {
 		Controller:      ctl,
 		CloudRegion:     cl.Regions[0],
 		CloudCredential: cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}
 	m.CloudRegion.Cloud = cl
 	modelSummaryFromController := base.UserModelSummary{
@@ -274,10 +274,9 @@ func TestToJujuModelSummary(t *testing.T) {
 		Type:           "iaas",
 		UUID:           "00000001-0000-0000-0000-0000-000000000001",
 		ControllerUUID: "00000000-0000-0000-0000-0000-0000000000002",
-		Life:           life.Value(state.Alive.String()),
+		Life:           life.Value(string(life.Alive)),
 		IsController:   false,
 		ProviderType:   "test-provider",
-		DefaultSeries:  "warty",
 		Status: base.Status{
 			Status: "available",
 			Since:  &now,
@@ -292,9 +291,6 @@ func TestToJujuModelSummary(t *testing.T) {
 			Entity: "units",
 			Count:  3,
 		}},
-		SLA: &base.SLASummary{
-			Level: "unsupported",
-		},
 	}
 	ms := m.MergeModelSummaryFromController(modelSummaryFromController, "", "writer")
 	c.Check(ms, qt.DeepEquals, base.UserModelSummary{
@@ -304,13 +300,12 @@ func TestToJujuModelSummary(t *testing.T) {
 		ControllerUUID:  "00000000-0000-0000-0000-0000-0000000000001",
 		IsController:    false,
 		ProviderType:    "test-provider",
-		DefaultSeries:   "warty",
 		Cloud:           "test-cloud",
 		CloudRegion:     "test-region",
 		CloudCredential: "test-cloud/bob@canonical.com/test-cred",
 		ModelUserAccess: "writer",
-		Owner:           "bob@canonical.com",
-		Life:            life.Value(state.Alive.String()),
+		Qualifier:       "bob@canonical.com",
+		Life:            life.Value(string(life.Alive)),
 		Status: base.Status{
 			Status: "available",
 			Since:  &now,
@@ -325,9 +320,6 @@ func TestToJujuModelSummary(t *testing.T) {
 			Entity: "units",
 			Count:  3,
 		}},
-		SLA: &base.SLASummary{
-			Level: "unsupported",
-		},
 	})
 }
 
@@ -380,12 +372,11 @@ func TestModelFromJujuModelInfo(t *testing.T) {
 		ControllerUUID:  "00000000-0000-0000-0000-0000-0000000000001",
 		IsController:    false,
 		ProviderType:    "test-provider",
-		DefaultSeries:   "warty",
 		Cloud:           "test-cloud",
 		CloudRegion:     "test-region",
 		CloudCredential: "test-cloud/bob@canonical.com/test-cred",
-		Owner:           "bob@canonical.com",
-		Life:            life.Value(state.Alive.String()),
+		Qualifier:       "bob@canonical.com",
+		Life:            life.Value(string(life.Alive)),
 		Status: base.Status{
 			Status: "available",
 			Since:  &now,
@@ -438,30 +429,6 @@ func TestModelFromJujuModelInfo(t *testing.T) {
 			Owner:     *i,
 		},
 		OwnerIdentityName: "bob@canonical.com",
-		Life:              state.Alive.String(),
-	})
-}
-
-func TestModelFromJujuModelUpdate(t *testing.T) {
-	c := qt.New(t)
-	now := time.Now().UTC().Truncate(time.Millisecond)
-
-	info := jujuparams.ModelUpdate{
-		Name: "test-model",
-		Life: life.Value(state.Alive.String()),
-		Status: jujuparams.StatusInfo{
-			Current: "available",
-			Since:   &now,
-		},
-		SLA: jujuparams.ModelSLAInfo{
-			Level: "unsupported",
-		},
-	}
-
-	model := dbmodel.Model{}
-	model.FromJujuModelUpdate(info)
-	c.Assert(model, qt.DeepEquals, dbmodel.Model{
-		Name: "test-model",
-		Life: state.Alive.String(),
+		Life:              string(life.Alive),
 	})
 }

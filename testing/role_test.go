@@ -28,11 +28,11 @@ func TestAddRole(t *testing.T) {
 	defer conn.Close()
 
 	client := api.NewClient(conn)
-	res, err := client.AddRole(&apiparams.AddRoleRequest{Name: "test-role"})
+	res, err := client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: "test-role"})
 	c.Assert(err, qt.IsNil)
 	c.Assert(res.UUID, qt.Not(qt.Equals), "")
 
-	_, err = client.AddRole(&apiparams.AddRoleRequest{Name: "test-role"})
+	_, err = client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: "test-role"})
 	c.Assert(err, qt.ErrorMatches, ".*already exists.*")
 }
 
@@ -45,24 +45,24 @@ func TestGetRole(t *testing.T) {
 
 	client := api.NewClient(conn)
 
-	created, err := client.AddRole(&apiparams.AddRoleRequest{Name: "test-role"})
+	created, err := client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: "test-role"})
 	c.Assert(err, qt.IsNil)
 
-	retrievedUuid, err := client.GetRole(&apiparams.GetRoleRequest{UUID: created.UUID})
+	retrievedUuid, err := client.GetRole(t.Context(), &apiparams.GetRoleRequest{UUID: created.UUID})
 	c.Assert(err, qt.IsNil)
 	c.Assert(retrievedUuid.Role, qt.DeepEquals, created.Role)
 
-	retrievedName, err := client.GetRole(&apiparams.GetRoleRequest{Name: created.Name})
+	retrievedName, err := client.GetRole(t.Context(), &apiparams.GetRoleRequest{Name: created.Name})
 	c.Assert(err, qt.IsNil)
 	c.Assert(retrievedName.Role, qt.DeepEquals, created.Role)
 
-	_, err = client.GetRole(&apiparams.GetRoleRequest{UUID: "non-existent"})
+	_, err = client.GetRole(t.Context(), &apiparams.GetRoleRequest{UUID: "non-existent"})
 	c.Assert(err, qt.ErrorMatches, ".*not found.*")
 
-	_, err = client.GetRole(&apiparams.GetRoleRequest{Name: created.Name, UUID: created.UUID})
+	_, err = client.GetRole(t.Context(), &apiparams.GetRoleRequest{Name: created.Name, UUID: created.UUID})
 	c.Assert(err, qt.ErrorMatches, ".*only one of.*")
 
-	_, err = client.GetRole(&apiparams.GetRoleRequest{
+	_, err = client.GetRole(t.Context(), &apiparams.GetRoleRequest{
 		Name: "#####",
 	})
 	c.Assert(err, qt.ErrorMatches, ".*invalid role name.*")
@@ -78,20 +78,20 @@ func TestRemoveRole(t *testing.T) {
 
 	client := api.NewClient(conn)
 
-	err := client.RemoveRole(&apiparams.RemoveRoleRequest{
+	err := client.RemoveRole(t.Context(), &apiparams.RemoveRoleRequest{
 		Name: "test-role",
 	})
 	c.Assert(err, qt.ErrorMatches, ".*not found.*")
 
-	err = client.RemoveRole(&apiparams.RemoveRoleRequest{
+	err = client.RemoveRole(t.Context(), &apiparams.RemoveRoleRequest{
 		Name: "#####",
 	})
 	c.Assert(err, qt.ErrorMatches, ".*invalid role name.*")
 
-	_, err = client.AddRole(&apiparams.AddRoleRequest{Name: "test-role"})
+	_, err = client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: "test-role"})
 	c.Assert(err, qt.IsNil)
 
-	err = client.RemoveRole(&apiparams.RemoveRoleRequest{
+	err = client.RemoveRole(t.Context(), &apiparams.RemoveRoleRequest{
 		Name: "test-role",
 	})
 	c.Assert(err, qt.IsNil)
@@ -139,21 +139,21 @@ func TestRemoveRoleRemovesTuples(t *testing.T) {
 	err = s.JIMM.OpenFGAClient.AddRelation(context.Background(), tuples...)
 	c.Assert(err, qt.IsNil)
 	// Check user has access to model and controller through role2
-	checkResp, err := client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
+	checkResp, err := client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, true)
-	checkResp, err = client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
+	checkResp, err = client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, true)
 
-	err = client.RemoveRole(&apiparams.RemoveRoleRequest{Name: role.Name})
+	err = client.RemoveRole(t.Context(), &apiparams.RemoveRoleRequest{Name: role.Name})
 	c.Assert(err, qt.IsNil)
 
 	// Check user access has been revoked.
-	checkResp, err = client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
+	checkResp, err = client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, false)
-	checkResp, err = client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
+	checkResp, err = client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, false)
 }
@@ -167,16 +167,16 @@ func TestRenameRole(t *testing.T) {
 
 	client := api.NewClient(conn)
 
-	err := client.RenameRole(&apiparams.RenameRoleRequest{
+	err := client.RenameRole(t.Context(), &apiparams.RenameRoleRequest{
 		Name:    "test-role",
 		NewName: "renamed-role",
 	})
 	c.Assert(err, qt.ErrorMatches, ".*not found.*")
 
-	_, err = client.AddRole(&apiparams.AddRoleRequest{Name: "test-role"})
+	_, err = client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: "test-role"})
 	c.Assert(err, qt.IsNil)
 
-	err = client.RenameRole(&apiparams.RenameRoleRequest{
+	err = client.RenameRole(t.Context(), &apiparams.RenameRoleRequest{
 		Name:    "test-role",
 		NewName: "renamed-role",
 	})
@@ -200,11 +200,11 @@ func TestListRoles(t *testing.T) {
 	}
 
 	for _, name := range roleNames {
-		_, err := client.AddRole(&apiparams.AddRoleRequest{Name: name})
+		_, err := client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: name})
 		c.Assert(err, qt.IsNil)
 	}
 	req := apiparams.ListRolesRequest{Limit: 10, Offset: 0}
-	roles, err := client.ListRoles(&req)
+	roles, err := client.ListRoles(t.Context(), &req)
 	c.Assert(err, qt.IsNil)
 	c.Assert(roles, qt.HasLen, 4)
 	// Verify the UUID is not empty.
@@ -224,14 +224,14 @@ func TestUnauthorizedUserForRoleManagerment(t *testing.T) {
 	defer conn.Close()
 	client := api.NewClient(conn)
 
-	_, err := client.GetRole(&apiparams.GetRoleRequest{Name: "name"})
+	_, err := client.GetRole(t.Context(), &apiparams.GetRoleRequest{Name: "name"})
 	c.Assert(err, qt.ErrorMatches, ".*unauthorized.*")
-	err = client.RemoveRole(&apiparams.RemoveRoleRequest{Name: "name"})
+	err = client.RemoveRole(t.Context(), &apiparams.RemoveRoleRequest{Name: "name"})
 	c.Assert(err, qt.ErrorMatches, ".*unauthorized.*")
-	_, err = client.AddRole(&apiparams.AddRoleRequest{Name: "name"})
+	_, err = client.AddRole(t.Context(), &apiparams.AddRoleRequest{Name: "name"})
 	c.Assert(err, qt.ErrorMatches, ".*unauthorized.*")
-	err = client.RenameRole(&apiparams.RenameRoleRequest{Name: "name", NewName: "rename"})
+	err = client.RenameRole(t.Context(), &apiparams.RenameRoleRequest{Name: "name", NewName: "rename"})
 	c.Assert(err, qt.ErrorMatches, ".*unauthorized.*")
-	_, err = client.ListRoles(&apiparams.ListRolesRequest{})
+	_, err = client.ListRoles(t.Context(), &apiparams.ListRolesRequest{})
 	c.Assert(err, qt.ErrorMatches, ".*unauthorized.*")
 }

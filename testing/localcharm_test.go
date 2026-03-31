@@ -8,13 +8,13 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/charm/v12"
-	"github.com/juju/charm/v12/resource"
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/client/charms"
 	"github.com/juju/juju/api/client/resources"
+	"github.com/juju/juju/core/semversion"
+	"github.com/juju/juju/domain/deployment/charm"
+	"github.com/juju/juju/domain/deployment/charm/resource"
 	"github.com/juju/juju/testcharms"
-	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
@@ -35,7 +35,7 @@ func TestLocalCharmDeploy(t *testing.T) {
 	curl := charm.MustParseURL(
 		fmt.Sprintf("local:quantal/%s-%d", charmArchive.Meta().Name, charmArchive.Revision()),
 	)
-	vers := version.MustParse("2.6.6")
+	vers := semversion.MustParse("2.6.6")
 	url, err := client.AddLocalCharm(curl, charmArchive, false, vers)
 	c.Assert(err, qt.IsNil)
 	c.Assert(url.String(), qt.Equals, curl.String())
@@ -59,7 +59,7 @@ func TestResourceEndpoint(t *testing.T) {
 	curl := charm.MustParseURL(
 		fmt.Sprintf("local:quantal/%s-%d", charmArchive.Meta().Name, charmArchive.Revision()),
 	)
-	url, err := charmClient.AddLocalCharm(curl, charmArchive, false, version.MustParse("2.6.6"))
+	url, err := charmClient.AddLocalCharm(curl, charmArchive, false, semversion.MustParse("2.6.6"))
 	c.Assert(err, qt.IsNil)
 
 	appName := "test-app"
@@ -67,7 +67,7 @@ func TestResourceEndpoint(t *testing.T) {
 	uploadClient, err := resources.NewClient(conn)
 	c.Assert(err, qt.IsNil)
 
-	pendingIDs, err := uploadClient.AddPendingResources(resources.AddPendingResourcesArgs{
+	pendingIDs, err := uploadClient.AddPendingResources(t.Context(), resources.AddPendingResourcesArgs{
 		ApplicationID: appName,
 		CharmID:       resources.CharmID{URL: url.String()},
 		Resources: []resource.Resource{
@@ -82,6 +82,6 @@ func TestResourceEndpoint(t *testing.T) {
 	pendingId := pendingIDs[0]
 
 	// act
-	err = uploadClient.Upload(appName, "test", "file", pendingId, strings.NewReader("<data>"))
+	err = uploadClient.Upload(t.Context(), appName, "test", "file", pendingId, strings.NewReader("<data>"))
 	c.Assert(err, qt.IsNil)
 }

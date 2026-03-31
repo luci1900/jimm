@@ -22,7 +22,7 @@ import (
 	jujuhttp "github.com/juju/http/v2"
 	"github.com/juju/juju/api/base"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 	"gopkg.in/httprequest.v1"
@@ -132,7 +132,6 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	broken := new(uint32)
 	go pinger(client, ct.Id(), monitorC, broken)
 	return &Connection{
-		ctx:                ctx,
 		client:             client,
 		user:               user,
 		facadeVersions:     facades,
@@ -187,7 +186,6 @@ func pinger(client *rpc.Client, controller string, doneC <-chan struct{}, broken
 // fall-back to earlier versions with slightly degraded functionality if
 // possible.
 type Connection struct {
-	ctx                context.Context
 	client             *rpc.Client
 	facadeVersions     map[string]bool
 	bestFacadeVersions map[string]int
@@ -216,7 +214,7 @@ func (c *Connection) IsBroken() bool {
 }
 
 func (c *Connection) RootHTTPClient() (*httprequest.Client, error) {
-	return c.HTTPClient()
+	return c.HTTPClient(base.HTTPClientScopeUnscoped)
 }
 
 // hasFacadeVersion returns whether the connection supports the given
@@ -272,7 +270,11 @@ func (c *Connection) ModelTag() (names.ModelTag, bool) {
 // HTTPClient returns a httprequest.Client that can be used
 // to make HTTP requests to the API. URLs passed to the client
 // will be made relative to the API host and the current model.
-func (c *Connection) HTTPClient() (*httprequest.Client, error) {
+func (c *Connection) HTTPClient(scope base.HTTPClientScope) (*httprequest.Client, error) {
+	return nil, errors.E(errors.CodeNotImplemented)
+}
+
+func (c *Connection) SimpleHTTPClient() (base.SimpleHTTPClient, error) {
 	return nil, errors.E(errors.CodeNotImplemented)
 }
 
@@ -295,13 +297,8 @@ func (c *Connection) BakeryClient() base.MacaroonDischarger {
 // APICall makes a call to the API server with the given object type,
 // id, request and parameters. The response is filled in with the
 // call's result if the call is successful.
-func (c *Connection) APICall(objType string, version int, id, request string, params, response interface{}) error {
-	return c.Call(c.ctx, objType, version, id, request, params, response)
-}
-
-// Context returns the standard context for this connection.
-func (c *Connection) Context() context.Context {
-	return c.ctx
+func (c *Connection) APICall(ctx context.Context, objType string, version int, id, request string, params, response interface{}) error {
+	return c.Call(ctx, objType, version, id, request, params, response)
 }
 
 // ConnectStream connects to the given HTTP websocket
@@ -309,14 +306,14 @@ func (c *Connection) Context() context.Context {
 // model) and returns the resulting connection.
 // The given parameters are used as URL query values
 // when making the initial HTTP request.
-func (c *Connection) ConnectStream(path string, attrs url.Values) (base.Stream, error) {
+func (c *Connection) ConnectStream(ctx context.Context, path string, attrs url.Values) (base.Stream, error) {
 
 	modelTag, ok := c.ModelTag()
 	if !ok {
 		return nil, errors.New("no model found")
 	}
 
-	user, pass, err := c.dialer.ControllerCredentialsStore.GetControllerCredentials(c.ctx, c.ctl.Name)
+	user, pass, err := c.dialer.ControllerCredentialsStore.GetControllerCredentials(ctx, c.ctl.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +322,7 @@ func (c *Connection) ConnectStream(path string, attrs url.Values) (base.Stream, 
 		return nil, errors.New("invalid/missing controller credentials")
 	}
 	requestHeader := jujuhttp.BasicAuthHeader(names.NewUserTag(user).String(), pass)
-	conn, err := rpc.Dial(c.ctx, c.ctl, modelTag, path, requestHeader, attrs)
+	conn, err := rpc.Dial(ctx, c.ctl, modelTag, path, requestHeader, attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -337,9 +334,9 @@ func (c *Connection) ConnectStream(path string, attrs url.Values) (base.Stream, 
 // values are used as URL query values when making the initial
 // HTTP request. Headers passed in will be added to the HTTP
 // request.
-func (c *Connection) ConnectControllerStream(path string, attrs url.Values, extraHeaders http.Header) (base.Stream, error) {
+func (c *Connection) ConnectControllerStream(ctx context.Context, path string, attrs url.Values, extraHeaders http.Header) (base.Stream, error) {
 
-	user, pass, err := c.dialer.ControllerCredentialsStore.GetControllerCredentials(c.ctx, c.ctl.Name)
+	user, pass, err := c.dialer.ControllerCredentialsStore.GetControllerCredentials(ctx, c.ctl.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +348,7 @@ func (c *Connection) ConnectControllerStream(path string, attrs url.Values, extr
 		}
 	}
 
-	conn, err := rpc.Dial(c.ctx, c.ctl, names.ModelTag{}, path, header, attrs)
+	conn, err := rpc.Dial(ctx, c.ctl, names.ModelTag{}, path, header, attrs)
 	if err != nil {
 		return nil, err
 	}

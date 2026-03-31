@@ -9,7 +9,7 @@ import (
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/api/client/modelmanager"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 )
@@ -28,9 +28,9 @@ type CreateModelArgs struct {
 // specification returning the model details created. CreateModel
 // uses the Create model procedure on the ModelManager facade.
 func (c Connection) CreateModel(ctx context.Context, args *CreateModelArgs) (base.ModelInfo, error) {
-	return modelmanager.NewClient(&c).CreateModel(
+	return modelmanager.NewClient(&c).CreateModel(ctx,
 		args.Name,
-		args.Owner,
+		names.NewUserTag(args.Owner),
 		args.Cloud,
 		args.CloudRegion,
 		args.CloudCredentialTag,
@@ -82,7 +82,7 @@ type ModelInfo struct {
 
 // ModelInfo retrieves information about a model from the controller.
 func (c Connection) ModelInfo(ctx context.Context, model names.ModelTag) (ModelInfo, error) {
-	res, err := modelmanager.NewClient(&c).ModelInfo([]names.ModelTag{model})
+	res, err := modelmanager.NewClient(&c).ModelInfo(ctx, []names.ModelTag{model})
 	if err != nil {
 		return ModelInfo{}, err
 	}
@@ -100,41 +100,41 @@ func (c Connection) ModelInfo(ctx context.Context, model names.ModelTag) (ModelI
 // ModelManager facade.
 func (c Connection) GrantJIMMModelAdmin(ctx context.Context, tag names.ModelTag) error {
 	access := string(jujuparams.ModelAdminAccess)
-	return modelmanager.NewClient(&c).GrantModel(adminUser, access, tag.Id())
+	return modelmanager.NewClient(&c).GrantModel(ctx, adminUser, access, tag.Id())
 }
 
 // DumpModel dumps debugging details for the given model. If the simplied
 // dump is requested then a simplified dump is returned. DumpModel uses the
 // DumpModels method on the ModelManager facade.
-func (c Connection) DumpModel(ctx context.Context, tag names.ModelTag, simplified bool) (map[string]interface{}, error) {
-	return modelmanager.NewClient(&c).DumpModel(tag, simplified)
+func (c Connection) DumpModel(ctx context.Context, tag names.ModelTag) (map[string]interface{}, error) {
+	return modelmanager.NewClient(&c).DumpModel(ctx, tag)
 }
 
 // DumpModelDB dumps the controller database entry given model.
 // DumpModelDB uses the DumpModelsDB method on the ModelManager facade..
 func (c Connection) DumpModelDB(ctx context.Context, tag names.ModelTag) (map[string]interface{}, error) {
-	return modelmanager.NewClient(&c).DumpModelDB(tag)
+	return modelmanager.NewClient(&c).DumpModelDB(ctx, tag)
 }
 
 // ListModelSummaries retrieves the list of model summaries from the controler
 func (c Connection) ListModelSummaries(ctx context.Context, ms jujuparams.ModelSummariesRequest) ([]base.UserModelSummary, error) {
-	return modelmanager.NewClient(&c).ListModelSummaries(c.user.ResourceTag().String(), ms.All)
+	return modelmanager.NewClient(&c).ListModelSummaries(ctx, c.user.ResourceTag().String(), ms.All)
 }
 
 // ValidateModelUpgrade validates if a model is allowed to perform an upgrade. It
 // uses ValidateModelUpgrades on the ModelManager facade.
 func (c Connection) ValidateModelUpgrade(ctx context.Context, model names.ModelTag, force bool) error {
-	return modelmanager.NewClient(&c).ValidateModelUpgrade(model, force)
+	return modelmanager.NewClient(&c).ValidateModelUpgrade(ctx, model, force)
 }
 
 // DestroyModel starts the destruction of the given model.
 func (c Connection) DestroyModel(ctx context.Context, tag names.ModelTag, destroyStorage *bool, force *bool, maxWait, timeout *time.Duration) error {
-	return modelmanager.NewClient(&c).DestroyModel(tag, destroyStorage, force, maxWait, timeout)
+	return modelmanager.NewClient(&c).DestroyModel(ctx, tag, destroyStorage, force, maxWait, timeout)
 }
 
 // ModelStatus retrieves the status of a model from the controller.
 func (c Connection) ModelStatus(ctx context.Context, modelTag names.ModelTag) (base.ModelStatus, error) {
-	statuses, err := modelmanager.NewClient(&c).ModelStatus(modelTag)
+	statuses, err := modelmanager.NewClient(&c).ModelStatus(ctx, modelTag)
 	if err != nil {
 		return base.ModelStatus{}, err
 	}
@@ -149,7 +149,7 @@ func (c Connection) ModelStatus(ctx context.Context, modelTag names.ModelTag) (b
 
 // ChangeModelCredential replaces cloud credential for a given model with the provided one.
 func (c Connection) ChangeModelCredential(ctx context.Context, model names.ModelTag, credential names.CloudCredentialTag) error {
-	return modelmanager.NewClient(&c).ChangeModelCredential(model, credential)
+	return modelmanager.NewClient(&c).ChangeModelCredential(ctx, model, credential)
 }
 
 // ListModels returns UserModel's for the user that is logged in. If the user logged
@@ -158,5 +158,5 @@ func (c Connection) ChangeModelCredential(ctx context.Context, model names.Model
 // In our wrapper, we ask as the controller admin. So expect ALL models from
 // the controller.
 func (c Connection) ListModels(ctx context.Context) ([]base.UserModel, error) {
-	return modelmanager.NewClient(&c).ListModels("admin")
+	return modelmanager.NewClient(&c).ListModels(ctx, "admin")
 }

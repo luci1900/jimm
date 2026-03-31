@@ -15,7 +15,7 @@ import (
 	controller "github.com/juju/juju/api/controller/controller"
 	crossmodel "github.com/juju/juju/core/crossmodel"
 	params "github.com/juju/juju/rpc/params"
-	names "github.com/juju/names/v5"
+	names "github.com/juju/names/v6"
 	gomock "go.uber.org/mock/gomock"
 )
 

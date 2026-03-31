@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucloud "github.com/juju/juju/cloud"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/juju/common"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -226,13 +226,13 @@ func (c *bootstrapCommand) Run(ctxt *cmd.Context) error {
 		Config: stringConfigValues,
 	}
 
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}
 	defer client.Close()
 
-	resp, err := client.StartBootstrap(&req)
+	resp, err := client.StartBootstrap(ctxt, &req)
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ Should you cancel this process, you can track the progress via bootstrap-status 
 		follow:              true,
 	}
 
-	return poller.watchBootstrapLogs()
+	return poller.watchBootstrapLogs(ctxt)
 }
 
 // CloudToParams converts a jujucloud.Cloud to a jujuparams.Cloud.

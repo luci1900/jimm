@@ -4,7 +4,7 @@ package jimmtest
 
 import (
 	"github.com/google/uuid"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/jujuapi"
 	"github.com/canonical/jimm/v3/internal/pubsub"

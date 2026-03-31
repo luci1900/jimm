@@ -24,8 +24,7 @@ import (
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/rpc/jsoncodec"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/utils/proxy"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
@@ -40,10 +39,10 @@ func TestLoginToController(t *testing.T) {
 		SkipLogin: true,
 	}, "test", nil)
 	defer conn.Close()
-	err := conn.Login(nil, "", "", nil)
+	err := conn.Login(t.Context(), nil, "", "", nil)
 	c.Assert(err, qt.ErrorMatches, `JIMM does not support login from old clients \(not supported\)`)
 	var resp jujuparams.RedirectInfoResult
-	err = conn.APICall("Admin", 3, "", "RedirectInfo", nil, &resp)
+	err = conn.APICall(t.Context(), "Admin", 3, "", "RedirectInfo", nil, &resp)
 	c.Assert(err, qt.ErrorMatches, "(?s).*not implemented.*")
 }
 
@@ -127,7 +126,7 @@ func testBrowserLogin(c *qt.C, s jimmtest.JimmWithControllers, username, passwor
 	defer conn.Close()
 
 	lr := &jujuparams.LoginResult{}
-	err = conn.APICall("Admin", 4, "", "LoginWithSessionCookie", nil, lr)
+	err = conn.APICall(c.Context(), "Admin", 4, "", "LoginWithSessionCookie", nil, lr)
 	c.Assert(err, qt.IsNil)
 
 	c.Assert(lr.UserInfo.Identity, qt.Equals, expectedEmail)
@@ -148,7 +147,7 @@ func TestBrowserLoginNoCookie(t *testing.T) {
 	defer conn.Close()
 
 	lr := &jujuparams.LoginResult{}
-	err := conn.APICall("Admin", 4, "", "LoginWithSessionCookie", nil, lr)
+	err := conn.APICall(t.Context(), "Admin", 4, "", "LoginWithSessionCookie", nil, lr)
 	c.Assert(err, qt.ErrorMatches, `missing cookie identity \(unauthorized access\)`)
 }
 
@@ -166,7 +165,7 @@ func TestDeviceLogin(t *testing.T) {
 	}, "test", nil)
 	defer conn.Close()
 
-	err := s.JIMM.Database.Migrate(context.Background())
+	err := s.JIMM.Database.Migrate(t.Context())
 	c.Assert(err, qt.IsNil)
 
 	// Create a user in keycloak
@@ -199,7 +198,7 @@ func TestDeviceLogin(t *testing.T) {
 	// A complete URI looks like: http://localhost:8082/realms/jimm/device?user_code=HOKO-OTRV
 	// where the user code is set as a part of the query string.
 	var loginDeviceResp params.LoginDeviceResponse
-	err = conn.APICall("Admin", 4, "", "LoginDevice", nil, &loginDeviceResp)
+	err = conn.APICall(t.Context(), "Admin", 4, "", "LoginDevice", nil, &loginDeviceResp)
 	c.Assert(err, qt.IsNil)
 	c.Assert(loginDeviceResp.UserCode, qt.Not(qt.IsNil))
 	c.Assert(loginDeviceResp.VerificationURI, qt.Equals, "http://localhost:8082/realms/jimm/device")
@@ -221,7 +220,7 @@ func TestDeviceLogin(t *testing.T) {
 	// token will complete. The polling can begin before OR after the user has entered the
 	// user code, for the simplicity of testing, we are retrieving it AFTER.
 	var sessionTokenResp params.GetDeviceSessionTokenResponse
-	err = conn.APICall("Admin", 4, "", "GetDeviceSessionToken", nil, &sessionTokenResp)
+	err = conn.APICall(t.Context(), "Admin", 4, "", "GetDeviceSessionToken", nil, &sessionTokenResp)
 	c.Assert(err, qt.IsNil)
 	// Ensure it is base64 and decodable
 	decodedToken, err := base64.StdEncoding.DecodeString(sessionTokenResp.SessionToken)
@@ -231,15 +230,15 @@ func TestDeviceLogin(t *testing.T) {
 
 	// Test no token present
 	var loginResult jujuparams.LoginResult
-	err = conn.APICall("Admin", 4, "", "LoginWithSessionToken", nil, &loginResult)
+	err = conn.APICall(t.Context(), "Admin", 4, "", "LoginWithSessionToken", nil, &loginResult)
 	c.Assert(err, qt.ErrorMatches, "no token presented.*")
 
 	// Test token not base64 encoded
-	err = conn.APICall("Admin", 4, "", "LoginWithSessionToken", params.LoginWithSessionTokenRequest{SessionToken: string(decodedToken)}, &loginResult)
+	err = conn.APICall(t.Context(), "Admin", 4, "", "LoginWithSessionToken", params.LoginWithSessionTokenRequest{SessionToken: string(decodedToken)}, &loginResult)
 	c.Assert(err, qt.ErrorMatches, "failed to decode token.*")
 
 	// Test token base64 encoded passes authentication
-	err = conn.APICall("Admin", 4, "", "LoginWithSessionToken", params.LoginWithSessionTokenRequest(sessionTokenResp), &loginResult)
+	err = conn.APICall(t.Context(), "Admin", 4, "", "LoginWithSessionToken", params.LoginWithSessionTokenRequest(sessionTokenResp), &loginResult)
 	c.Assert(err, qt.IsNil)
 	c.Assert(loginResult.UserInfo.Identity, qt.Equals, "user-"+user.Email)
 	c.Assert(loginResult.UserInfo.DisplayName, qt.Equals, strings.Split(user.Email, "@")[0])
@@ -248,7 +247,7 @@ func TestDeviceLogin(t *testing.T) {
 	updatedUser, err := dbmodel.NewIdentity(user.Email)
 	c.Assert(err, qt.IsNil)
 
-	c.Assert(s.JIMM.Database.GetIdentity(context.Background(), updatedUser), qt.IsNil)
+	c.Assert(s.JIMM.Database.GetIdentity(t.Context(), updatedUser), qt.IsNil)
 	// TODO(ale8k): Do we need to validate the token again for the test?
 	// It has just been through a verifier etc and was returned directly
 	// from the device grant?
@@ -318,7 +317,7 @@ func TestLoginWithClientCredentials(t *testing.T) {
 	)
 
 	var loginResult jujuparams.LoginResult
-	err := conn.APICall("Admin", 4, "", "LoginWithClientCredentials", params.LoginWithClientCredentialsRequest{
+	err := conn.APICall(t.Context(), "Admin", 4, "", "LoginWithClientCredentials", params.LoginWithClientCredentialsRequest{
 		ClientID:     validClientID,
 		ClientSecret: validClientSecret,
 	}, &loginResult)
@@ -326,7 +325,7 @@ func TestLoginWithClientCredentials(t *testing.T) {
 	c.Assert(loginResult.ControllerTag, qt.Equals, names.NewControllerTag(s.Params.ControllerUUID).String())
 	c.Assert(loginResult.UserInfo.Identity, qt.Equals, names.NewUserTag("test-client-id@serviceaccount").String())
 
-	err = conn.APICall("Admin", 4, "", "LoginWithClientCredentials", params.LoginWithClientCredentialsRequest{
+	err = conn.APICall(t.Context(), "Admin", 4, "", "LoginWithClientCredentials", params.LoginWithClientCredentialsRequest{
 		ClientID:     "invalid-client-id",
 		ClientSecret: "invalid-secret",
 	}, &loginResult)
@@ -353,7 +352,7 @@ func getDialWebsocketWithCustomCookieJar(jar *cookiejar.Jar) func(ctx context.Co
 				}
 				return netDialer.DialContext(ctx, netw, addr)
 			},
-			Proxy:            proxy.DefaultConfig.GetProxy,
+			Proxy:            nil,
 			HandshakeTimeout: 45 * time.Second,
 			TLSClientConfig:  tlsConfig,
 			// We update the jar so that the cookies retrieved from RunBrowserLogin

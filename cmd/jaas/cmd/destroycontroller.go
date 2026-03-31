@@ -5,11 +5,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -112,15 +112,17 @@ func (c *destroyControllerCommand) Run(ctxt *cmd.Context) error {
 		}
 	}
 
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("could not create JIMM client: %v", err)
 	}
 	defer client.Close()
 
-	resp, err := client.StartDestroyController(&params.DestroyControllerRequest{
-		ControllerName: c.controllerName,
-	})
+	resp, err := client.StartDestroyController(
+		ctxt,
+		&params.DestroyControllerRequest{
+			ControllerName: c.controllerName,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to start destroy controller job: %w", err)
 	}
@@ -161,5 +163,5 @@ Should you cancel this process, you can track the progress via destroy-status wi
 		follow:              true,
 	}
 
-	return poller.watchBootstrapLogs()
+	return poller.watchBootstrapLogs(ctxt)
 }

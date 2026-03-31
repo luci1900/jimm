@@ -6,7 +6,7 @@ import (
 	"context"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/juju/jujuclient"
+	"github.com/juju/juju/api/jujuclient"
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/internal/jujucommands"

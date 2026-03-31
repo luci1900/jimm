@@ -22,10 +22,10 @@ import (
 	controller "github.com/juju/juju/controller"
 	crossmodel "github.com/juju/juju/core/crossmodel"
 	migration "github.com/juju/juju/core/migration"
+	semversion "github.com/juju/juju/core/semversion"
 	cloudspec "github.com/juju/juju/environs/cloudspec"
 	params "github.com/juju/juju/rpc/params"
-	names "github.com/juju/names/v5"
-	version "github.com/juju/version/v2"
+	names "github.com/juju/names/v6"
 	gomock "go.uber.org/mock/gomock"
 	httprequest "gopkg.in/httprequest.v1"
 )
@@ -55,17 +55,17 @@ func (m *MockAPI) EXPECT() *MockAPIMockRecorder {
 }
 
 // APICall mocks base method.
-func (m *MockAPI) APICall(objType string, arg1 int, id, request string, arg4, response any) error {
+func (m *MockAPI) APICall(ctx context.Context, objType string, version int, id, request string, arg5, response any) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APICall", objType, arg1, id, request, arg4, response)
+	ret := m.ctrl.Call(m, "APICall", ctx, objType, version, id, request, arg5, response)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // APICall indicates an expected call of APICall.
-func (mr *MockAPIMockRecorder) APICall(objType, arg1, id, request, arg4, response any) *MockAPIAPICallCall {
+func (mr *MockAPIMockRecorder) APICall(ctx, objType, version, id, request, arg5, response any) *MockAPIAPICallCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APICall", reflect.TypeOf((*MockAPI)(nil).APICall), objType, arg1, id, request, arg4, response)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APICall", reflect.TypeOf((*MockAPI)(nil).APICall), ctx, objType, version, id, request, arg5, response)
 	return &MockAPIAPICallCall{Call: call}
 }
 
@@ -81,29 +81,29 @@ func (c *MockAPIAPICallCall) Return(arg0 error) *MockAPIAPICallCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIAPICallCall) Do(f func(string, int, string, string, any, any) error) *MockAPIAPICallCall {
+func (c *MockAPIAPICallCall) Do(f func(context.Context, string, int, string, string, any, any) error) *MockAPIAPICallCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIAPICallCall) DoAndReturn(f func(string, int, string, string, any, any) error) *MockAPIAPICallCall {
+func (c *MockAPIAPICallCall) DoAndReturn(f func(context.Context, string, int, string, string, any, any) error) *MockAPIAPICallCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // Abort mocks base method.
-func (m *MockAPI) Abort(arg0 string) error {
+func (m *MockAPI) Abort(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Abort", arg0)
+	ret := m.ctrl.Call(m, "Abort", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Abort indicates an expected call of Abort.
-func (mr *MockAPIMockRecorder) Abort(arg0 any) *MockAPIAbortCall {
+func (mr *MockAPIMockRecorder) Abort(arg0, arg1 any) *MockAPIAbortCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Abort", reflect.TypeOf((*MockAPI)(nil).Abort), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Abort", reflect.TypeOf((*MockAPI)(nil).Abort), arg0, arg1)
 	return &MockAPIAbortCall{Call: call}
 }
 
@@ -119,29 +119,29 @@ func (c *MockAPIAbortCall) Return(arg0 error) *MockAPIAbortCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIAbortCall) Do(f func(string) error) *MockAPIAbortCall {
+func (c *MockAPIAbortCall) Do(f func(context.Context, string) error) *MockAPIAbortCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIAbortCall) DoAndReturn(f func(string) error) *MockAPIAbortCall {
+func (c *MockAPIAbortCall) DoAndReturn(f func(context.Context, string) error) *MockAPIAbortCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // Activate mocks base method.
-func (m *MockAPI) Activate(modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error {
+func (m *MockAPI) Activate(ctx context.Context, modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Activate", modelUUID, sourceInfo, relatedModels)
+	ret := m.ctrl.Call(m, "Activate", ctx, modelUUID, sourceInfo, relatedModels)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Activate indicates an expected call of Activate.
-func (mr *MockAPIMockRecorder) Activate(modelUUID, sourceInfo, relatedModels any) *MockAPIActivateCall {
+func (mr *MockAPIMockRecorder) Activate(ctx, modelUUID, sourceInfo, relatedModels any) *MockAPIActivateCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activate", reflect.TypeOf((*MockAPI)(nil).Activate), modelUUID, sourceInfo, relatedModels)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activate", reflect.TypeOf((*MockAPI)(nil).Activate), ctx, modelUUID, sourceInfo, relatedModels)
 	return &MockAPIActivateCall{Call: call}
 }
 
@@ -157,29 +157,29 @@ func (c *MockAPIActivateCall) Return(arg0 error) *MockAPIActivateCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIActivateCall) Do(f func(string, migration.SourceControllerInfo, []string) error) *MockAPIActivateCall {
+func (c *MockAPIActivateCall) Do(f func(context.Context, string, migration.SourceControllerInfo, []string) error) *MockAPIActivateCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIActivateCall) DoAndReturn(f func(string, migration.SourceControllerInfo, []string) error) *MockAPIActivateCall {
+func (c *MockAPIActivateCall) DoAndReturn(f func(context.Context, string, migration.SourceControllerInfo, []string) error) *MockAPIActivateCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AddCloud mocks base method.
-func (m *MockAPI) AddCloud(arg0 names.CloudTag, arg1 cloud.Cloud, arg2 bool) error {
+func (m *MockAPI) AddCloud(arg0 context.Context, arg1 names.CloudTag, arg2 cloud.Cloud, arg3 bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCloud", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AddCloud", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCloud indicates an expected call of AddCloud.
-func (mr *MockAPIMockRecorder) AddCloud(arg0, arg1, arg2 any) *MockAPIAddCloudCall {
+func (mr *MockAPIMockRecorder) AddCloud(arg0, arg1, arg2, arg3 any) *MockAPIAddCloudCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCloud", reflect.TypeOf((*MockAPI)(nil).AddCloud), arg0, arg1, arg2)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCloud", reflect.TypeOf((*MockAPI)(nil).AddCloud), arg0, arg1, arg2, arg3)
 	return &MockAPIAddCloudCall{Call: call}
 }
 
@@ -195,29 +195,29 @@ func (c *MockAPIAddCloudCall) Return(arg0 error) *MockAPIAddCloudCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIAddCloudCall) Do(f func(names.CloudTag, cloud.Cloud, bool) error) *MockAPIAddCloudCall {
+func (c *MockAPIAddCloudCall) Do(f func(context.Context, names.CloudTag, cloud.Cloud, bool) error) *MockAPIAddCloudCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIAddCloudCall) DoAndReturn(f func(names.CloudTag, cloud.Cloud, bool) error) *MockAPIAddCloudCall {
+func (c *MockAPIAddCloudCall) DoAndReturn(f func(context.Context, names.CloudTag, cloud.Cloud, bool) error) *MockAPIAddCloudCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // AdoptResources mocks base method.
-func (m *MockAPI) AdoptResources(arg0 string, arg1 version.Number) error {
+func (m *MockAPI) AdoptResources(arg0 context.Context, arg1 string, arg2 semversion.Number) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdoptResources", arg0, arg1)
+	ret := m.ctrl.Call(m, "AdoptResources", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AdoptResources indicates an expected call of AdoptResources.
-func (mr *MockAPIMockRecorder) AdoptResources(arg0, arg1 any) *MockAPIAdoptResourcesCall {
+func (mr *MockAPIMockRecorder) AdoptResources(arg0, arg1, arg2 any) *MockAPIAdoptResourcesCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdoptResources", reflect.TypeOf((*MockAPI)(nil).AdoptResources), arg0, arg1)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdoptResources", reflect.TypeOf((*MockAPI)(nil).AdoptResources), arg0, arg1, arg2)
 	return &MockAPIAdoptResourcesCall{Call: call}
 }
 
@@ -233,13 +233,13 @@ func (c *MockAPIAdoptResourcesCall) Return(arg0 error) *MockAPIAdoptResourcesCal
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIAdoptResourcesCall) Do(f func(string, version.Number) error) *MockAPIAdoptResourcesCall {
+func (c *MockAPIAdoptResourcesCall) Do(f func(context.Context, string, semversion.Number) error) *MockAPIAdoptResourcesCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIAdoptResourcesCall) DoAndReturn(f func(string, version.Number) error) *MockAPIAdoptResourcesCall {
+func (c *MockAPIAdoptResourcesCall) DoAndReturn(f func(context.Context, string, semversion.Number) error) *MockAPIAdoptResourcesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -398,18 +398,18 @@ func (c *MockAPICheckCredentialModelsCall) DoAndReturn(f func(context.Context, p
 }
 
 // CheckMachines mocks base method.
-func (m *MockAPI) CheckMachines(arg0 string) ([]error, error) {
+func (m *MockAPI) CheckMachines(arg0 context.Context, arg1 string) ([]error, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckMachines", arg0)
+	ret := m.ctrl.Call(m, "CheckMachines", arg0, arg1)
 	ret0, _ := ret[0].([]error)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckMachines indicates an expected call of CheckMachines.
-func (mr *MockAPIMockRecorder) CheckMachines(arg0 any) *MockAPICheckMachinesCall {
+func (mr *MockAPIMockRecorder) CheckMachines(arg0, arg1 any) *MockAPICheckMachinesCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckMachines", reflect.TypeOf((*MockAPI)(nil).CheckMachines), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckMachines", reflect.TypeOf((*MockAPI)(nil).CheckMachines), arg0, arg1)
 	return &MockAPICheckMachinesCall{Call: call}
 }
 
@@ -425,13 +425,13 @@ func (c *MockAPICheckMachinesCall) Return(arg0 []error, arg1 error) *MockAPIChec
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPICheckMachinesCall) Do(f func(string) ([]error, error)) *MockAPICheckMachinesCall {
+func (c *MockAPICheckMachinesCall) Do(f func(context.Context, string) ([]error, error)) *MockAPICheckMachinesCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPICheckMachinesCall) DoAndReturn(f func(string) ([]error, error)) *MockAPICheckMachinesCall {
+func (c *MockAPICheckMachinesCall) DoAndReturn(f func(context.Context, string) ([]error, error)) *MockAPICheckMachinesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -475,18 +475,18 @@ func (c *MockAPICloseCall) DoAndReturn(f func() error) *MockAPICloseCall {
 }
 
 // Cloud mocks base method.
-func (m *MockAPI) Cloud(arg0 names.CloudTag) (cloud.Cloud, error) {
+func (m *MockAPI) Cloud(arg0 context.Context, arg1 names.CloudTag) (cloud.Cloud, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Cloud", arg0)
+	ret := m.ctrl.Call(m, "Cloud", arg0, arg1)
 	ret0, _ := ret[0].(cloud.Cloud)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Cloud indicates an expected call of Cloud.
-func (mr *MockAPIMockRecorder) Cloud(arg0 any) *MockAPICloudCall {
+func (mr *MockAPIMockRecorder) Cloud(arg0, arg1 any) *MockAPICloudCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cloud", reflect.TypeOf((*MockAPI)(nil).Cloud), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cloud", reflect.TypeOf((*MockAPI)(nil).Cloud), arg0, arg1)
 	return &MockAPICloudCall{Call: call}
 }
 
@@ -502,13 +502,13 @@ func (c *MockAPICloudCall) Return(arg0 cloud.Cloud, arg1 error) *MockAPICloudCal
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPICloudCall) Do(f func(names.CloudTag) (cloud.Cloud, error)) *MockAPICloudCall {
+func (c *MockAPICloudCall) Do(f func(context.Context, names.CloudTag) (cloud.Cloud, error)) *MockAPICloudCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPICloudCall) DoAndReturn(f func(names.CloudTag) (cloud.Cloud, error)) *MockAPICloudCall {
+func (c *MockAPICloudCall) DoAndReturn(f func(context.Context, names.CloudTag) (cloud.Cloud, error)) *MockAPICloudCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -553,18 +553,18 @@ func (c *MockAPICloudSpecCall) DoAndReturn(f func(context.Context) (cloudspec.Cl
 }
 
 // Clouds mocks base method.
-func (m *MockAPI) Clouds() (map[names.CloudTag]cloud.Cloud, error) {
+func (m *MockAPI) Clouds(arg0 context.Context) (map[names.CloudTag]cloud.Cloud, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clouds")
+	ret := m.ctrl.Call(m, "Clouds", arg0)
 	ret0, _ := ret[0].(map[names.CloudTag]cloud.Cloud)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Clouds indicates an expected call of Clouds.
-func (mr *MockAPIMockRecorder) Clouds() *MockAPICloudsCall {
+func (mr *MockAPIMockRecorder) Clouds(arg0 any) *MockAPICloudsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clouds", reflect.TypeOf((*MockAPI)(nil).Clouds))
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clouds", reflect.TypeOf((*MockAPI)(nil).Clouds), arg0)
 	return &MockAPICloudsCall{Call: call}
 }
 
@@ -580,30 +580,30 @@ func (c *MockAPICloudsCall) Return(arg0 map[names.CloudTag]cloud.Cloud, arg1 err
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPICloudsCall) Do(f func() (map[names.CloudTag]cloud.Cloud, error)) *MockAPICloudsCall {
+func (c *MockAPICloudsCall) Do(f func(context.Context) (map[names.CloudTag]cloud.Cloud, error)) *MockAPICloudsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPICloudsCall) DoAndReturn(f func() (map[names.CloudTag]cloud.Cloud, error)) *MockAPICloudsCall {
+func (c *MockAPICloudsCall) DoAndReturn(f func(context.Context) (map[names.CloudTag]cloud.Cloud, error)) *MockAPICloudsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ConnectControllerStream mocks base method.
-func (m *MockAPI) ConnectControllerStream(path string, attrs url.Values, headers http.Header) (base.Stream, error) {
+func (m *MockAPI) ConnectControllerStream(ctx context.Context, path string, attrs url.Values, headers http.Header) (base.Stream, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConnectControllerStream", path, attrs, headers)
+	ret := m.ctrl.Call(m, "ConnectControllerStream", ctx, path, attrs, headers)
 	ret0, _ := ret[0].(base.Stream)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ConnectControllerStream indicates an expected call of ConnectControllerStream.
-func (mr *MockAPIMockRecorder) ConnectControllerStream(path, attrs, headers any) *MockAPIConnectControllerStreamCall {
+func (mr *MockAPIMockRecorder) ConnectControllerStream(ctx, path, attrs, headers any) *MockAPIConnectControllerStreamCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectControllerStream", reflect.TypeOf((*MockAPI)(nil).ConnectControllerStream), path, attrs, headers)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectControllerStream", reflect.TypeOf((*MockAPI)(nil).ConnectControllerStream), ctx, path, attrs, headers)
 	return &MockAPIConnectControllerStreamCall{Call: call}
 }
 
@@ -619,30 +619,30 @@ func (c *MockAPIConnectControllerStreamCall) Return(arg0 base.Stream, arg1 error
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIConnectControllerStreamCall) Do(f func(string, url.Values, http.Header) (base.Stream, error)) *MockAPIConnectControllerStreamCall {
+func (c *MockAPIConnectControllerStreamCall) Do(f func(context.Context, string, url.Values, http.Header) (base.Stream, error)) *MockAPIConnectControllerStreamCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIConnectControllerStreamCall) DoAndReturn(f func(string, url.Values, http.Header) (base.Stream, error)) *MockAPIConnectControllerStreamCall {
+func (c *MockAPIConnectControllerStreamCall) DoAndReturn(f func(context.Context, string, url.Values, http.Header) (base.Stream, error)) *MockAPIConnectControllerStreamCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ConnectStream mocks base method.
-func (m *MockAPI) ConnectStream(arg0 string, arg1 url.Values) (base.Stream, error) {
+func (m *MockAPI) ConnectStream(ctx context.Context, path string, attrs url.Values) (base.Stream, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConnectStream", arg0, arg1)
+	ret := m.ctrl.Call(m, "ConnectStream", ctx, path, attrs)
 	ret0, _ := ret[0].(base.Stream)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ConnectStream indicates an expected call of ConnectStream.
-func (mr *MockAPIMockRecorder) ConnectStream(arg0, arg1 any) *MockAPIConnectStreamCall {
+func (mr *MockAPIMockRecorder) ConnectStream(ctx, path, attrs any) *MockAPIConnectStreamCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectStream", reflect.TypeOf((*MockAPI)(nil).ConnectStream), arg0, arg1)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectStream", reflect.TypeOf((*MockAPI)(nil).ConnectStream), ctx, path, attrs)
 	return &MockAPIConnectStreamCall{Call: call}
 }
 
@@ -658,13 +658,13 @@ func (c *MockAPIConnectStreamCall) Return(arg0 base.Stream, arg1 error) *MockAPI
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIConnectStreamCall) Do(f func(string, url.Values) (base.Stream, error)) *MockAPIConnectStreamCall {
+func (c *MockAPIConnectStreamCall) Do(f func(context.Context, string, url.Values) (base.Stream, error)) *MockAPIConnectStreamCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIConnectStreamCall) DoAndReturn(f func(string, url.Values) (base.Stream, error)) *MockAPIConnectStreamCall {
+func (c *MockAPIConnectStreamCall) DoAndReturn(f func(context.Context, string, url.Values) (base.Stream, error)) *MockAPIConnectStreamCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -748,18 +748,18 @@ func (c *MockAPICreateModelCall) DoAndReturn(f func(context.Context, *jujuclient
 }
 
 // CredentialContents mocks base method.
-func (m *MockAPI) CredentialContents(arg0, credential string, withSecrets bool) ([]params.CredentialContentResult, error) {
+func (m *MockAPI) CredentialContents(ctx context.Context, arg1, credential string, withSecrets bool) ([]params.CredentialContentResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CredentialContents", arg0, credential, withSecrets)
+	ret := m.ctrl.Call(m, "CredentialContents", ctx, arg1, credential, withSecrets)
 	ret0, _ := ret[0].([]params.CredentialContentResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CredentialContents indicates an expected call of CredentialContents.
-func (mr *MockAPIMockRecorder) CredentialContents(arg0, credential, withSecrets any) *MockAPICredentialContentsCall {
+func (mr *MockAPIMockRecorder) CredentialContents(ctx, arg1, credential, withSecrets any) *MockAPICredentialContentsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialContents", reflect.TypeOf((*MockAPI)(nil).CredentialContents), arg0, credential, withSecrets)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialContents", reflect.TypeOf((*MockAPI)(nil).CredentialContents), ctx, arg1, credential, withSecrets)
 	return &MockAPICredentialContentsCall{Call: call}
 }
 
@@ -775,13 +775,13 @@ func (c *MockAPICredentialContentsCall) Return(arg0 []params.CredentialContentRe
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPICredentialContentsCall) Do(f func(string, string, bool) ([]params.CredentialContentResult, error)) *MockAPICredentialContentsCall {
+func (c *MockAPICredentialContentsCall) Do(f func(context.Context, string, string, bool) ([]params.CredentialContentResult, error)) *MockAPICredentialContentsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPICredentialContentsCall) DoAndReturn(f func(string, string, bool) ([]params.CredentialContentResult, error)) *MockAPICredentialContentsCall {
+func (c *MockAPICredentialContentsCall) DoAndReturn(f func(context.Context, string, string, bool) ([]params.CredentialContentResult, error)) *MockAPICredentialContentsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -863,18 +863,18 @@ func (c *MockAPIDestroyModelCall) DoAndReturn(f func(context.Context, names.Mode
 }
 
 // DumpModel mocks base method.
-func (m *MockAPI) DumpModel(ctx context.Context, tag names.ModelTag, simplified bool) (map[string]any, error) {
+func (m *MockAPI) DumpModel(ctx context.Context, tag names.ModelTag) (map[string]any, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DumpModel", ctx, tag, simplified)
+	ret := m.ctrl.Call(m, "DumpModel", ctx, tag)
 	ret0, _ := ret[0].(map[string]any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DumpModel indicates an expected call of DumpModel.
-func (mr *MockAPIMockRecorder) DumpModel(ctx, tag, simplified any) *MockAPIDumpModelCall {
+func (mr *MockAPIMockRecorder) DumpModel(ctx, tag any) *MockAPIDumpModelCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DumpModel", reflect.TypeOf((*MockAPI)(nil).DumpModel), ctx, tag, simplified)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DumpModel", reflect.TypeOf((*MockAPI)(nil).DumpModel), ctx, tag)
 	return &MockAPIDumpModelCall{Call: call}
 }
 
@@ -890,13 +890,13 @@ func (c *MockAPIDumpModelCall) Return(arg0 map[string]any, arg1 error) *MockAPID
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIDumpModelCall) Do(f func(context.Context, names.ModelTag, bool) (map[string]any, error)) *MockAPIDumpModelCall {
+func (c *MockAPIDumpModelCall) Do(f func(context.Context, names.ModelTag) (map[string]any, error)) *MockAPIDumpModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIDumpModelCall) DoAndReturn(f func(context.Context, names.ModelTag, bool) (map[string]any, error)) *MockAPIDumpModelCall {
+func (c *MockAPIDumpModelCall) DoAndReturn(f func(context.Context, names.ModelTag) (map[string]any, error)) *MockAPIDumpModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1096,18 +1096,18 @@ func (c *MockAPIGrantJIMMModelAdminCall) DoAndReturn(f func(context.Context, nam
 }
 
 // HTTPClient mocks base method.
-func (m *MockAPI) HTTPClient() (*httprequest.Client, error) {
+func (m *MockAPI) HTTPClient(arg0 base.HTTPClientScope) (*httprequest.Client, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HTTPClient")
+	ret := m.ctrl.Call(m, "HTTPClient", arg0)
 	ret0, _ := ret[0].(*httprequest.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // HTTPClient indicates an expected call of HTTPClient.
-func (mr *MockAPIMockRecorder) HTTPClient() *MockAPIHTTPClientCall {
+func (mr *MockAPIMockRecorder) HTTPClient(arg0 any) *MockAPIHTTPClientCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HTTPClient", reflect.TypeOf((*MockAPI)(nil).HTTPClient))
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HTTPClient", reflect.TypeOf((*MockAPI)(nil).HTTPClient), arg0)
 	return &MockAPIHTTPClientCall{Call: call}
 }
 
@@ -1123,29 +1123,29 @@ func (c *MockAPIHTTPClientCall) Return(arg0 *httprequest.Client, arg1 error) *Mo
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIHTTPClientCall) Do(f func() (*httprequest.Client, error)) *MockAPIHTTPClientCall {
+func (c *MockAPIHTTPClientCall) Do(f func(base.HTTPClientScope) (*httprequest.Client, error)) *MockAPIHTTPClientCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIHTTPClientCall) DoAndReturn(f func() (*httprequest.Client, error)) *MockAPIHTTPClientCall {
+func (c *MockAPIHTTPClientCall) DoAndReturn(f func(base.HTTPClientScope) (*httprequest.Client, error)) *MockAPIHTTPClientCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // Import mocks base method.
-func (m *MockAPI) Import(arg0 []byte) error {
+func (m *MockAPI) Import(arg0 context.Context, arg1 []byte) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Import", arg0)
+	ret := m.ctrl.Call(m, "Import", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Import indicates an expected call of Import.
-func (mr *MockAPIMockRecorder) Import(arg0 any) *MockAPIImportCall {
+func (mr *MockAPIMockRecorder) Import(arg0, arg1 any) *MockAPIImportCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockAPI)(nil).Import), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockAPI)(nil).Import), arg0, arg1)
 	return &MockAPIImportCall{Call: call}
 }
 
@@ -1161,13 +1161,13 @@ func (c *MockAPIImportCall) Return(arg0 error) *MockAPIImportCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIImportCall) Do(f func([]byte) error) *MockAPIImportCall {
+func (c *MockAPIImportCall) Do(f func(context.Context, []byte) error) *MockAPIImportCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIImportCall) DoAndReturn(f func([]byte) error) *MockAPIImportCall {
+func (c *MockAPIImportCall) DoAndReturn(f func(context.Context, []byte) error) *MockAPIImportCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1211,18 +1211,18 @@ func (c *MockAPIIsBrokenCall) DoAndReturn(f func() bool) *MockAPIIsBrokenCall {
 }
 
 // LatestLogTime mocks base method.
-func (m *MockAPI) LatestLogTime(arg0 string) (time.Time, error) {
+func (m *MockAPI) LatestLogTime(arg0 context.Context, arg1 string) (time.Time, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LatestLogTime", arg0)
+	ret := m.ctrl.Call(m, "LatestLogTime", arg0, arg1)
 	ret0, _ := ret[0].(time.Time)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LatestLogTime indicates an expected call of LatestLogTime.
-func (mr *MockAPIMockRecorder) LatestLogTime(arg0 any) *MockAPILatestLogTimeCall {
+func (mr *MockAPIMockRecorder) LatestLogTime(arg0, arg1 any) *MockAPILatestLogTimeCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LatestLogTime", reflect.TypeOf((*MockAPI)(nil).LatestLogTime), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LatestLogTime", reflect.TypeOf((*MockAPI)(nil).LatestLogTime), arg0, arg1)
 	return &MockAPILatestLogTimeCall{Call: call}
 }
 
@@ -1238,13 +1238,13 @@ func (c *MockAPILatestLogTimeCall) Return(arg0 time.Time, arg1 error) *MockAPILa
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPILatestLogTimeCall) Do(f func(string) (time.Time, error)) *MockAPILatestLogTimeCall {
+func (c *MockAPILatestLogTimeCall) Do(f func(context.Context, string) (time.Time, error)) *MockAPILatestLogTimeCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPILatestLogTimeCall) DoAndReturn(f func(string) (time.Time, error)) *MockAPILatestLogTimeCall {
+func (c *MockAPILatestLogTimeCall) DoAndReturn(f func(context.Context, string) (time.Time, error)) *MockAPILatestLogTimeCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1639,17 +1639,17 @@ func (c *MockAPIOfferCall) DoAndReturn(f func(context.Context, jujuclient.OfferP
 }
 
 // Prechecks mocks base method.
-func (m *MockAPI) Prechecks(model params.MigrationModelInfo) error {
+func (m *MockAPI) Prechecks(ctx context.Context, model params.MigrationModelInfo) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Prechecks", model)
+	ret := m.ctrl.Call(m, "Prechecks", ctx, model)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Prechecks indicates an expected call of Prechecks.
-func (mr *MockAPIMockRecorder) Prechecks(model any) *MockAPIPrechecksCall {
+func (mr *MockAPIMockRecorder) Prechecks(ctx, model any) *MockAPIPrechecksCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prechecks", reflect.TypeOf((*MockAPI)(nil).Prechecks), model)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prechecks", reflect.TypeOf((*MockAPI)(nil).Prechecks), ctx, model)
 	return &MockAPIPrechecksCall{Call: call}
 }
 
@@ -1665,29 +1665,29 @@ func (c *MockAPIPrechecksCall) Return(arg0 error) *MockAPIPrechecksCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIPrechecksCall) Do(f func(params.MigrationModelInfo) error) *MockAPIPrechecksCall {
+func (c *MockAPIPrechecksCall) Do(f func(context.Context, params.MigrationModelInfo) error) *MockAPIPrechecksCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIPrechecksCall) DoAndReturn(f func(params.MigrationModelInfo) error) *MockAPIPrechecksCall {
+func (c *MockAPIPrechecksCall) DoAndReturn(f func(context.Context, params.MigrationModelInfo) error) *MockAPIPrechecksCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RemoveCloud mocks base method.
-func (m *MockAPI) RemoveCloud(arg0 names.CloudTag) error {
+func (m *MockAPI) RemoveCloud(arg0 context.Context, arg1 names.CloudTag) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveCloud", arg0)
+	ret := m.ctrl.Call(m, "RemoveCloud", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveCloud indicates an expected call of RemoveCloud.
-func (mr *MockAPIMockRecorder) RemoveCloud(arg0 any) *MockAPIRemoveCloudCall {
+func (mr *MockAPIMockRecorder) RemoveCloud(arg0, arg1 any) *MockAPIRemoveCloudCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCloud", reflect.TypeOf((*MockAPI)(nil).RemoveCloud), arg0)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCloud", reflect.TypeOf((*MockAPI)(nil).RemoveCloud), arg0, arg1)
 	return &MockAPIRemoveCloudCall{Call: call}
 }
 
@@ -1703,13 +1703,13 @@ func (c *MockAPIRemoveCloudCall) Return(arg0 error) *MockAPIRemoveCloudCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIRemoveCloudCall) Do(f func(names.CloudTag) error) *MockAPIRemoveCloudCall {
+func (c *MockAPIRemoveCloudCall) Do(f func(context.Context, names.CloudTag) error) *MockAPIRemoveCloudCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIRemoveCloudCall) DoAndReturn(f func(names.CloudTag) error) *MockAPIRemoveCloudCall {
+func (c *MockAPIRemoveCloudCall) DoAndReturn(f func(context.Context, names.CloudTag) error) *MockAPIRemoveCloudCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1752,41 +1752,41 @@ func (c *MockAPIRevokeCredentialCall) DoAndReturn(f func(context.Context, names.
 	return c
 }
 
-// RootHTTPClient mocks base method.
-func (m *MockAPI) RootHTTPClient() (*httprequest.Client, error) {
+// SimpleHTTPClient mocks base method.
+func (m *MockAPI) SimpleHTTPClient() (base.SimpleHTTPClient, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RootHTTPClient")
-	ret0, _ := ret[0].(*httprequest.Client)
+	ret := m.ctrl.Call(m, "SimpleHTTPClient")
+	ret0, _ := ret[0].(base.SimpleHTTPClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// RootHTTPClient indicates an expected call of RootHTTPClient.
-func (mr *MockAPIMockRecorder) RootHTTPClient() *MockAPIRootHTTPClientCall {
+// SimpleHTTPClient indicates an expected call of SimpleHTTPClient.
+func (mr *MockAPIMockRecorder) SimpleHTTPClient() *MockAPISimpleHTTPClientCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RootHTTPClient", reflect.TypeOf((*MockAPI)(nil).RootHTTPClient))
-	return &MockAPIRootHTTPClientCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SimpleHTTPClient", reflect.TypeOf((*MockAPI)(nil).SimpleHTTPClient))
+	return &MockAPISimpleHTTPClientCall{Call: call}
 }
 
-// MockAPIRootHTTPClientCall wrap *gomock.Call
-type MockAPIRootHTTPClientCall struct {
+// MockAPISimpleHTTPClientCall wrap *gomock.Call
+type MockAPISimpleHTTPClientCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockAPIRootHTTPClientCall) Return(arg0 *httprequest.Client, arg1 error) *MockAPIRootHTTPClientCall {
+func (c *MockAPISimpleHTTPClientCall) Return(arg0 base.SimpleHTTPClient, arg1 error) *MockAPISimpleHTTPClientCall {
 	c.Call = c.Call.Return(arg0, arg1)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIRootHTTPClientCall) Do(f func() (*httprequest.Client, error)) *MockAPIRootHTTPClientCall {
+func (c *MockAPISimpleHTTPClientCall) Do(f func() (base.SimpleHTTPClient, error)) *MockAPISimpleHTTPClientCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIRootHTTPClientCall) DoAndReturn(f func() (*httprequest.Client, error)) *MockAPIRootHTTPClientCall {
+func (c *MockAPISimpleHTTPClientCall) DoAndReturn(f func() (base.SimpleHTTPClient, error)) *MockAPISimpleHTTPClientCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1869,17 +1869,17 @@ func (c *MockAPISupportsModelSummaryWatcherCall) DoAndReturn(f func() bool) *Moc
 }
 
 // UpdateCloud mocks base method.
-func (m *MockAPI) UpdateCloud(arg0 names.CloudTag, arg1 cloud.Cloud) error {
+func (m *MockAPI) UpdateCloud(arg0 context.Context, arg1 names.CloudTag, arg2 cloud.Cloud) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCloud", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateCloud", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateCloud indicates an expected call of UpdateCloud.
-func (mr *MockAPIMockRecorder) UpdateCloud(arg0, arg1 any) *MockAPIUpdateCloudCall {
+func (mr *MockAPIMockRecorder) UpdateCloud(arg0, arg1, arg2 any) *MockAPIUpdateCloudCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCloud", reflect.TypeOf((*MockAPI)(nil).UpdateCloud), arg0, arg1)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCloud", reflect.TypeOf((*MockAPI)(nil).UpdateCloud), arg0, arg1, arg2)
 	return &MockAPIUpdateCloudCall{Call: call}
 }
 
@@ -1895,13 +1895,13 @@ func (c *MockAPIUpdateCloudCall) Return(arg0 error) *MockAPIUpdateCloudCall {
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIUpdateCloudCall) Do(f func(names.CloudTag, cloud.Cloud) error) *MockAPIUpdateCloudCall {
+func (c *MockAPIUpdateCloudCall) Do(f func(context.Context, names.CloudTag, cloud.Cloud) error) *MockAPIUpdateCloudCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIUpdateCloudCall) DoAndReturn(f func(names.CloudTag, cloud.Cloud) error) *MockAPIUpdateCloudCall {
+func (c *MockAPIUpdateCloudCall) DoAndReturn(f func(context.Context, names.CloudTag, cloud.Cloud) error) *MockAPIUpdateCloudCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1946,18 +1946,18 @@ func (c *MockAPIUpdateCloudsCredentialForceCall) DoAndReturn(f func(context.Cont
 }
 
 // UpgradeModel mocks base method.
-func (m *MockAPI) UpgradeModel(modelUUID string, targetVersion version.Number, stream string, ignoreAgentVersions, dryRun bool) (version.Number, error) {
+func (m *MockAPI) UpgradeModel(ctx context.Context, modelUUID string, targetVersion semversion.Number, stream string, ignoreAgentVersions, dryRun bool) (semversion.Number, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpgradeModel", modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
-	ret0, _ := ret[0].(version.Number)
+	ret := m.ctrl.Call(m, "UpgradeModel", ctx, modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
+	ret0, _ := ret[0].(semversion.Number)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpgradeModel indicates an expected call of UpgradeModel.
-func (mr *MockAPIMockRecorder) UpgradeModel(modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun any) *MockAPIUpgradeModelCall {
+func (mr *MockAPIMockRecorder) UpgradeModel(ctx, modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun any) *MockAPIUpgradeModelCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeModel", reflect.TypeOf((*MockAPI)(nil).UpgradeModel), modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeModel", reflect.TypeOf((*MockAPI)(nil).UpgradeModel), ctx, modelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
 	return &MockAPIUpgradeModelCall{Call: call}
 }
 
@@ -1967,19 +1967,19 @@ type MockAPIUpgradeModelCall struct {
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockAPIUpgradeModelCall) Return(arg0 version.Number, arg1 error) *MockAPIUpgradeModelCall {
+func (c *MockAPIUpgradeModelCall) Return(arg0 semversion.Number, arg1 error) *MockAPIUpgradeModelCall {
 	c.Call = c.Call.Return(arg0, arg1)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockAPIUpgradeModelCall) Do(f func(string, version.Number, string, bool, bool) (version.Number, error)) *MockAPIUpgradeModelCall {
+func (c *MockAPIUpgradeModelCall) Do(f func(context.Context, string, semversion.Number, string, bool, bool) (semversion.Number, error)) *MockAPIUpgradeModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockAPIUpgradeModelCall) DoAndReturn(f func(string, version.Number, string, bool, bool) (version.Number, error)) *MockAPIUpgradeModelCall {
+func (c *MockAPIUpgradeModelCall) DoAndReturn(f func(context.Context, string, semversion.Number, string, bool, bool) (semversion.Number, error)) *MockAPIUpgradeModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

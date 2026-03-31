@@ -3,14 +3,15 @@
 package jujuclient
 
 import (
+	"context"
 	"time"
 
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/controller/migrationtarget"
 	coremigration "github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 )
 
 // PreChecks checks that the target controller is able to accept the
@@ -20,7 +21,7 @@ import (
 // a `github.com/juju/description` type rather than a byte slice for
 // the model description, and we need to be able to accept different version
 // of the description depending on the target controller version.
-func (c Connection) Prechecks(model jujuparams.MigrationModelInfo) error {
+func (c Connection) Prechecks(ctx context.Context, model jujuparams.MigrationModelInfo) error {
 	// Pass all the known facade versions to the controller so that it
 	// can check that the target controller supports them. Passing all of them
 	// ensures that we don't have to update this code when new facades are
@@ -34,13 +35,13 @@ func (c Connection) Prechecks(model jujuparams.MigrationModelInfo) error {
 	args := jujuparams.MigrationModelInfo{
 		UUID:                   model.UUID,
 		Name:                   model.Name,
-		OwnerTag:               model.OwnerTag,
+		Qualifier:              model.Qualifier,
 		AgentVersion:           model.AgentVersion,
 		ControllerAgentVersion: model.ControllerAgentVersion,
 		FacadeVersions:         versions,
 		ModelDescription:       model.ModelDescription,
 	}
-	if err := c.CallHighestFacadeVersion(c.Context(), "MigrationTarget", []int{6}, "", "Prechecks", &args, nil); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "MigrationTarget", []int{6}, "", "Prechecks", &args, nil); err != nil {
 		return err
 	}
 	return nil
@@ -55,45 +56,45 @@ func (c Connection) Prechecks(model jujuparams.MigrationModelInfo) error {
 // fetches the SourceControllerVersion from a global var based on the
 // Juju version we are using, which doesn't work for JIMM since we
 // want to use the controller version that was passed to us.
-func (c Connection) AdoptResources(modelUUID string, controllerVersion version.Number) error {
+func (c Connection) AdoptResources(ctx context.Context, modelUUID string, controllerVersion semversion.Number) error {
 	args := jujuparams.AdoptResourcesArgs{
 		ModelTag:                names.NewModelTag(modelUUID).String(),
 		SourceControllerVersion: controllerVersion,
 	}
-	if err := c.CallHighestFacadeVersion(c.Context(), "MigrationTarget", []int{6}, "", "AdoptResources", &args, nil); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "MigrationTarget", []int{6}, "", "AdoptResources", &args, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Abort aborts a model migration.
-func (c Connection) Abort(modelUUID string) error {
+func (c Connection) Abort(ctx context.Context, modelUUID string) error {
 	migrationTarget := migrationtarget.NewClient(&c)
-	return migrationTarget.Abort(modelUUID)
+	return migrationTarget.Abort(ctx, modelUUID)
 }
 
 // CheckMachines compares the machines in state with the ones reported by the provider and reports any discrepancies.
-func (c Connection) CheckMachines(modelUUID string) ([]error, error) {
+func (c Connection) CheckMachines(ctx context.Context, modelUUID string) ([]error, error) {
 	migrationTarget := migrationtarget.NewClient(&c)
-	return migrationTarget.CheckMachines(modelUUID)
+	return migrationTarget.CheckMachines(ctx, modelUUID)
 }
 
 // Activate activates a model on the controller.
-func (c Connection) Activate(modelUUID string, sourceInfo coremigration.SourceControllerInfo, relatedModels []string) error {
-	return migrationtarget.NewClient(&c).Activate(modelUUID, sourceInfo, relatedModels)
+func (c Connection) Activate(ctx context.Context, modelUUID string, sourceInfo coremigration.SourceControllerInfo, relatedModels []string) error {
+	return migrationtarget.NewClient(&c).Activate(ctx, modelUUID, sourceInfo, relatedModels)
 }
 
 // LatestLogTime asks the target controller for the time of the latest
 // log record it has seen. This can be used to make the log transfer
 // restartable.
-func (c Connection) LatestLogTime(modelUUID string) (time.Time, error) {
+func (c Connection) LatestLogTime(ctx context.Context, modelUUID string) (time.Time, error) {
 	migrationTarget := migrationtarget.NewClient(&c)
-	return migrationTarget.LatestLogTime(modelUUID)
+	return migrationTarget.LatestLogTime(ctx, modelUUID)
 }
 
 // Import imports a model migration from the given bytes of the
 // serialized model description.
-func (c Connection) Import(bytes []byte) error {
+func (c Connection) Import(ctx context.Context, bytes []byte) error {
 	migrationTarget := migrationtarget.NewClient(&c)
-	return migrationTarget.Import(bytes)
+	return migrationTarget.Import(ctx, bytes)
 }

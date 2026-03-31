@@ -6,7 +6,7 @@ import (
 	"context"
 
 	jujucontroller "github.com/juju/juju/controller"
-	"github.com/juju/version/v2"
+	"github.com/juju/juju/core/semversion"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -20,7 +20,7 @@ type ControllerService struct {
 	ControllerDetailsForModel_         func(ctx context.Context, modelUUID string) (juju.ControllerConnectionDetails, error)
 	ControllerDetailsForIncomingModel_ func(ctx context.Context, modelUUID string) (juju.ControllerConnectionDetails, error)
 	ControllerInfo_                    func(ctx context.Context, name string) (*dbmodel.Controller, error)
-	EarliestControllerVersion_         func(ctx context.Context) (version.Number, error)
+	EarliestControllerVersion_         func(ctx context.Context) (semversion.Number, error)
 	ListControllers_                   func(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
 	RemoveController_                  func(ctx context.Context, user *openfga.User, controllerName string, force bool) error
 	SetControllerDeprecated_           func(ctx context.Context, user *openfga.User, controllerName string, deprecated bool) error
@@ -55,9 +55,9 @@ func (j *ControllerService) ControllerInfo(ctx context.Context, name string) (*d
 	return j.ControllerInfo_(ctx, name)
 }
 
-func (j *ControllerService) EarliestControllerVersion(ctx context.Context) (version.Number, error) {
+func (j *ControllerService) EarliestControllerVersion(ctx context.Context) (semversion.Number, error) {
 	if j.EarliestControllerVersion_ == nil {
-		return version.Number{}, errors.E(errors.CodeNotImplemented)
+		return semversion.Number{}, errors.E(errors.CodeNotImplemented)
 	}
 	return j.EarliestControllerVersion_(ctx)
 }

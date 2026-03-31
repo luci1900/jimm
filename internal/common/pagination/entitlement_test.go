@@ -19,21 +19,22 @@ func TestMarshalEntitlementToken(t *testing.T) {
 		token         pagination.ComboToken
 		expectedError string
 		expectedToken string
-	}{{
-		desc: "Valid marshal token",
-		token: pagination.ComboToken{
-			Kind:         openfga.ModelType,
-			OpenFGAToken: "continuation-token",
-		},
-		expectedToken: "eyJraW5kIjoibW9kZWwiLCJ0b2tlbiI6ImNvbnRpbnVhdGlvbi10b2tlbiJ9",
-	}, {
-		desc: "invalid - missing kind",
-		token: pagination.ComboToken{
-			Kind:         "",
-			OpenFGAToken: "continuation-token",
-		},
-		expectedError: "marshal entitlement token: kind not specified",
-	}}
+	}{
+		{
+			desc: "Valid marshal token",
+			token: pagination.ComboToken{
+				Kind:         openfga.ModelType,
+				OpenFGAToken: "continuation-token",
+			},
+			expectedToken: "eyJraW5kIjoibW9kZWwiLCJ0b2tlbiI6ImNvbnRpbnVhdGlvbi10b2tlbiJ9",
+		}, {
+			desc: "invalid - missing kind",
+			token: pagination.ComboToken{
+				Kind:         "",
+				OpenFGAToken: "continuation-token",
+			},
+			expectedError: "marshal entitlement token: kind not specified",
+		}}
 
 	for _, tC := range tests {
 		c.Run(tC.desc, func(c *qt.C) {

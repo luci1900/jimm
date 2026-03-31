@@ -9,7 +9,7 @@ import (
 
 	"github.com/juju/juju/core/migration"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
@@ -41,16 +41,16 @@ func init() {
 		latestLogTime := rpc.Method(r.LatestLogTime)
 		abort := rpc.Method(r.Abort)
 
-		r.AddMethod("MigrationTarget", 6, "Prechecks", preChecks)
-		r.AddMethod("MigrationTarget", 6, "CACert", caCert)
-		r.AddMethod("MigrationTarget", 6, "Activate", activate)
-		r.AddMethod("MigrationTarget", 6, "AdoptResources", adoptResources)
-		r.AddMethod("MigrationTarget", 6, "Abort", abort)
-		r.AddMethod("MigrationTarget", 6, "CheckMachines", checkMachines)
-		r.AddMethod("MigrationTarget", 6, "Import", importMethod)
-		r.AddMethod("MigrationTarget", 6, "LatestLogTime", latestLogTime)
+		r.AddMethod("MigrationTarget", 7, "Prechecks", preChecks)
+		r.AddMethod("MigrationTarget", 7, "CACert", caCert)
+		r.AddMethod("MigrationTarget", 7, "Activate", activate)
+		r.AddMethod("MigrationTarget", 7, "AdoptResources", adoptResources)
+		r.AddMethod("MigrationTarget", 7, "Abort", abort)
+		r.AddMethod("MigrationTarget", 7, "CheckMachines", checkMachines)
+		r.AddMethod("MigrationTarget", 7, "Import", importMethod)
+		r.AddMethod("MigrationTarget", 7, "LatestLogTime", latestLogTime)
 
-		return []int{6}
+		return []int{7}
 	}
 }
 
@@ -154,20 +154,15 @@ func (r *controllerRoot) Prechecks(ctx context.Context, args jujuparams.Migratio
 		return errors.E(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	ownerTag, err := names.ParseUserTag(args.OwnerTag)
-	if err != nil {
-		return err
-	}
-
 	model := juju.MigratingModelInfo{
 		UUID:                   args.UUID,
 		Name:                   args.Name,
-		Owner:                  ownerTag,
+		Owner:                  args.Qualifier,
 		AgentVersion:           args.AgentVersion,
 		ControllerAgentVersion: args.ControllerAgentVersion,
 		RawModelDescription:    args.ModelDescription,
 	}
-	err = r.jimm.JujuManager().Prechecks(ctx, r.user, model)
+	err := r.jimm.JujuManager().Prechecks(ctx, r.user, model)
 	if err != nil {
 		return err
 	}

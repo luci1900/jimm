@@ -4,7 +4,6 @@ package juju
 
 import (
 	"context"
-	"net/url"
 	"time"
 
 	"github.com/juju/juju/api/base"
@@ -12,10 +11,10 @@ import (
 	jujucontroller "github.com/juju/juju/controller"
 	"github.com/juju/juju/core/crossmodel"
 	"github.com/juju/juju/core/migration"
+	"github.com/juju/juju/core/semversion"
 	"github.com/juju/juju/environs/cloudspec"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
-	"github.com/juju/version/v2"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/jujuclient"
@@ -40,19 +39,19 @@ type API interface {
 	base.APICallCloser
 
 	// Abort aborts a model migration.
-	Abort(string) error
+	Abort(context.Context, string) error
 
 	// Activate activates a model on the controller.
 	// It is used to activate a model that has been migrated from another controller.
-	Activate(modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error
+	Activate(ctx context.Context, modelUUID string, sourceInfo migration.SourceControllerInfo, relatedModels []string) error
 
 	// AddCloud adds a new cloud.
-	AddCloud(names.CloudTag, jujucloud.Cloud, bool) error
+	AddCloud(context.Context, names.CloudTag, jujucloud.Cloud, bool) error
 
 	// AdoptResources adopts resources from a model with the given UUID
 	// and controller version. This is used to adopt resources from a
 	// model that is being migrated.
-	AdoptResources(string, version.Number) error
+	AdoptResources(context.Context, string, semversion.Number) error
 
 	// ChangeModelCredential replaces cloud credential for a given model with the provided one.
 	ChangeModelCredential(context.Context, names.ModelTag, names.CloudCredentialTag) error
@@ -63,19 +62,19 @@ type API interface {
 
 	// CheckMachines compares the machines in state with the ones
 	// reported by the provider and reports any discrepancies.
-	CheckMachines(string) ([]error, error)
+	CheckMachines(context.Context, string) ([]error, error)
 
 	// Import imports a model from a serialized format.
-	Import([]byte) error
+	Import(context.Context, []byte) error
 
 	// Close closes the API connection.
 	Close() error
 
 	// Cloud fetches the cloud data for the given cloud.
-	Cloud(names.CloudTag) (jujucloud.Cloud, error)
+	Cloud(context.Context, names.CloudTag) (jujucloud.Cloud, error)
 
 	// Clouds returns the set of clouds supported by the controller.
-	Clouds() (map[names.CloudTag]jujucloud.Cloud, error)
+	Clouds(context.Context) (map[names.CloudTag]jujucloud.Cloud, error)
 
 	// CloudSpec fetches the cloud spec of the model connected to.
 	CloudSpec(context.Context) (cloudspec.CloudSpec, error)
@@ -92,11 +91,8 @@ type API interface {
 	// DestroyModel destroys a model.
 	DestroyModel(ctx context.Context, tag names.ModelTag, destroyStorage *bool, force *bool, maxWait, timeout *time.Duration) error
 
-	// ConnectStream creates a new connection to a streaming endpoint.
-	ConnectStream(string, url.Values) (base.Stream, error)
-
 	// DumpModel collects a database-agnostic dump of a model.
-	DumpModel(ctx context.Context, tag names.ModelTag, simplified bool) (map[string]interface{}, error)
+	DumpModel(ctx context.Context, tag names.ModelTag) (map[string]interface{}, error)
 
 	// DumpModelDB collects a database dump of a model.
 	DumpModelDB(context.Context, names.ModelTag) (map[string]interface{}, error)
@@ -119,7 +115,7 @@ type API interface {
 
 	// LatestLogTime returns the time of the latest log record
 	// seen by the controller for the given model.
-	LatestLogTime(string) (time.Time, error)
+	LatestLogTime(context.Context, string) (time.Time, error)
 
 	// ListApplicationOffers lists application offers that match the filter.
 	ListApplicationOffers(context.Context, []crossmodel.ApplicationOfferFilter) ([]*crossmodel.ApplicationOfferDetails, error)
@@ -137,10 +133,10 @@ type API interface {
 	Offer(context.Context, jujuclient.OfferParams) error
 
 	// PreChecks runs pre-checks for a model migration.
-	Prechecks(model jujuparams.MigrationModelInfo) error
+	Prechecks(ctx context.Context, model jujuparams.MigrationModelInfo) error
 
 	// RemoveCloud removes a cloud.
-	RemoveCloud(names.CloudTag) error
+	RemoveCloud(context.Context, names.CloudTag) error
 
 	// RevokeCredential revokes a credential.
 	RevokeCredential(context.Context, names.CloudCredentialTag) error
@@ -153,7 +149,7 @@ type API interface {
 	Status(ctx context.Context, patterns []string) (*jujuparams.FullStatus, error)
 
 	// UpdateCloud updates a cloud definition.
-	UpdateCloud(names.CloudTag, jujucloud.Cloud) error
+	UpdateCloud(context.Context, names.CloudTag, jujucloud.Cloud) error
 
 	// UpdateCredential updates a credential.
 	UpdateCloudsCredentialForce(context.Context, jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialResult, error)
@@ -180,19 +176,20 @@ type API interface {
 
 	// CredentialContents returns contents of the credential values for the specified
 	// cloud and credential name. Secrets will be included if requested.
-	CredentialContents(cloud string, credential string, withSecrets bool) ([]jujuparams.CredentialContentResult, error)
+	CredentialContents(ctx context.Context, cloud string, credential string, withSecrets bool) ([]jujuparams.CredentialContentResult, error)
 
 	// UpgradeModel upgrades the model to the provided agent version.
-	// The provided target version could be version.Zero, in which case the
+	// The provided target version could be semversion.Zero, in which case the
 	// best version is selected by the controller and returned as ChosenVersion
 	// in the result.
 	UpgradeModel(
+		ctx context.Context,
 		modelUUID string,
-		targetVersion version.Number,
+		targetVersion semversion.Number,
 		stream string,
 		ignoreAgentVersions bool,
 		dryRun bool,
-	) (version.Number, error)
+	) (semversion.Number, error)
 }
 
 // PermissionManager provides a way to manage permissions within JIMM.

@@ -3,16 +3,17 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
 	controllerapi "github.com/juju/juju/api/controller/controller"
+	jjclient "github.com/juju/juju/api/jujuclient"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"github.com/juju/juju/cmd/modelcmd"
 	"github.com/juju/juju/core/crossmodel"
 	"github.com/juju/juju/core/permission"
-	jjclient "github.com/juju/juju/jujuclient"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"go.uber.org/mock/gomock"
 
@@ -71,7 +72,7 @@ bob: bob@canonical.com
 		UserMapping:           map[string]string{"alice": "alice@canonical.com", "bob": "bob@canonical.com"},
 		ModelTag:              "model-" + testUUID,
 	}
-	mocks.client.EXPECT().PrepareModelMigration(prepareMigrateParams).Return(apiparams.PrepareModelMigrationResponse{
+	mocks.client.EXPECT().PrepareModelMigration(gomock.Any(), prepareMigrateParams).Return(apiparams.PrepareModelMigrationResponse{
 		Token: "migration-token",
 	}, nil)
 	mocks.client.EXPECT().Close().Return(nil)
@@ -98,7 +99,7 @@ bob: bob@canonical.com
 	migrateClient.EXPECT().InitiateMigration(migrationSpec).Return("migration-id", nil)
 
 	migrateCmd := &migrateModelCommand{
-		jimmAPIFunc: func() (JIMMAPI, error) {
+		jimmAPIFunc: func(ctx context.Context) (JIMMAPI, error) {
 			return mocks.client, nil
 		},
 		jujuApiFunc: func() (MigrateAPI, error) {

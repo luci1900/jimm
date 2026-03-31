@@ -9,7 +9,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/google/uuid"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
@@ -129,20 +129,20 @@ func TestConnectStreams(t *testing.T) {
 	defer api.Close()
 
 	// Connect to the model stream for a valid endpoint
-	modelStream, err := api.ConnectStream("/log", nil)
+	modelStream, err := api.ConnectStream(t.Context(), "/log", nil)
 	c.Assert(err, qt.IsNil)
 	defer modelStream.Close()
 
 	// Connect to the model stream for an invalid endpoint
-	_, err = api.ConnectStream("/log2", nil)
+	_, err = api.ConnectStream(t.Context(), "/log2", nil)
 	c.Assert(err, qt.Not(qt.IsNil))
 
 	// Connect to the controller stream for a valid endpoint
-	controllerStream, err := api.ConnectControllerStream("/migrate/logtransfer", nil, nil)
+	controllerStream, err := api.ConnectControllerStream(t.Context(), "/migrate/logtransfer", nil, nil)
 	c.Assert(err, qt.IsNil)
 	defer controllerStream.Close()
 
 	// Connect to the controller stream for an invalid endpoint
-	_, err = api.ConnectControllerStream("/migrate/logtransfer2", nil, nil)
+	_, err = api.ConnectControllerStream(t.Context(), "/migrate/logtransfer2", nil, nil)
 	c.Assert(err, qt.Not(qt.IsNil))
 }

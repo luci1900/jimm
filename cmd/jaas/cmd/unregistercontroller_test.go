@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"github.com/juju/juju/rpc/params"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v3"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -31,7 +32,7 @@ func TestUnregisterControllerSuperuser(t *testing.T) {
 		},
 	}
 
-	cmdMocks.client.EXPECT().RemoveController(&apiparams.RemoveControllerRequest{
+	cmdMocks.client.EXPECT().RemoveController(gomock.Any(), &apiparams.RemoveControllerRequest{
 		Name:  "mycontroller",
 		Force: true,
 	}).Return(fakeCtrl, nil)

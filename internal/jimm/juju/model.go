@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/juju/juju/api/base"
+	"github.com/juju/juju/core/life"
+	"github.com/juju/juju/core/model"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
@@ -377,7 +378,7 @@ func (j *JujuManager) ListModelSummaries(ctx context.Context, user *openfga.User
 func (j *JujuManager) mergeModelInfo(ctx context.Context, user *openfga.User, modelInfo jujuclient.ModelInfo, jimmModel dbmodel.Model) (jujuclient.ModelInfo, error) {
 	modelInfo.CloudCredential = jimmModel.CloudCredential.ResourceTag().Id()
 	modelInfo.ControllerUUID = jimmModel.Controller.UUID
-	modelInfo.Owner = jimmModel.Owner.Name
+	modelInfo.Qualifier = model.Qualifier(jimmModel.Owner.Name)
 
 	userAccess := make(map[string]string)
 
@@ -557,7 +558,7 @@ func (j *JujuManager) ForEachModel(ctx context.Context, user *openfga.User, f fu
 // the juju API will not have it's code masked.
 func (j *JujuManager) DestroyModel(ctx context.Context, user *openfga.User, mt names.ModelTag, destroyStorage, force *bool, maxWait, timeout *time.Duration) error {
 	err := j.doModelAdmin(ctx, user, mt, func(m *dbmodel.Model, api API) error {
-		m.Life = state.Dying.String()
+		m.Life = string(life.Dying)
 		if err := j.Database.UpdateModel(ctx, m); err != nil {
 			zapctx.Error(ctx, "failed to store model change", zaputil.Error(err))
 			return err
@@ -565,7 +566,7 @@ func (j *JujuManager) DestroyModel(ctx context.Context, user *openfga.User, mt n
 		if err := api.DestroyModel(ctx, mt, destroyStorage, force, maxWait, timeout); err != nil {
 			zapctx.Error(ctx, "failed to call DestroyModel juju api", zaputil.Error(err))
 			// this is a manual way of restoring the life state to alive if the JUJU api fails.
-			m.Life = state.Alive.String()
+			m.Life = string(life.Alive)
 			if uerr := j.Database.UpdateModel(ctx, m); uerr != nil {
 				zapctx.Error(ctx, "failed to store model change", zaputil.Error(uerr))
 			}
@@ -594,7 +595,7 @@ func (j *JujuManager) DumpModel(ctx context.Context, user *openfga.User, mt name
 	var dump map[string]interface{}
 	err := j.doModelAdmin(ctx, user, mt, func(m *dbmodel.Model, api API) error {
 		var err error
-		dump, err = api.DumpModel(ctx, mt, simplified)
+		dump, err = api.DumpModel(ctx, mt)
 		return err
 	})
 	if err != nil {
@@ -779,7 +780,7 @@ func (j *JujuManager) ListModels(ctx context.Context, user *openfga.User) ([]bas
 			if !ok {
 				continue
 			}
-			um.Owner = mapModel.OwnerIdentityName
+			um.Qualifier = model.Qualifier(mapModel.OwnerIdentityName)
 			userModels = append(userModels, um)
 		}
 		return nil

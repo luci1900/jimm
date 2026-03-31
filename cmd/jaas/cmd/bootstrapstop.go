@@ -5,10 +5,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/juju/cmd/v3"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	"github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -63,14 +63,16 @@ func (c *bootstrapStopCommand) Init(args []string) error {
 
 // Run implements cmd.Command.Run interface.
 func (c *bootstrapStopCommand) Run(ctxt *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctxt)
 	if err != nil {
 		return fmt.Errorf("failed to create JIMM client: %v", err)
 	}
 
-	err = client.StopBootstrap(&params.StopBootstrapRequest{
-		JobID: c.jobId,
-	})
+	err = client.StopBootstrap(
+		ctxt,
+		&params.StopBootstrapRequest{
+			JobID: c.jobId,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to stop bootstrap: %v", err)
 	}

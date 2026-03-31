@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
+	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -44,7 +45,7 @@ func TestShowModelOutput(t *testing.T) {
 
 	mocks := setupCmdMocks(c)
 	mocks.client.EXPECT().Close().AnyTimes()
-	mocks.client.EXPECT().ModelControllerInfo("12345678-1234-1234-1234-123456789abc").Return(modelControllerInfo, nil).AnyTimes()
+	mocks.client.EXPECT().ModelControllerInfo(gomock.Any(), "12345678-1234-1234-1234-123456789abc").Return(modelControllerInfo, nil).AnyTimes()
 
 	tests := []struct {
 		args           []string
@@ -76,7 +77,7 @@ func TestShowModelError(t *testing.T) {
 
 	mocks := setupCmdMocks(c)
 	mocks.client.EXPECT().Close().AnyTimes()
-	mocks.client.EXPECT().ModelControllerInfo("12345678-1234-1234-1234-123456789abc").Return(nil, errors.New("not found")).AnyTimes()
+	mocks.client.EXPECT().ModelControllerInfo(gomock.Any(), "12345678-1234-1234-1234-123456789abc").Return(nil, errors.New("not found")).AnyTimes()
 
 	_, err := runShowModelCommand(c, mocks, "12345678-1234-1234-1234-123456789abc")
 	c.Assert(err, qt.ErrorMatches, "not found")
@@ -87,7 +88,7 @@ func TestShowModelArgsError(t *testing.T) {
 
 	mocks := setupCmdMocks(c)
 	mocks.client.EXPECT().Close().AnyTimes()
-	mocks.client.EXPECT().ModelControllerInfo("12345678-1234-1234-1234-123456789abc").Return(nil, errors.New("not found")).AnyTimes()
+	mocks.client.EXPECT().ModelControllerInfo(gomock.Any(), "12345678-1234-1234-1234-123456789abc").Return(nil, errors.New("not found")).AnyTimes()
 
 	_, err := runShowModelCommand(c, mocks)
 	c.Assert(err, qt.ErrorMatches, "missing model qualifier")

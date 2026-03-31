@@ -11,7 +11,6 @@ import (
 	"github.com/juju/juju/core/life"
 	"github.com/juju/juju/core/status"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
 
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
@@ -106,8 +105,6 @@ models:
   users:
   - user: alice@canonical.com
     access: admin
-  sla:
-    level: unsupported
   agent-version: 1.2.3
 `
 
@@ -132,14 +129,13 @@ func getFullStatus(
 				Since:  &now,
 				Data:   map[string]interface{}{},
 			},
-			SLA: "unsupported",
 		},
-		Machines:           map[string]jujuparams.MachineStatus{},
-		Applications:       applications,
-		RemoteApplications: remoteApps,
-		Offers:             map[string]jujuparams.ApplicationOfferStatus{},
-		Relations:          modelRelations,
-		Branches:           map[string]jujuparams.BranchStatus{},
+		Machines:                  map[string]jujuparams.MachineStatus{},
+		Applications:              applications,
+		RemoteApplicationOfferers: remoteApps,
+		Offers:                    map[string]jujuparams.ApplicationOfferStatus{},
+		Relations:                 modelRelations,
+		Branches:                  map[string]jujuparams.BranchStatus{},
 	}
 }
 
@@ -339,9 +335,9 @@ func TestQueryModelsJq(t *testing.T) {
 										FilesystemTag: "filesystem-myapp-0-0",
 										VolumeTag:     "volume-myapp-0-0",
 										Info: jujuparams.FilesystemInfo{
-											Size:         4096,
-											Pool:         "pool-1",
-											FilesystemId: "da64ec3c-0cf7-42f2-9951-35a5a3eaadc1",
+											SizeMiB:    4096,
+											Pool:       "pool-1",
+											ProviderId: "da64ec3c-0cf7-42f2-9951-35a5a3eaadc1",
 										},
 										Life: life.Alive,
 										Status: jujuparams.EntityStatus{
@@ -354,7 +350,7 @@ func TestQueryModelsJq(t *testing.T) {
 													MountPoint: "/home/ubuntu/myapp/.data",
 													ReadOnly:   false,
 												},
-												Life: life.Value(state.Alive.String()),
+												Life: life.Value(string(life.Alive)),
 											},
 										},
 									},
@@ -450,7 +446,6 @@ func TestQueryModelsJq(t *testing.T) {
 				},
 				"name": "model-1",
 				"region": "localhost",
-				"sla": "unsupported",
 				"type": "caas",
 				"version": "2.9.37"
 			}
@@ -465,7 +460,6 @@ func TestQueryModelsJq(t *testing.T) {
 				},
 				"name": "model-2",
 				"region": "localhost",
-				"sla": "unsupported",
 				"type": "caas",
 				"version": "2.9.37"
 			}
@@ -480,7 +474,6 @@ func TestQueryModelsJq(t *testing.T) {
 				},
 				"name": "model-3",
 				"region": "localhost",
-				"sla": "unsupported",
 				"type": "caas",
 				"version": "2.9.37"
 			}

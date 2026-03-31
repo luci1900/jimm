@@ -13,7 +13,8 @@ import (
 	"github.com/juju/errors"
 	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/client/client"
-	"github.com/juju/names/v5"
+	"github.com/juju/juju/core/logger"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/openfga"
@@ -32,7 +33,7 @@ func TestConnectToModel(t *testing.T) {
 	}, "test", nil)
 	defer conn.Close()
 	var resp map[string]interface{}
-	err := conn.APICall("Admin", 3, "", "TestMethod", nil, &resp)
+	err := conn.APICall(t.Context(), "Admin", 3, "", "TestMethod", nil, &resp)
 	c.Assert(err, qt.ErrorMatches, `(?s).*no such request - method Admin.TestMethod is not implemented \(not implemented\).*`)
 }
 
@@ -81,7 +82,7 @@ func TestAgentLoginReturnsRedirect(t *testing.T) {
 	dialOpts := api.DialOpts{
 		InsecureSkipVerify: true,
 	}
-	_, err = api.Open(&info, dialOpts)
+	_, err = api.Open(t.Context(), &info, dialOpts)
 	c.Assert(err, qt.Not(qt.IsNil))
 	redirectErr, ok := errors.Cause(err).(*api.RedirectError)
 	c.Check(ok, qt.Equals, true)
@@ -107,14 +108,49 @@ func TestAgentLoginModelDoesNotExist(t *testing.T) {
 	dialOpts := api.DialOpts{
 		InsecureSkipVerify: true,
 	}
-	_, err = api.Open(&info, dialOpts)
+	_, err = api.Open(t.Context(), &info, dialOpts)
 	c.Assert(err, qt.Not(qt.IsNil))
 	c.Check(err.Error(), qt.Matches, `failed to find model: model not found.*`)
 }
 
-type logger struct{}
+type jujuLoggerShim struct {
+}
 
-func (l logger) Errorf(string, ...interface{}) {}
+func (j jujuLoggerShim) Errorf(ctx context.Context, msg string, in ...interface{}) {
+}
+
+func (j jujuLoggerShim) Criticalf(ctx context.Context, msg string, args ...any) {
+}
+
+func (j jujuLoggerShim) Warningf(ctx context.Context, msg string, args ...any) {
+}
+
+func (j jujuLoggerShim) Infof(ctx context.Context, msg string, args ...any) {
+}
+
+func (j jujuLoggerShim) Debugf(ctx context.Context, msg string, args ...any) {
+}
+
+func (j jujuLoggerShim) Tracef(ctx context.Context, msg string, args ...any) {
+}
+
+func (j jujuLoggerShim) Logf(ctx context.Context, level logger.Level, labels logger.Labels, format string, args ...any) {
+}
+
+func (j jujuLoggerShim) IsLevelEnabled(level logger.Level) bool {
+	return true
+}
+
+func (j jujuLoggerShim) GetChildByName(name string) logger.Logger {
+	return jujuLoggerShim{}
+}
+
+func (j jujuLoggerShim) Helper() {
+}
+
+func (j jujuLoggerShim) Child(name string, tags ...string) logger.Logger {
+	return jujuLoggerShim{}
+}
 
 func TestProxyModelStatus(t *testing.T) {
 	c := qt.New(t)
@@ -126,8 +162,8 @@ func TestProxyModelStatus(t *testing.T) {
 		SkipLogin: false,
 	}, "alice@canonical.com", nil)
 	defer conn.Close()
-	jujuClient := client.NewClient(conn, logger{})
-	status, err := jujuClient.Status(nil)
+	jujuClient := client.NewClient(conn, jujuLoggerShim{})
+	status, err := jujuClient.Status(t.Context(), nil)
 	c.Check(err, qt.IsNil)
 	c.Check(status, qt.Not(qt.IsNil))
 	c.Check(status.Model.Name, qt.Equals, model.Name)

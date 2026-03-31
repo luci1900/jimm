@@ -11,10 +11,10 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/juju/api/base"
+	"github.com/juju/juju/core/life"
 	jujurpc "github.com/juju/juju/rpc"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -268,5 +268,5 @@ func TestPollModelsDyingControllerErrors(t *testing.T) {
 	}
 	err = s.jujuManager.Database.GetModel(ctx, &model)
 	c.Assert(err, qt.IsNil)
-	c.Assert(model.Life, qt.Equals, state.Alive.String())
+	c.Assert(model.Life, qt.Equals, string(life.Alive))
 }

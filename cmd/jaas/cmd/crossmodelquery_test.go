@@ -31,7 +31,7 @@ func TestCrossModelQueryRun(t *testing.T) {
 		Errors: map[string][]string{},
 	}
 
-	s.client.EXPECT().CrossModelQuery(expectedReq).Return(expectedResp, nil)
+	s.client.EXPECT().CrossModelQuery(gomock.Any(), expectedReq).Return(expectedResp, nil)
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &crossModelQueryCommand{}
@@ -55,7 +55,7 @@ func TestCrossModelQueryRunClientError(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().CrossModelQuery(gomock.Any()).Return(nil, errors.New("could not create JIMM client: boom"))
+	s.client.EXPECT().CrossModelQuery(gomock.Any(), gomock.Any()).Return(nil, errors.New("could not create JIMM client: boom"))
 	s.client.EXPECT().Close().Return(nil)
 
 	command := &crossModelQueryCommand{}

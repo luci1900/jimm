@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
@@ -116,7 +116,7 @@ func (s streamControllerProxier) ServeWS(ctx context.Context, clientConn *websoc
 		jujuparams.JujuClientVersion:        []string{jimmhttp.ClientVersionFromContext(ctx)},
 	}
 
-	controllerStream, err := api.ConnectControllerStream(logTransferPath, jimmhttp.QueryParamsFromContext(ctx), headers)
+	controllerStream, err := api.ConnectControllerStream(ctx, logTransferPath, jimmhttp.QueryParamsFromContext(ctx), headers)
 	if err != nil {
 		zapctx.Error(ctx, "failed to connect stream", zap.Error(err))
 		writeError(fmt.Sprintf("failed to connect stream: %s", err.Error()), errors.CodeConnectionFailed)

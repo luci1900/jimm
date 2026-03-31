@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
+	"github.com/juju/juju/api/jujuclient"
 	jujucmd "github.com/juju/juju/cmd"
+	"github.com/juju/juju/cmd/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
-	"github.com/juju/juju/jujuclient"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
@@ -81,13 +81,13 @@ func (c *purgeLogsCommand) SetFlags(f *gnuflag.FlagSet) {
 // Run implements Command.Run. It purges logs from the database before the given
 // date.
 func (c *purgeLogsCommand) Run(ctx *cmd.Context) error {
-	client, err := c.getJIMMAPI()
+	client, err := c.getJIMMAPI(ctx)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	response, err := client.PurgeLogs(&apiparams.PurgeLogsRequest{
+	response, err := client.PurgeLogs(ctx, &apiparams.PurgeLogsRequest{
 		Date: c.date,
 	})
 	if err != nil {

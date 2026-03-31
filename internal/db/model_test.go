@@ -10,8 +10,8 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/juju/state"
-	"github.com/juju/names/v5"
+	"github.com/juju/juju/core/life"
+	"github.com/juju/names/v6"
 	"gorm.io/gorm"
 
 	"github.com/canonical/jimm/v3/internal/db"
@@ -73,7 +73,7 @@ func (s *dbSuite) TestAddModel(c *qt.C) {
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	m1 := model
 	err = s.Database.AddModel(context.Background(), &model)
@@ -139,7 +139,7 @@ func (s *dbSuite) TestGetModel(c *qt.C) {
 		CloudRegion:       cloud.Regions[0],
 		CloudCredentialID: cred.ID,
 		CloudCredential:   cred,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	model.CloudCredential.Cloud = dbmodel.Cloud{}
 	// We don't care about the cloud credential owner when
@@ -223,7 +223,7 @@ func (s *dbSuite) TestUpdateModel(c *qt.C) {
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	err = s.Database.AddModel(context.Background(), &model)
 	c.Assert(err, qt.Equals, nil)
@@ -291,7 +291,7 @@ func (s *dbSuite) TestDeleteModel(c *qt.C) {
 		Controller:        controller,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 
 	err = s.Database.AddModel(context.Background(), &model)
@@ -358,7 +358,7 @@ func (s *dbSuite) TestDeleteModelByModelUUID(c *qt.C) {
 		Controller:        controller,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 
 	err = s.Database.AddModel(context.Background(), &model)
@@ -429,7 +429,7 @@ func (s *dbSuite) TestGetModelsUsingCredential(c *qt.C) {
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred1.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	err = s.Database.AddModel(context.Background(), &model1)
 	c.Assert(err, qt.Equals, nil)
@@ -444,7 +444,7 @@ func (s *dbSuite) TestGetModelsUsingCredential(c *qt.C) {
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred2.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 	err = s.Database.AddModel(context.Background(), &model2)
 	c.Assert(err, qt.Equals, nil)
@@ -465,7 +465,7 @@ func (s *dbSuite) TestGetModelsUsingCredential(c *qt.C) {
 		Controller:        controller,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred1.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}})
 
 	models, err = s.Database.GetModelsUsingCredential(context.Background(), 0)
@@ -695,7 +695,7 @@ func (s *dbSuite) TestGetModelsByController(c *qt.C) {
 		Controller:      controller,
 		CloudRegion:     cloud.Regions[0],
 		CloudCredential: cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}, {
 		Name: "test-model-2",
 		UUID: sql.NullString{
@@ -706,7 +706,7 @@ func (s *dbSuite) TestGetModelsByController(c *qt.C) {
 		Controller:      controller,
 		CloudRegion:     cloud.Regions[0],
 		CloudCredential: cred,
-		Life:            state.Alive.String(),
+		Life:            string(life.Alive),
 	}}
 	for _, m := range models {
 		c.Assert(s.Database.DB.Create(&m).Error, qt.IsNil)

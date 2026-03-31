@@ -8,7 +8,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/google/uuid"
 	"github.com/juju/juju/core/permission"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	jimmnames "github.com/canonical/jimm/v3/pkg/names"

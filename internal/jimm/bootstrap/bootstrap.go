@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/juju/juju/api/jujuclient"
 	"github.com/juju/juju/core/network"
-	"github.com/juju/juju/jujuclient"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/zaputil/zapctx"
 	"github.com/riverqueue/river/rivertype"

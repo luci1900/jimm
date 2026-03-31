@@ -12,16 +12,16 @@ import (
 // ListFilesystems lists filesystems for desired machines.
 // If no machines provided, a list of all filesystems is returned.
 func (c Connection) ListFilesystems(ctx context.Context, machines []string) ([]jujuparams.FilesystemDetailsListResult, error) {
-	return storage.NewClient(&c).ListFilesystems(machines)
+	return storage.NewClient(&c).ListFilesystems(ctx, machines)
 }
 
 // ListVolumes lists volumes for desired machines.
 // If no machines provided, a list of all volumes is returned.
 func (c Connection) ListVolumes(ctx context.Context, machines []string) ([]jujuparams.VolumeDetailsListResult, error) {
-	return storage.NewClient(&c).ListVolumes(machines)
+	return storage.NewClient(&c).ListVolumes(ctx, machines)
 }
 
 // ListStorageDetails lists all storage.
 func (c Connection) ListStorageDetails(ctx context.Context) ([]jujuparams.StorageDetails, error) {
-	return storage.NewClient(&c).ListStorageDetails()
+	return storage.NewClient(&c).ListStorageDetails(ctx)
 }

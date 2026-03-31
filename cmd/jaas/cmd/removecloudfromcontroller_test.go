@@ -3,11 +3,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/juju/cmd/v3/cmdtesting"
+	"github.com/juju/juju/cmd/cmd/cmdtesting"
 	"go.uber.org/mock/gomock"
 
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
@@ -17,8 +18,8 @@ func TestRemoveCloudFromController(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().RemoveCloudFromController(gomock.Any()).DoAndReturn(
-		func(rcfcr *apiparams.RemoveCloudFromControllerRequest) error {
+	s.client.EXPECT().RemoveCloudFromController(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, rcfcr *apiparams.RemoveCloudFromControllerRequest) error {
 			c.Check(rcfcr.ControllerName, qt.Equals, "controller-1")
 			c.Check(rcfcr.CloudTag, qt.Equals, "cloud-test-cloud")
 			return nil
@@ -51,7 +52,7 @@ func TestRemoveCloudFromControllerCloudNotFound(t *testing.T) {
 	c := qt.New(t)
 	s := setupCmdMocks(c)
 
-	s.client.EXPECT().RemoveCloudFromController(gomock.Any()).Return(fmt.Errorf("cloud \"test-cloud\" not found"))
+	s.client.EXPECT().RemoveCloudFromController(gomock.Any(), gomock.Any()).Return(fmt.Errorf("cloud \"test-cloud\" not found"))
 	command := &removeCloudFromControllerCommand{}
 	command.setJIMMAPI(s.client)
 	s.client.EXPECT().Close()

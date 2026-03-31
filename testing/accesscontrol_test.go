@@ -3,7 +3,6 @@
 package testing
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/google/uuid"
 	"github.com/juju/juju/core/crossmodel"
-	"github.com/juju/juju/state"
+	"github.com/juju/juju/core/life"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/openfga"
@@ -32,11 +31,11 @@ func TestAddGroup(t *testing.T) {
 	defer conn.Close()
 
 	client := api.NewClient(conn)
-	res, err := client.AddGroup(&apiparams.AddGroupRequest{Name: "test-group"})
+	res, err := client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "test-group"})
 	c.Assert(err, qt.IsNil)
 	c.Assert(res.UUID, qt.Not(qt.Equals), "")
 
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "test-group"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "test-group"})
 	c.Assert(err, qt.ErrorMatches, ".*already exists.*")
 }
 
@@ -48,21 +47,21 @@ func TestGetGroup(t *testing.T) {
 
 	client := api.NewClient(conn)
 
-	created, err := client.AddGroup(&apiparams.AddGroupRequest{Name: "test-group"})
+	created, err := client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "test-group"})
 	c.Assert(err, qt.IsNil)
 
-	retrievedUuid, err := client.GetGroup(&apiparams.GetGroupRequest{UUID: created.UUID})
+	retrievedUuid, err := client.GetGroup(t.Context(), &apiparams.GetGroupRequest{UUID: created.UUID})
 	c.Assert(err, qt.IsNil)
 	c.Assert(retrievedUuid.Group, qt.DeepEquals, created.Group)
 
-	retrievedName, err := client.GetGroup(&apiparams.GetGroupRequest{Name: created.Name})
+	retrievedName, err := client.GetGroup(t.Context(), &apiparams.GetGroupRequest{Name: created.Name})
 	c.Assert(err, qt.IsNil)
 	c.Assert(retrievedName.Group, qt.DeepEquals, created.Group)
 
-	_, err = client.GetGroup(&apiparams.GetGroupRequest{UUID: "non-existent"})
+	_, err = client.GetGroup(t.Context(), &apiparams.GetGroupRequest{UUID: "non-existent"})
 	c.Assert(err, qt.ErrorMatches, ".*not found.*")
 
-	_, err = client.GetGroup(&apiparams.GetGroupRequest{Name: created.Name, UUID: created.UUID})
+	_, err = client.GetGroup(t.Context(), &apiparams.GetGroupRequest{Name: created.Name, UUID: created.UUID})
 	c.Assert(err, qt.ErrorMatches, ".*only one of.*")
 }
 
@@ -74,15 +73,15 @@ func TestRemoveGroup(t *testing.T) {
 
 	client := api.NewClient(conn)
 
-	err := client.RemoveGroup(&apiparams.RemoveGroupRequest{
+	err := client.RemoveGroup(t.Context(), &apiparams.RemoveGroupRequest{
 		Name: "test-group",
 	})
 	c.Assert(err, qt.ErrorMatches, ".*not found.*")
 
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "test-group"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "test-group"})
 	c.Assert(err, qt.IsNil)
 
-	err = client.RemoveGroup(&apiparams.RemoveGroupRequest{
+	err = client.RemoveGroup(t.Context(), &apiparams.RemoveGroupRequest{
 		Name: "test-group",
 	})
 	c.Assert(err, qt.IsNil)
@@ -91,7 +90,7 @@ func TestRemoveGroup(t *testing.T) {
 func TestRemoveGroupRemovesTuples(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	db := s.JIMM.Database
 
 	user, group, controller, model, _, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -141,32 +140,32 @@ func TestRemoveGroupRemovesTuples(t *testing.T) {
 	checkAccessTupleController := apiparams.RelationshipTuple{Object: u, Relation: "administrator", TargetObject: "controller-" + controller.UUID}
 	checkAccessTupleModel := apiparams.RelationshipTuple{Object: u, Relation: "writer", TargetObject: "model-" + model.UUID.String}
 
-	err = s.JIMM.OpenFGAClient.AddRelation(context.Background(), tuples...)
+	err = s.JIMM.OpenFGAClient.AddRelation(t.Context(), tuples...)
 	c.Assert(err, qt.IsNil)
 	// Check user has access to model and controller through group2
-	checkResp, err := client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
+	checkResp, err := client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, true)
-	checkResp, err = client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
+	checkResp, err = client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, true)
 
-	resp, err := client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{})
+	resp, err := client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{})
 	c.Assert(err, qt.IsNil)
 	previousTupleCount := len(resp.Tuples)
 
-	err = client.RemoveGroup(&apiparams.RemoveGroupRequest{Name: group2.Name})
+	err = client.RemoveGroup(t.Context(), &apiparams.RemoveGroupRequest{Name: group2.Name})
 	c.Assert(err, qt.IsNil)
 
-	resp, err = client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{})
+	resp, err = client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{})
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(resp.Tuples), qt.Equals, previousTupleCount-4)
 
 	// Check user access has been revoked.
-	checkResp, err = client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
+	checkResp, err = client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleController})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, false)
-	checkResp, err = client.CheckRelation(&apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
+	checkResp, err = client.CheckRelation(t.Context(), &apiparams.CheckRelationRequest{Tuple: checkAccessTupleModel})
 	c.Assert(err, qt.IsNil)
 	c.Assert(checkResp.Allowed, qt.Equals, false)
 }
@@ -179,16 +178,16 @@ func TestRenameGroup(t *testing.T) {
 
 	client := api.NewClient(conn)
 
-	err := client.RenameGroup(&apiparams.RenameGroupRequest{
+	err := client.RenameGroup(t.Context(), &apiparams.RenameGroupRequest{
 		Name:    "test-group",
 		NewName: "renamed-group",
 	})
 	c.Assert(err, qt.ErrorMatches, ".*not found.*")
 
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "test-group"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "test-group"})
 	c.Assert(err, qt.IsNil)
 
-	err = client.RenameGroup(&apiparams.RenameGroupRequest{
+	err = client.RenameGroup(t.Context(), &apiparams.RenameGroupRequest{
 		Name:    "test-group",
 		NewName: "renamed-group",
 	})
@@ -211,11 +210,11 @@ func TestListGroups(t *testing.T) {
 	}
 
 	for _, name := range groupNames {
-		_, err := client.AddGroup(&apiparams.AddGroupRequest{Name: name})
+		_, err := client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: name})
 		c.Assert(err, qt.IsNil)
 	}
 	req := apiparams.ListGroupsRequest{Limit: 10, Offset: 0}
-	groups, err := client.ListGroups(&req)
+	groups, err := client.ListGroups(t.Context(), &req)
 	c.Assert(err, qt.IsNil)
 	c.Assert(groups, qt.HasLen, 4)
 	// Verify the UUID is not empty.
@@ -261,7 +260,7 @@ func createTuple(object, relation, target string) openfga.Tuple {
 func TestAddRelation(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	db := s.JIMM.Database
 
 	user, group, controller, model, offer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -488,7 +487,7 @@ func TestAddRelation(t *testing.T) {
 			//nolint:errcheck
 			s.COFGAClient.RemoveRelation(ctx, tc.want)
 		}
-		err := client.AddRelation(&apiparams.AddRelationRequest{
+		err := client.AddRelation(t.Context(), &apiparams.AddRelationRequest{
 			Tuples: []apiparams.RelationshipTuple{
 				{
 					Object:       tc.input.object,
@@ -532,7 +531,7 @@ func TestAddRelation(t *testing.T) {
 func TestRemoveRelation(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	user, group, controller, model, offer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
 	defer closeClient()
@@ -780,7 +779,7 @@ func TestRemoveRelation(t *testing.T) {
 	for i, tc := range tagTests {
 		c.Logf("running test %d", i)
 		ofgaClient := s.JIMM.OpenFGAClient
-		err := ofgaClient.AddRelation(context.Background(), tc.toAdd)
+		err := ofgaClient.AddRelation(t.Context(), tc.toAdd)
 		c.Check(err, qt.IsNil)
 		changes, err := s.COFGAClient.ReadChanges(ctx, tc.changesType, 99, "")
 		c.Assert(err, qt.IsNil)
@@ -789,7 +788,7 @@ func TestRemoveRelation(t *testing.T) {
 		c.Assert(key.Relation, qt.DeepEquals, tc.want.Relation.String())
 		c.Assert(key.Object, qt.DeepEquals, tc.want.Target.String())
 
-		err = client.RemoveRelation(&apiparams.RemoveRelationRequest{
+		err = client.RemoveRelation(t.Context(), &apiparams.RemoveRelationRequest{
 			Tuples: []apiparams.RelationshipTuple{
 				{
 					Object:       tc.toRemove.user,
@@ -823,13 +822,13 @@ func TestListRelationshipTuples(t *testing.T) {
 	user, _, controller, _, applicationOffer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
 	defer closeClient()
 
-	response, err := client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
+	response, err := client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
 	c.Assert(err, qt.IsNil)
 	initialTupleCount := len(response.Tuples)
 
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "yellow"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "yellow"})
 	c.Assert(err, qt.IsNil)
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "orange"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "orange"})
 	c.Assert(err, qt.IsNil)
 
 	tuples := []apiparams.RelationshipTuple{{
@@ -850,10 +849,10 @@ func TestListRelationshipTuples(t *testing.T) {
 		TargetObject: "applicationoffer-" + applicationOffer.URL,
 	}}
 
-	err = client.AddRelation(&apiparams.AddRelationRequest{Tuples: tuples})
+	err = client.AddRelation(t.Context(), &apiparams.AddRelationRequest{Tuples: tuples})
 	c.Assert(err, qt.IsNil)
 
-	response, err = client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
+	response, err = client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
 	c.Assert(err, qt.IsNil)
 	// first tuples are created during setup test
 	c.Assert(response.Tuples[initialTupleCount:], qt.DeepEquals, tuples)
@@ -862,7 +861,7 @@ func TestListRelationshipTuples(t *testing.T) {
 	}
 	c.Assert(len(response.Errors), qt.Equals, 0)
 
-	response, err = client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{
+	response, err = client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{
 		Tuple: apiparams.RelationshipTuple{
 			TargetObject: "applicationoffer-" + applicationOffer.URL,
 		},
@@ -873,7 +872,7 @@ func TestListRelationshipTuples(t *testing.T) {
 	c.Assert(len(response.Errors), qt.Equals, 0)
 
 	// Test error message when a resource is not found
-	_, err = client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{
+	_, err = client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{
 		Tuple: apiparams.RelationshipTuple{
 			TargetObject: "applicationoffer-" + "fake-offer",
 		},
@@ -885,11 +884,11 @@ func TestListRelationshipTuples(t *testing.T) {
 func TestListRelationshipTuplesNoUUIDResolution(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, _, _, applicationOffer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
 	defer closeClient()
 
-	_, err := client.AddGroup(&apiparams.AddGroupRequest{Name: "orange"})
+	_, err := client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "orange"})
 	c.Assert(err, qt.IsNil)
 
 	tuples := []apiparams.RelationshipTuple{{
@@ -898,7 +897,7 @@ func TestListRelationshipTuplesNoUUIDResolution(t *testing.T) {
 		TargetObject: "applicationoffer-" + applicationOffer.UUID,
 	}}
 
-	err = client.AddRelation(&apiparams.AddRelationRequest{Tuples: tuples})
+	err = client.AddRelation(t.Context(), &apiparams.AddRelationRequest{Tuples: tuples})
 	c.Assert(err, qt.IsNil)
 
 	groupOrange := dbmodel.GroupEntry{Name: "orange"}
@@ -909,7 +908,7 @@ func TestListRelationshipTuplesNoUUIDResolution(t *testing.T) {
 		Relation:     "administrator",
 		TargetObject: "applicationoffer-" + applicationOffer.UUID,
 	}}
-	response, err := client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{
+	response, err := client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{
 		Tuple: apiparams.RelationshipTuple{
 			TargetObject: "applicationoffer-" + applicationOffer.URL,
 		},
@@ -927,13 +926,13 @@ func TestListRelationshipTuplesAfterDeletingGroup(t *testing.T) {
 	user, _, controller, _, applicationOffer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
 	defer closeClient()
 
-	response, err := client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
+	response, err := client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
 	c.Assert(err, qt.IsNil)
 	initialTupleCount := len(response.Tuples)
 
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "yellow"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "yellow"})
 	c.Assert(err, qt.IsNil)
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "orange"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "orange"})
 	c.Assert(err, qt.IsNil)
 
 	tuples := []apiparams.RelationshipTuple{{
@@ -954,13 +953,13 @@ func TestListRelationshipTuplesAfterDeletingGroup(t *testing.T) {
 		TargetObject: "applicationoffer-" + applicationOffer.URL,
 	}}
 
-	err = client.AddRelation(&apiparams.AddRelationRequest{Tuples: tuples})
+	err = client.AddRelation(t.Context(), &apiparams.AddRelationRequest{Tuples: tuples})
 	c.Assert(err, qt.IsNil)
 
-	err = client.RemoveGroup(&apiparams.RemoveGroupRequest{Name: "yellow"})
+	err = client.RemoveGroup(t.Context(), &apiparams.RemoveGroupRequest{Name: "yellow"})
 	c.Assert(err, qt.IsNil)
 
-	response, err = client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
+	response, err = client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
 	c.Assert(err, qt.IsNil)
 	// Create a new slice of tuples excluding the ones we expect to be deleted.
 	responseTuples := response.Tuples[initialTupleCount:]
@@ -981,17 +980,17 @@ func TestListRelationshipTuplesAfterDeletingGroup(t *testing.T) {
 func TestListRelationshipTuplesWithMissingGroups(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, _, _, _, _, _, client, closeClient := createTestControllerEnvironment(c, s)
 	defer closeClient()
 
-	response, err := client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
+	response, err := client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
 	c.Assert(err, qt.IsNil)
 	initialTupleCount := len(response.Tuples)
 
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "yellow"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "yellow"})
 	c.Assert(err, qt.IsNil)
-	_, err = client.AddGroup(&apiparams.AddGroupRequest{Name: "orange"})
+	_, err = client.AddGroup(t.Context(), &apiparams.AddGroupRequest{Name: "orange"})
 	c.Assert(err, qt.IsNil)
 
 	tuples := []apiparams.RelationshipTuple{{
@@ -1000,7 +999,7 @@ func TestListRelationshipTuplesWithMissingGroups(t *testing.T) {
 		TargetObject: "group-yellow",
 	}}
 
-	err = client.AddRelation(&apiparams.AddRelationRequest{Tuples: tuples})
+	err = client.AddRelation(t.Context(), &apiparams.AddRelationRequest{Tuples: tuples})
 	c.Assert(err, qt.IsNil)
 
 	// Delete a group without going through the API.
@@ -1010,7 +1009,7 @@ func TestListRelationshipTuplesWithMissingGroups(t *testing.T) {
 	err = s.JIMM.Database.RemoveGroup(ctx, group)
 	c.Assert(err, qt.IsNil)
 
-	response, err = client.ListRelationshipTuples(&apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
+	response, err = client.ListRelationshipTuples(t.Context(), &apiparams.ListRelationshipTuplesRequest{ResolveUUIDs: true})
 	c.Assert(err, qt.IsNil)
 	tupleWithoutDBEntry := tuples[0]
 	tupleWithoutDBEntry.TargetObject = "group:" + group.UUID
@@ -1036,7 +1035,7 @@ func TestCheckRelationAsNonAdmin(t *testing.T) {
 		TargetObject: "controller-jimm",
 	}
 	req := apiparams.CheckRelationRequest{Tuple: input}
-	_, err := client.CheckRelation(&req)
+	_, err := client.CheckRelation(t.Context(), &req)
 	c.Assert(err, qt.ErrorMatches, `failed to check relation: unauthorized \(unauthorized access\)`)
 	// Verify Bob can check for his own permission.
 	input = apiparams.RelationshipTuple{
@@ -1045,14 +1044,14 @@ func TestCheckRelationAsNonAdmin(t *testing.T) {
 		TargetObject: "controller-jimm",
 	}
 	req = apiparams.CheckRelationRequest{Tuple: input}
-	_, err = client.CheckRelation(&req)
+	_, err = client.CheckRelation(t.Context(), &req)
 	c.Assert(err, qt.IsNil)
 }
 
 func TestCheckRelationOfferReaderFlow(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	ofgaClient := s.JIMM.OpenFGAClient
 
 	user, group, _, _, offer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -1116,7 +1115,7 @@ func TestCheckRelationOfferReaderFlow(t *testing.T) {
 
 	for _, tc := range tests {
 		req := apiparams.CheckRelationRequest{Tuple: tc.input}
-		res, err := client.CheckRelation(&req)
+		res, err := client.CheckRelation(t.Context(), &req)
 		c.Assert(err, qt.IsNil)
 		c.Assert(res.Allowed, qt.Equals, tc.want)
 	}
@@ -1125,7 +1124,7 @@ func TestCheckRelationOfferReaderFlow(t *testing.T) {
 func TestCheckRelationOfferConsumerFlow(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	ofgaClient := s.JIMM.OpenFGAClient
 
 	user, group, _, _, offer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -1187,7 +1186,7 @@ func TestCheckRelationOfferConsumerFlow(t *testing.T) {
 
 	for _, tc := range tests {
 		req := apiparams.CheckRelationRequest{Tuple: tc.input}
-		res, err := client.CheckRelation(&req)
+		res, err := client.CheckRelation(t.Context(), &req)
 		c.Assert(err, qt.IsNil)
 		c.Assert(res.Allowed, qt.Equals, tc.want)
 	}
@@ -1196,7 +1195,7 @@ func TestCheckRelationOfferConsumerFlow(t *testing.T) {
 func TestCheckRelationModelReaderFlow(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	ofgaClient := s.JIMM.OpenFGAClient
 
 	user, group, _, model, _, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -1260,7 +1259,7 @@ func TestCheckRelationModelReaderFlow(t *testing.T) {
 
 	for _, tc := range tests {
 		req := apiparams.CheckRelationRequest{Tuple: tc.input}
-		res, err := client.CheckRelation(&req)
+		res, err := client.CheckRelation(t.Context(), &req)
 		c.Assert(err, qt.IsNil)
 		c.Assert(res.Allowed, qt.Equals, tc.want)
 	}
@@ -1269,7 +1268,7 @@ func TestCheckRelationModelReaderFlow(t *testing.T) {
 func TestCheckRelationModelWriterFlow(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	ofgaClient := s.JIMM.OpenFGAClient
 
 	user, group, _, model, _, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -1331,7 +1330,7 @@ func TestCheckRelationModelWriterFlow(t *testing.T) {
 
 	for _, tc := range tests {
 		req := apiparams.CheckRelationRequest{Tuple: tc.input}
-		res, err := client.CheckRelation(&req)
+		res, err := client.CheckRelation(t.Context(), &req)
 		c.Assert(err, qt.IsNil)
 		c.Assert(res.Allowed, qt.Equals, tc.want)
 	}
@@ -1340,7 +1339,7 @@ func TestCheckRelationModelWriterFlow(t *testing.T) {
 func TestCheckRelationControllerAdministratorFlow(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	ctx := context.Background()
+	ctx := t.Context()
 	ofgaClient := s.JIMM.OpenFGAClient
 
 	user, group, controller, model, offer, _, _, client, closeClient := createTestControllerEnvironment(c, s)
@@ -1458,7 +1457,7 @@ func TestCheckRelationControllerAdministratorFlow(t *testing.T) {
 
 	for _, tc := range tests {
 		req := apiparams.CheckRelationRequest{Tuple: tc.input}
-		res, err := client.CheckRelation(&req)
+		res, err := client.CheckRelation(t.Context(), &req)
 		c.Assert(err, qt.IsNil)
 		c.Assert(res.Allowed, qt.Equals, tc.want)
 	}
@@ -1471,7 +1470,7 @@ func TestCheckRelationControllerAdministratorFlow(t *testing.T) {
 			Allowed: tc.want,
 		})
 	}
-	results, err := client.CheckRelations(&tuplesToCheck)
+	results, err := client.CheckRelations(t.Context(), &tuplesToCheck)
 	c.Assert(err, qt.IsNil)
 	c.Assert(results, qt.DeepEquals, expected)
 }
@@ -1563,7 +1562,7 @@ func createTestControllerEnvironment(c *qt.C, s jimmtest.JimmWithControllers) (
 		ControllerID:      controller.ID,
 		CloudRegionID:     cloud.Regions[0].ID,
 		CloudCredentialID: cred.ID,
-		Life:              state.Alive.String(),
+		Life:              string(life.Alive),
 	}
 
 	err = db.AddModel(ctx, &model)
@@ -1579,7 +1578,7 @@ func createTestControllerEnvironment(c *qt.C, s jimmtest.JimmWithControllers) (
 		ModelID: model.ID,
 		URL:     offerURL.String(),
 	}
-	err = db.AddApplicationOffer(context.Background(), &offer)
+	err = db.AddApplicationOffer(c.Context(), &offer)
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(offer.UUID), qt.Equals, 36)
 

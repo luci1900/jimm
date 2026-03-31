@@ -11,7 +11,7 @@ import (
 	"time"
 
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 	"gorm.io/gorm"
 )
 

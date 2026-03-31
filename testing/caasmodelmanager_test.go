@@ -13,7 +13,7 @@ import (
 	cloudapi "github.com/juju/juju/api/client/cloud"
 	"github.com/juju/juju/api/client/modelmanager"
 	"github.com/juju/juju/core/model"
-	"github.com/juju/names/v5"
+	"github.com/juju/names/v6"
 
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
@@ -37,7 +37,7 @@ func SetupCaasModelTest(c *qt.C) caasModelManagerDeps {
 	cloudclient := cloudapi.NewClient(conn)
 	cloud, credential := s.GetMicrok8sCloudAndCloudCredential(c)
 	deps.cloudName = cloud.Name
-	err := cloudclient.AddCloud(cloud, false)
+	err := cloudclient.AddCloud(c.Context(), cloud, false)
 	c.Assert(err, qt.Equals, nil)
 	credentialName := petname.Generate(2, "-")
 	deps.cred = names.NewCloudCredentialTag(deps.cloudName + "/bob@canonical.com/" + credentialName)
@@ -47,7 +47,7 @@ func SetupCaasModelTest(c *qt.C) caasModelManagerDeps {
 		conn := s.Open(c, nil, "bob@canonical.com", nil)
 		defer conn.Close()
 		cloudclient := cloudapi.NewClient(conn)
-		err := cloudclient.RemoveCloud(deps.cloudName)
+		err := cloudclient.RemoveCloud(c.Context(), deps.cloudName)
 		c.Check(err, qt.Equals, nil)
 	})
 
@@ -62,7 +62,7 @@ func TestCreateModelKubernetes(t *testing.T) {
 
 	client := modelmanager.NewClient(conn)
 	modelName := petname.Generate(2, "-")
-	mi, err := client.CreateModel(modelName, "bob@canonical.com", s.cloudName, "", s.cred, nil)
+	mi, err := client.CreateModel(t.Context(), modelName, names.NewUserTag("bob@canonical.com"), s.cloudName, "", s.cred, nil)
 	c.Assert(err, qt.Equals, nil)
 	c.Cleanup(func() {
 		s.DestroyModelAndDeleteFromDatabase(c, names.NewModelTag(mi.UUID))
@@ -72,7 +72,7 @@ func TestCreateModelKubernetes(t *testing.T) {
 	c.Assert(mi.ProviderType, qt.Equals, "kubernetes")
 	c.Assert(mi.Cloud, qt.Equals, s.cloudName)
 	c.Assert(mi.CloudRegion, qt.Equals, "localhost")
-	c.Assert(mi.Owner, qt.Equals, "bob@canonical.com")
+	c.Assert(mi.Qualifier.String(), qt.Equals, "bob@canonical.com")
 }
 
 func TestListCAASModelSummaries(t *testing.T) {
@@ -83,13 +83,13 @@ func TestListCAASModelSummaries(t *testing.T) {
 
 	client := modelmanager.NewClient(conn)
 	modelName := petname.Generate(2, "-")
-	mi, err := client.CreateModel(modelName, "bob@canonical.com", s.cloudName, "", s.cred, nil)
+	mi, err := client.CreateModel(t.Context(), modelName, names.NewUserTag("bob@canonical.com"), s.cloudName, "", s.cred, nil)
 	c.Assert(err, qt.Equals, nil)
 	c.Cleanup(func() {
 		s.DestroyModelAndDeleteFromDatabase(c, names.NewModelTag(mi.UUID))
 	})
 
-	models, err := client.ListModelSummaries("bob", false)
+	models, err := client.ListModelSummaries(t.Context(), "bob", false)
 	c.Assert(err, qt.Equals, nil)
 
 	var caasMS *base.UserModelSummary
@@ -108,11 +108,10 @@ func TestListCAASModelSummaries(t *testing.T) {
 		ControllerUUID:  jimmtest.ControllerUUID,
 		IsController:    false,
 		ProviderType:    "kubernetes",
-		DefaultSeries:   "jammy",
 		Cloud:           s.cloudName,
 		CloudRegion:     "localhost",
 		CloudCredential: s.cloudName + "/bob@canonical.com/" + s.cred.Name(),
-		Owner:           "bob@canonical.com",
+		Qualifier:       "bob@canonical.com",
 		Life:            "alive",
 		Status: base.Status{
 			Status: "available",
@@ -125,17 +124,12 @@ func TestListCAASModelSummaries(t *testing.T) {
 		Counts:             []base.EntityCount{},
 		Error:              nil,
 		Migration:          nil,
-		SLA: &base.SLASummary{
-			Level: "",
-			Owner: "bob@canonical.com",
-		},
 	}
 	c.Assert(
 		caasMS,
 		qt.CmpEquals(
 			cmpopts.IgnoreFields(
 				base.UserModelSummary{},
-				"DefaultSeries",
 				"AgentVersion",
 			),
 			cmpopts.IgnoreTypes(
@@ -157,13 +151,13 @@ func TestListCAASModels(t *testing.T) {
 
 	client := modelmanager.NewClient(conn)
 	modelName := petname.Generate(2, "-")
-	mi, err := client.CreateModel(modelName, "bob@canonical.com", s.cloudName, "", s.cred, nil)
+	mi, err := client.CreateModel(t.Context(), modelName, names.NewUserTag("bob@canonical.com"), s.cloudName, "", s.cred, nil)
 	c.Assert(err, qt.Equals, nil)
 	c.Cleanup(func() {
 		s.DestroyModelAndDeleteFromDatabase(c, names.NewModelTag(mi.UUID))
 	})
 
-	models, err := client.ListModels("bob")
+	models, err := client.ListModels(t.Context(), "bob")
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(
 		models,
@@ -177,21 +171,21 @@ func TestListCAASModels(t *testing.T) {
 		),
 		[]base.UserModel{
 			{
-				Name:  modelName,
-				UUID:  mi.UUID,
-				Owner: "bob@canonical.com",
-				Type:  "caas",
+				Name:      modelName,
+				UUID:      mi.UUID,
+				Qualifier: "bob@canonical.com",
+				Type:      "caas",
 			}, {
-				Name:  model.Name,
-				UUID:  model.UUID.String,
-				Owner: "bob@canonical.com",
-				Type:  "iaas",
+				Name:      model.Name,
+				UUID:      model.UUID.String,
+				Qualifier: "bob@canonical.com",
+				Type:      "iaas",
 			},
 			{
-				Name:  model3.Name,
-				UUID:  model3.UUID.String,
-				Owner: "charlie@canonical.com",
-				Type:  "iaas",
+				Name:      model3.Name,
+				UUID:      model3.UUID.String,
+				Qualifier: "charlie@canonical.com",
+				Type:      "iaas",
 			},
 		},
 	)
