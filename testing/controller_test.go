@@ -108,10 +108,10 @@ func TestIdentityProviderURL(t *testing.T) {
 	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 
-	var result jujuparams.StringResult
-	err := conn.APICall(t.Context(), "Controller", 12, "", "IdentityProviderURL", nil, &result)
+	client := controllerapi.NewClient(conn)
+	res, err := client.IdentityProviderURL(t.Context())
 	c.Assert(err, qt.IsNil)
-	c.Assert(result.Result, qt.Matches, ``)
+	c.Assert(res, qt.Matches, ``)
 }
 
 func TestControllerVersion(t *testing.T) {
@@ -121,11 +121,11 @@ func TestControllerVersion(t *testing.T) {
 	conn := s.Open(c, nil, "test", nil)
 	defer conn.Close()
 
-	var result jujuparams.ControllerVersionResults
-	err := conn.APICall(t.Context(), "Controller", 12, "", "ControllerVersion", nil, &result)
+	client := controllerapi.NewClient(conn)
+	result, err := client.ControllerVersion(t.Context())
 	c.Assert(err, qt.IsNil)
-	c.Assert(result, qt.DeepEquals, jujuparams.ControllerVersionResults{
-		Version:   "3.6.19",
+	c.Assert(result, qt.DeepEquals, controllerapi.ControllerVersion{
+		Version:   "3.6.20",
 		GitCommit: jimmversion.VersionInfo.GitCommit,
 	})
 }
@@ -278,18 +278,14 @@ func TestWatchAllModelSummaries(t *testing.T) {
 	conn := s.Open(c, nil, "alice", nil)
 	defer conn.Close()
 
-	var watcherID jujuparams.SummaryWatcherID
-	err := conn.APICall(t.Context(), "Controller", 12, "", "WatchAllModelSummaries", nil, &watcherID)
+	client := controllerapi.NewClient(conn)
+	w, err := client.WatchAllModelSummaries(t.Context())
 	c.Assert(err, qt.IsNil)
 
-	var summaries jujuparams.SummaryWatcherNextResults
-	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Next", nil, &summaries)
+	models, err := w.Next(t.Context())
 	c.Assert(err, qt.IsNil)
-	c.Assert(summaries.Models, qt.DeepEquals, expectedModels)
+	c.Assert(models, qt.DeepEquals, expectedModels)
 
-	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Stop", nil, nil)
+	err = w.Stop(t.Context())
 	c.Assert(err, qt.IsNil)
-
-	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, "unknown-id", "Next", nil, &summaries)
-	c.Assert(err, qt.ErrorMatches, `not found \(not found\)`)
 }

@@ -7,8 +7,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/juju/juju/api"
+	"github.com/juju/juju/core/semversion"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/version/v2"
 
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
@@ -27,7 +27,7 @@ func TestServerVersion(t *testing.T) {
 
 	v, ok := conn.ServerVersion()
 	c.Assert(ok, qt.Equals, true)
-	c.Assert(v, qt.DeepEquals, version.MustParse("1.2.3"))
+	c.Assert(v, qt.DeepEquals, semversion.MustParse("1.2.3"))
 }
 
 func TestUnimplementedMethodFails(t *testing.T) {
@@ -53,5 +53,5 @@ func TestUnimplementedRootFails(t *testing.T) {
 	defer conn.Close()
 	var resp jujuparams.RedirectInfoResult
 	err := conn.APICall(t.Context(), "NoSuch", 1, "", "Method", nil, &resp)
-	c.Assert(err, qt.ErrorMatches, `(?s).*no such request - method NoSuch\(1\).Method is not implemented \(not implemented\).*`)
+	c.Assert(err, qt.ErrorMatches, `(?s).*unknown method "Method" at version 1 for facade type "NoSuch" \(not implemented\).*`)
 }
