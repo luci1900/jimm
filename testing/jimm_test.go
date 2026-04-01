@@ -1136,7 +1136,7 @@ func TestCreateModelOnTargetController(t *testing.T) {
 	controllerName, conf := s.GetOneControllerConfig(c)
 
 	name := generateModelName()
-	ownerTag := names.NewUserTag("bob@canonical.com").String()
+	owner := "bob@canonical.com"
 	cloudTag := names.NewCloudTag(jimmtest.TestE2ECloudName).String()
 	credentialTag := "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred"
 
@@ -1144,7 +1144,7 @@ func TestCreateModelOnTargetController(t *testing.T) {
 	err := conn.APICall(t.Context(), "JIMM", 4, "", "AddModelToController", apiparams.AddModelToControllerRequest{
 		ModelCreateArgs: jujuparams.ModelCreateArgs{
 			Name:               name,
-			Qualifier:          ownerTag,
+			Qualifier:          owner,
 			CloudTag:           cloudTag,
 			CloudCredentialTag: credentialTag,
 		},
@@ -1164,7 +1164,7 @@ func TestCreateModelOnTargetController(t *testing.T) {
 	c.Assert(err, qt.Equals, nil)
 	c.Assert(mi.Name, qt.Equals, name)
 	c.Assert(mi.UUID, qt.Not(qt.Equals), "")
-	c.Assert(mi.Qualifier, qt.Equals, ownerTag)
+	c.Assert(mi.Qualifier, qt.Equals, owner)
 	c.Assert(mi.ControllerUUID, qt.Equals, jimmtest.ControllerUUID)
 	c.Assert(mi.Users, qt.Not(qt.HasLen), 0)
 
