@@ -12,7 +12,6 @@ import (
 	"github.com/juju/juju/core/crossmodel"
 	"github.com/juju/juju/core/migration"
 	"github.com/juju/juju/core/semversion"
-	"github.com/juju/juju/environs/cloudspec"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v6"
 
@@ -76,8 +75,9 @@ type API interface {
 	// Clouds returns the set of clouds supported by the controller.
 	Clouds(context.Context) (map[names.CloudTag]jujucloud.Cloud, error)
 
-	// CloudSpec fetches the cloud spec of the model connected to.
-	CloudSpec(context.Context) (cloudspec.CloudSpec, error)
+	// ControllerModelSummary fetches the model summary of the model on the
+	// controller that hosts the controller machines.
+	ControllerModelSummary(context.Context) (base.UserModelSummary, error)
 
 	// ControllerConfig fetches the controller configuration.
 	ControllerConfig(context.Context) (jujucontroller.Config, error)

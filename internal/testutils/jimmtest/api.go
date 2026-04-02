@@ -15,7 +15,6 @@ import (
 	coremigration "github.com/juju/juju/core/migration"
 	"github.com/juju/juju/core/semversion"
 	jujuversion "github.com/juju/juju/core/version"
-	"github.com/juju/juju/environs/cloudspec"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v6"
 
@@ -137,7 +136,7 @@ type API struct {
 	Close_                             func() error
 	Cloud_                             func(context.Context, names.CloudTag) (jujucloud.Cloud, error)
 	Clouds_                            func(context.Context) (map[names.CloudTag]jujucloud.Cloud, error)
-	CloudSpec_                         func(context.Context) (cloudspec.CloudSpec, error)
+	ControllerModelSummary_            func(context.Context) (base.UserModelSummary, error)
 	ControllerConfig_                  func(context.Context) (jujucontroller.Config, error)
 	CreateModel_                       func(context.Context, *jujuclient.CreateModelArgs) (base.ModelInfo, error)
 	DestroyApplicationOffer_           func(context.Context, string, bool) error
@@ -238,11 +237,11 @@ func (a *API) Clouds(ctx context.Context) (map[names.CloudTag]jujucloud.Cloud, e
 	return a.Clouds_(ctx)
 }
 
-func (a *API) CloudSpec(ctx context.Context) (cloudspec.CloudSpec, error) {
-	if a.CloudSpec_ == nil {
-		return cloudspec.CloudSpec{}, errors.E(errors.CodeNotImplemented)
+func (a *API) ControllerModelSummary(ctx context.Context) (base.UserModelSummary, error) {
+	if a.ControllerModelSummary_ == nil {
+		return base.UserModelSummary{}, errors.E(errors.CodeNotImplemented)
 	}
-	return a.CloudSpec_(ctx)
+	return a.ControllerModelSummary_(ctx)
 }
 
 func (a *API) ControllerConfig(ctx context.Context) (jujucontroller.Config, error) {

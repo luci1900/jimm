@@ -211,13 +211,13 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 	}
 	defer api.Close()
 
-	cloudSpec, err := api.CloudSpec(ctx)
+	modelSummary, err := api.ControllerModelSummary(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get model summary: %v", err)
 	}
 
-	ctl.CloudName = cloudSpec.Name
-	ctl.CloudRegion = cloudSpec.Region
+	ctl.CloudName = modelSummary.Cloud
+	ctl.CloudRegion = modelSummary.CloudRegion
 	// TODO(mhilton) add the controller model?
 
 	clouds, err := api.Clouds(ctx)
@@ -260,7 +260,7 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 	for _, cloud := range dbClouds {
 		// If this cloud is the one used by the controller model then
 		// it is available to all users. Other clouds require `juju grant-cloud` to add permissions.
-		if cloud.Name == cloudSpec.Name {
+		if cloud.Name == modelSummary.Cloud {
 			if err := j.everyoneUser().SetCloudAccess(ctx, cloud.ResourceTag(), ofganames.CanAddModelRelation); err != nil {
 				zapctx.Error(ctx, "failed to grant everyone add-model access", zap.Error(err))
 			}

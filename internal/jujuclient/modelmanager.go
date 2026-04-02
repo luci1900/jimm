@@ -116,6 +116,22 @@ func (c Connection) DumpModelDB(ctx context.Context, tag names.ModelTag) (map[st
 	return modelmanager.NewClient(&c).DumpModelDB(ctx, tag)
 }
 
+// ControllerModelSummary retrieves the ModelSummary for the controller
+// model. ControllerModelSummary uses the ListModelSummaries procedure on
+// the ModelManager facade.
+func (c Connection) ControllerModelSummary(ctx context.Context) (base.UserModelSummary, error) {
+	modelSummaries, err := modelmanager.NewClient(&c).ListModelSummaries(ctx, c.user.ResourceTag().String(), true)
+	if err != nil {
+		return base.UserModelSummary{}, err
+	}
+	for _, r := range modelSummaries {
+		if r.IsController {
+			return r, nil
+		}
+	}
+	return base.UserModelSummary{}, errors.E("controller model not found", errors.CodeNotFound)
+}
+
 // ListModelSummaries retrieves the list of model summaries from the controler
 func (c Connection) ListModelSummaries(ctx context.Context, ms jujuparams.ModelSummariesRequest) ([]base.UserModelSummary, error) {
 	return modelmanager.NewClient(&c).ListModelSummaries(ctx, c.user.ResourceTag().String(), ms.All)

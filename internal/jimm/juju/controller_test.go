@@ -21,7 +21,6 @@ import (
 	"github.com/juju/juju/core/life"
 	"github.com/juju/juju/core/semversion"
 	"github.com/juju/juju/core/status"
-	"github.com/juju/juju/environs/cloudspec"
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v6"
 	"gopkg.in/macaroon.v2"
@@ -86,12 +85,11 @@ func TestAddController(t *testing.T) {
 			}
 			return clouds, nil
 		},
-		CloudSpec_: func(ctx context.Context) (cloudspec.CloudSpec, error) {
-			cs := cloudspec.CloudSpec{}
-			cs.Name = "aws"
-			cs.Type = "iaas"
-			cs.Region = "eu-west-1"
-			return cs, nil
+		ControllerModelSummary_: func(ctx context.Context) (base.UserModelSummary, error) {
+			ms := base.UserModelSummary{}
+			ms.Cloud = "aws"
+			ms.CloudRegion = "eu-west-1"
+			return ms, nil
 		},
 	}
 
@@ -157,11 +155,10 @@ func TestAddControllerWithCloudWithoutRegions(t *testing.T) {
 			}
 			return clouds, nil
 		},
-		CloudSpec_: func(ctx context.Context) (cloudspec.CloudSpec, error) {
-			cs := cloudspec.CloudSpec{}
-			cs.Name = "k8s"
-			cs.Type = "iaas"
-			return cs, nil
+		ControllerModelSummary_: func(ctx context.Context) (base.UserModelSummary, error) {
+			ms := base.UserModelSummary{}
+			ms.Cloud = "k8s"
+			return ms, nil
 		},
 	}
 
@@ -272,12 +269,11 @@ func TestAddControllerWithVault(t *testing.T) {
 			}
 			return clouds, nil
 		},
-		CloudSpec_: func(ctx context.Context) (cloudspec.CloudSpec, error) {
-			cs := cloudspec.CloudSpec{}
-			cs.Name = "aws"
-			cs.Type = "iaas"
-			cs.Region = "eu-west-1"
-			return cs, nil
+		ControllerModelSummary_: func(ctx context.Context) (base.UserModelSummary, error) {
+			ms := base.UserModelSummary{}
+			ms.Cloud = "aws"
+			ms.CloudRegion = "eu-west-1"
+			return ms, nil
 		},
 	}
 
