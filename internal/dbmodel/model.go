@@ -138,7 +138,6 @@ func (m Model) ToJujuModel() jujuparams.Model {
 	jm.Name = m.Name
 	jm.UUID = m.UUID.String
 	jm.Qualifier = m.OwnerIdentityName
-	jm.Type = m.CloudRegion.Cloud.Type
 	return jm
 }
 

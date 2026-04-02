@@ -247,7 +247,6 @@ func TestToJujuModel(t *testing.T) {
 		Name:      "test-model",
 		UUID:      "00000001-0000-0000-0000-0000-000000000001",
 		Qualifier: "bob@canonical.com",
-		Type:      "test-provider",
 	})
 }
 

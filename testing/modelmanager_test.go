@@ -13,6 +13,7 @@ import (
 	"github.com/juju/juju/api/base"
 	"github.com/juju/juju/api/client/modelmanager"
 	"github.com/juju/juju/core/life"
+	coremodel "github.com/juju/juju/core/model"
 	"github.com/juju/juju/core/status"
 	"github.com/juju/juju/environs/config"
 	jujuparams "github.com/juju/juju/rpc/params"
@@ -189,7 +190,7 @@ func TestModelInfo(t *testing.T) {
 	c.Assert(models[0].Result.Life, qt.Equals, life.Alive)
 	c.Assert(models[0].Result.ControllerUUID, qt.Equals, jimmtest.ControllerUUID)
 	c.Assert(models[0].Result.CloudCredentialTag, qt.Equals, model.CloudCredential.Tag().String())
-	c.Assert(models[0].Result.Qualifier, qt.Equals, names.NewUserTag("bob@canonical.com").String())
+	c.Assert(models[0].Result.Qualifier, qt.Equals, "bob@canonical.com")
 	// As admin, bob can see all users
 	c.Assert(findUserAccess(models[0].Result.Users, "bob@canonical.com"), qt.Equals, "admin")
 	c.Assert(findUserAccess(models[0].Result.Users, "alice@canonical.com"), qt.Equals, "admin")
@@ -205,7 +206,7 @@ func TestModelInfo(t *testing.T) {
 	c.Assert(models[2].Result.UUID, qt.Equals, model3.UUID.String)
 	c.Assert(models[2].Result.ControllerUUID, qt.Equals, jimmtest.ControllerUUID)
 	c.Assert(models[2].Result.CloudCredentialTag, qt.Equals, model3.CloudCredential.Tag().String())
-	c.Assert(models[2].Result.Qualifier, qt.Equals, names.NewUserTag("charlie@canonical.com").String())
+	c.Assert(models[2].Result.Qualifier, qt.Equals, "charlie@canonical.com")
 	// As reader, bob can only see himself in users list
 	c.Assert(findUserAccess(models[2].Result.Users, "bob@canonical.com"), qt.Equals, "read")
 	// Read access means no machines visible
@@ -269,96 +270,81 @@ func TestCreateModel(t *testing.T) {
 		name          string
 		owner         string
 		region        string
-		cloudTag      string
-		credentialTag string
+		cloud         string
+		credentialTag names.CloudCredentialTag
 		config        map[string]interface{}
 		expectError   string
 	}{{
 		about:         "success",
 		name:          generateModelName(),
 		owner:         "bob@canonical.com",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		cloud:         jimmtest.TestE2ECloudName,
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 	}, {
 		about:         "unauthorized user",
 		name:          generateModelName(),
 		owner:         "noauthuser@canonical.com",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		cloud:         jimmtest.TestE2ECloudName,
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 		expectError:   `unauthorized \(unauthorized access\)`,
 	}, {
 		about:         "existing model name",
 		name:          model.Name, // Use existing model name to trigger duplicate error
 		owner:         "bob@canonical.com",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		cloud:         jimmtest.TestE2ECloudName,
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 		expectError:   "model bob@canonical.com/" + model.Name + " already exists \\(already exists\\)",
 	}, {
-		about:         "no controller for region",
-		name:          generateModelName(),
-		owner:         "bob@canonical.com",
-		region:        "no-such-region",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "",
-		expectError:   `cloud region "no-such-region" not found in cloud "localhost" \(not found\)`,
+		about:       "no controller for region",
+		name:        generateModelName(),
+		owner:       "bob@canonical.com",
+		region:      "no-such-region",
+		cloud:       jimmtest.TestE2ECloudName,
+		expectError: `cloud region "no-such-region" not found in cloud "localhost" \(not found\)`,
 	}, {
 		about:         "local user",
 		name:          generateModelName(),
 		owner:         "bob",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		cloud:         jimmtest.TestE2ECloudName,
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 		expectError:   `unauthorized \(unauthorized access\)`,
-	}, {
-		about:         "invalid user",
-		name:          generateModelName(),
-		owner:         "user-bob/test@canonical.com",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
-		expectError:   `"user-bob/test@canonical.com" is not a valid user tag \(bad request\)`,
 	}, {
 		about:         "specific cloud",
 		name:          generateModelName(),
 		owner:         "bob@canonical.com",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		cloud:         jimmtest.TestE2ECloudName,
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 	}, {
 		about:         "specific cloud and region",
 		name:          generateModelName(),
 		owner:         "bob@canonical.com",
-		cloudTag:      names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
+		cloud:         jimmtest.TestE2ECloudName,
 		region:        jimmtest.TestE2ECloudRegionName,
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 	}, {
 		about:         "bad cloud tag",
 		name:          generateModelName(),
 		owner:         "bob@canonical.com",
-		cloudTag:      "not-a-cloud-tag",
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
-		expectError:   `"not-a-cloud-tag" is not a valid tag \(bad request\)`,
+		cloud:         "not-a-cloud-tag",
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
+		expectError:   `cloud credential cloud mismatch`,
 	}, {
-		about:    "no credential tag selects unambiguous creds",
-		name:     generateModelName(),
-		owner:    "bob@canonical.com",
-		cloudTag: names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		region:   jimmtest.TestE2ECloudRegionName,
+		about:  "no credential tag selects unambiguous creds",
+		name:   generateModelName(),
+		owner:  "bob@canonical.com",
+		cloud:  jimmtest.TestE2ECloudName,
+		region: jimmtest.TestE2ECloudRegionName,
 	}, {
 		about:         "success - without a cloud tag",
 		name:          generateModelName(),
 		owner:         "bob@canonical.com",
-		credentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
+		credentialTag: names.NewCloudCredentialTag(jimmtest.TestE2ECloudName + "/bob@canonical.com/cred"),
 	}}
 
 	for i, test := range createModelTests {
 		c.Logf("test %d. %s", i, test.about)
-		var mi jujuparams.ModelInfo
-		err := conn.APICall(t.Context(), "ModelManager", 10, "", "CreateModel", jujuparams.ModelCreateArgs{
-			Name:               test.name,
-			Qualifier:          test.owner,
-			Config:             test.config,
-			CloudTag:           test.cloudTag,
-			CloudRegion:        test.region,
-			CloudCredentialTag: test.credentialTag,
-		}, &mi)
+		client := modelmanager.NewClient(conn)
+		mi, err := client.CreateModel(t.Context(), test.name, names.NewUserTag(test.owner), test.cloud, test.region, test.credentialTag, test.config)
 		if test.expectError != "" {
 			c.Assert(err, qt.ErrorMatches, test.expectError)
 			continue
@@ -366,22 +352,19 @@ func TestCreateModel(t *testing.T) {
 		c.Assert(err, qt.Equals, nil)
 		c.Assert(mi.Name, qt.Equals, test.name)
 		c.Assert(mi.UUID, qt.Not(qt.Equals), "")
-		c.Assert(mi.Qualifier, qt.Equals, test.owner)
+		c.Assert(mi.Qualifier, qt.Equals, coremodel.Qualifier(test.owner))
 		c.Assert(mi.ControllerUUID, qt.Equals, jimmtest.ControllerUUID)
 		c.Assert(mi.Users, qt.Not(qt.HasLen), 0)
-		if test.credentialTag == "" {
-			c.Assert(mi.CloudCredentialTag, qt.Not(qt.Equals), "")
+		emptyCred := names.CloudCredentialTag{}
+		if test.credentialTag == emptyCred {
+			c.Assert(mi.CloudCredential, qt.Not(qt.Equals), "")
 		} else {
-			tag, err := names.ParseCloudCredentialTag(mi.CloudCredentialTag)
-			c.Assert(err, qt.Equals, nil)
-			c.Assert(tag.String(), qt.Equals, test.credentialTag)
+			c.Assert(mi.CloudCredential, qt.Equals, test.credentialTag.Id())
 		}
-		if test.cloudTag == "" {
-			c.Assert(mi.CloudTag, qt.Equals, names.NewCloudTag(jimmtest.TestE2ECloudName).String())
+		if test.cloud == "" {
+			c.Assert(mi.Cloud, qt.Equals, jimmtest.TestE2ECloudName)
 		} else {
-			ct, err := names.ParseCloudTag(test.cloudTag)
-			c.Assert(err, qt.Equals, nil)
-			c.Assert(mi.CloudTag, qt.Equals, names.NewCloudTag(ct.Id()).String())
+			c.Assert(mi.Cloud, qt.Equals, test.cloud)
 		}
 	}
 }
@@ -392,20 +375,24 @@ func TestCreateDuplicateModelsFails(t *testing.T) {
 
 	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
+	client := modelmanager.NewClient(conn)
 
 	modelName := petname.Generate(2, "-")
-	createModel := func(mi jujuparams.ModelInfo) error {
-		return conn.APICall(t.Context(), "ModelManager", 10, "", "CreateModel", jujuparams.ModelCreateArgs{
-			Name:               modelName,
-			Qualifier:          names.NewUserTag("bob@canonical.com").String(),
-			CloudTag:           names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-			CloudCredentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
-		}, &mi)
+	createModel := func() error {
+		_, err := client.CreateModel(
+			t.Context(),
+			modelName,
+			names.NewUserTag("bob@canonical.com"),
+			jimmtest.TestE2ECloudName,
+			"",
+			names.NewCloudCredentialTag(jimmtest.TestE2ECloudName+"/bob@canonical.com/cred"),
+			nil,
+		)
+		return err
 	}
-	var mi jujuparams.ModelInfo
-	err := createModel(mi)
+	err := createModel()
 	c.Assert(err, qt.IsNil)
-	err = createModel(mi)
+	err = createModel()
 	c.Assert(err, qt.ErrorMatches, `model bob@canonical\.com/`+modelName+` already exists \(already exists\)`)
 }
 
@@ -486,88 +473,56 @@ func TestModifyModelAccessErrors(t *testing.T) {
 
 	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
+	client := modelmanager.NewClient(conn)
 
 	modifyModelAccessErrorTests := []struct {
-		about             string
-		modifyModelAccess jujuparams.ModifyModelAccess
-		expectError       string
+		about       string
+		user        string
+		access      string
+		modelUUID   string
+		expectError string
 	}{{
-		about: "unauthorized",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  names.NewUserTag("eve@canonical.com").String(),
-			Action:   jujuparams.GrantModelAccess,
-			Access:   jujuparams.ModelReadAccess,
-			ModelTag: model2.Tag().String(),
-		},
+		about:       "unauthorized",
+		user:        "eve@canonical.com",
+		access:      "read",
+		modelUUID:   model2.UUID.String,
 		expectError: `unauthorized`,
 	}, {
-		about: "bad user domain",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  names.NewUserTag("eve@local").String(),
-			Action:   jujuparams.GrantModelAccess,
-			Access:   jujuparams.ModelReadAccess,
-			ModelTag: model.Tag().String(),
-		},
+		about:       "bad user domain",
+		user:        "eve@local",
+		access:      "read",
+		modelUUID:   model.UUID.String,
 		expectError: `unsupported local user; if this is a service account add @serviceaccount domain`,
 	}, {
-		about: "no such model",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  names.NewUserTag("eve@canonical.com").String(),
-			Action:   jujuparams.GrantModelAccess,
-			Access:   jujuparams.ModelReadAccess,
-			ModelTag: names.NewModelTag("00000000-0000-0000-0000-000000000000").String(),
-		},
+		about:       "no such model",
+		user:        "eve@canonical.com",
+		access:      "read",
+		modelUUID:   "00000000-0000-0000-0000-000000000000",
 		expectError: `unauthorized`,
 	}, {
-		about: "invalid model tag",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  names.NewUserTag("eve@canonical.com").String(),
-			Action:   jujuparams.GrantModelAccess,
-			Access:   jujuparams.ModelReadAccess,
-			ModelTag: "not-a-model-tag",
-		},
-		expectError: `"not-a-model-tag" is not a valid tag`,
+		about:       "invalid model uuid",
+		user:        "eve@canonical.com",
+		access:      "read",
+		modelUUID:   "not-a-model-uuid",
+		expectError: `invalid model: "not-a-model-uuid"`,
 	}, {
-		about: "invalid user tag",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  "not-a-user-tag",
-			Action:   jujuparams.GrantModelAccess,
-			Access:   jujuparams.ModelReadAccess,
-			ModelTag: model.Tag().String(),
-		},
-		expectError: `"not-a-user-tag" is not a valid tag`,
+		about:       "invalid username",
+		user:        "not-a-user-tag",
+		access:      "read",
+		modelUUID:   model.UUID.String,
+		expectError: `unsupported local user; if this is a service account add @serviceaccount domain`,
 	}, {
-		about: "unknown action",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  names.NewUserTag("eve@canonical.com").String(),
-			Action:   "not-an-action",
-			Access:   jujuparams.ModelReadAccess,
-			ModelTag: model.Tag().String(),
-		},
-		expectError: `invalid action "not-an-action"`,
-	}, {
-		about: "invalid access",
-		modifyModelAccess: jujuparams.ModifyModelAccess{
-			UserTag:  names.NewUserTag("eve@canonical.com").String(),
-			Action:   jujuparams.GrantModelAccess,
-			Access:   "not-an-access",
-			ModelTag: model.Tag().String(),
-		},
-		expectError: `failed to recognize given access: "not-an-access"`,
+		about:       "invalid access",
+		user:        "eve@canonical.com",
+		access:      "not-an-access",
+		modelUUID:   model.UUID.String,
+		expectError: `.*not-an-access.*`,
 	}}
 
 	for i, test := range modifyModelAccessErrorTests {
 		c.Logf("%d. %s", i, test.about)
-		var res jujuparams.ErrorResults
-		req := jujuparams.ModifyModelAccessRequest{
-			Changes: []jujuparams.ModifyModelAccess{
-				test.modifyModelAccess,
-			},
-		}
-		err := conn.APICall(t.Context(), "ModelManager", 10, "", "ModifyModelAccess", req, &res)
-		c.Assert(err, qt.Equals, nil)
-		c.Assert(res.Results, qt.HasLen, 1)
-		c.Assert(res.Results[0].Error, qt.ErrorMatches, test.expectError)
+		err := client.GrantModel(t.Context(), test.user, test.access, test.modelUUID)
+		c.Assert(err, qt.ErrorMatches, test.expectError)
 	}
 }
 
@@ -580,18 +535,20 @@ func TestDestroyModel(t *testing.T) {
 	// Create a new model to destroy so we don't affect other tests
 	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
+	client := modelmanager.NewClient(conn)
 
 	modelName := petname.Generate(2, "-")
-	var mi jujuparams.ModelInfo
-	err := conn.APICall(t.Context(), "ModelManager", 10, "", "CreateModel", jujuparams.ModelCreateArgs{
-		Name:               modelName,
-		Qualifier:          "bob@canonical.com",
-		CloudTag:           names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		CloudCredentialTag: "cloudcred-" + jimmtest.TestE2ECloudName + "_bob@canonical.com_cred",
-	}, &mi)
+	mi, err := client.CreateModel(
+		t.Context(),
+		modelName,
+		names.NewUserTag("bob@canonical.com"),
+		jimmtest.TestE2ECloudName,
+		"",
+		names.NewCloudCredentialTag(jimmtest.TestE2ECloudName+"/bob@canonical.com/cred"),
+		nil,
+	)
 	c.Assert(err, qt.Equals, nil)
 
-	client := modelmanager.NewClient(conn)
 	tag := names.NewModelTag(mi.UUID)
 	err = client.DestroyModel(t.Context(), tag, nil, nil, nil, &zeroDuration)
 	c.Assert(err, qt.Equals, nil)

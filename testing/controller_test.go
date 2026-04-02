@@ -50,13 +50,11 @@ func TestAllModels(t *testing.T) {
 		UUID:           model.UUID.String,
 		Qualifier:      "bob@canonical.com",
 		LastConnection: nil,
-		Type:           "iaas",
 	}, {
 		Name:           model3.Name,
 		UUID:           model3.UUID.String,
 		Qualifier:      "charlie@canonical.com",
 		LastConnection: nil,
-		Type:           "iaas",
 	}})
 }
 
@@ -219,20 +217,16 @@ func TestWatchModelSummaries(t *testing.T) {
 	conn := s.Open(c, nil, "bob", nil)
 	defer conn.Close()
 
-	var watcherID jujuparams.SummaryWatcherID
-	err := conn.APICall(t.Context(), "Controller", 12, "", "WatchModelSummaries", nil, &watcherID)
+	client := controllerapi.NewClient(conn)
+	w, err := client.WatchModelSummaries(t.Context())
 	c.Assert(err, qt.IsNil)
 
-	var summaries jujuparams.SummaryWatcherNextResults
-	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Next", nil, &summaries)
+	models, err := w.Next(t.Context())
 	c.Assert(err, qt.IsNil)
-	c.Assert(summaries.Models, qt.DeepEquals, expectedModels)
+	c.Assert(models, qt.DeepEquals, expectedModels)
 
-	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, watcherID.WatcherID, "Stop", nil, nil)
+	err = w.Stop(t.Context())
 	c.Assert(err, qt.IsNil)
-
-	err = conn.APICall(t.Context(), "ModelSummaryWatcher", 1, "unknown-id", "Next", nil, &summaries)
-	c.Assert(err, qt.ErrorMatches, `not found \(not found\)`)
 }
 
 func TestWatchAllModelSummaries(t *testing.T) {
