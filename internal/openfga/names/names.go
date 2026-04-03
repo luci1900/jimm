@@ -171,7 +171,7 @@ func ParseRelation(relationString string) (cofga.Relation, error) {
 	case AssigneeRelation.String():
 		return AssigneeRelation, nil
 	default:
-		return cofga.Relation(""), errors.E(fmt.Sprintf("unknown relation %s", relationString))
+		return cofga.Relation(""), fmt.Errorf("unknown relation %s", relationString)
 
 	}
 }

@@ -294,7 +294,7 @@ func (u *User) ListApplicationOffers(ctx context.Context, relation ofga.Relation
 // CheckPermission returns an Unauthorized error if user is not allowed specified permission to the resource.
 func (u *User) CheckPermission(ctx context.Context, resourceTag string, permission string) error {
 	if u.client == nil {
-		return errors.E(errors.CodeUnauthorized, "cannot check permission")
+		return errors.Codef(errors.CodeUnauthorized, "cannot check permission")
 	}
 	resource, err := names.ParseTag(resourceTag)
 	if err != nil {
@@ -329,7 +329,7 @@ func (u *User) CheckPermission(ctx context.Context, resourceTag string, permissi
 	}
 
 	if !allowed {
-		return errors.E(errors.CodeUnauthorized, fmt.Sprintf("user %q not allowed %q to %q", u.Name, permission, resourceTag))
+		return errors.Codef(errors.CodeUnauthorized, "user %q not allowed %q to %q", u.Name, permission, resourceTag)
 	}
 	return nil
 }
@@ -426,7 +426,7 @@ func unsetMultipleResourceAccesses[T ofganames.ResourceTagger](ctx context.Conte
 		}, pageSize, lastContinuationToken)
 
 		if err != nil {
-			return errors.E(err, "failed to retrieve existing relations")
+			return fmt.Errorf("failed to retrieve existing relations: %w", err)
 		}
 
 		for _, timestampedTuple := range timestampedTuples {
@@ -453,7 +453,7 @@ func unsetMultipleResourceAccesses[T ofganames.ResourceTagger](ctx context.Conte
 
 	err := user.client.RemoveRelation(ctx, tuplesToRemove...)
 	if err != nil {
-		return errors.E(err, "failed to remove relations")
+		return fmt.Errorf("failed to remove relations: %w", err)
 	}
 	return nil
 }

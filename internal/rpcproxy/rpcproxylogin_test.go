@@ -135,10 +135,10 @@ func TestProxySocketsAdminFacade(t *testing.T) {
 		},
 		expectedClientResponse: &rpcproxy.Message{
 			RequestID: 1,
-			Error:     "unauthorized access",
+			Error:     "unauthorized",
 			ErrorCode: "unauthorized access",
 		},
-		oauthAuthenticatorError: errors.E(errors.CodeUnauthorized),
+		oauthAuthenticatorError: errors.Codef(errors.CodeUnauthorized, "unauthorized"),
 	}, {
 		about: "login with client credentials - a login message is sent to the controller",
 		messageToSend: rpcproxy.Message{
@@ -166,10 +166,10 @@ func TestProxySocketsAdminFacade(t *testing.T) {
 		},
 		expectedClientResponse: &rpcproxy.Message{
 			RequestID: 1,
-			Error:     "unauthorized access",
+			Error:     "unauthorized",
 			ErrorCode: "unauthorized access",
 		},
-		oauthAuthenticatorError: errors.E(errors.CodeUnauthorized),
+		oauthAuthenticatorError: errors.Codef(errors.CodeUnauthorized, "unauthorized"),
 	}, {
 		about: "login with username/password fails",
 		messageToSend: rpcproxy.Message{
@@ -305,10 +305,10 @@ func TestProxySocketsAdminFacade(t *testing.T) {
 		},
 		expectedClientResponse: &rpcproxy.Message{
 			RequestID: 1,
-			Error:     "unauthorized access",
+			Error:     "unauthorized",
 			ErrorCode: "unauthorized access",
 		},
-		oauthAuthenticatorError: errors.E(errors.CodeUnauthorized),
+		oauthAuthenticatorError: errors.Codef(errors.CodeUnauthorized, "unauthorized"),
 	}, {
 		about: "connection to controller fails",
 		expectedClientResponse: &rpcproxy.Message{

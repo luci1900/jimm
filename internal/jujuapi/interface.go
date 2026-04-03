@@ -253,7 +253,7 @@ type JujuManager interface {
 	UnsetModelDefaults(ctx context.Context, user *dbmodel.Identity, cloudTag names.CloudTag, region string, keys []string) error
 	UpdateMigratedModel(ctx context.Context, user *openfga.User, modelTag names.ModelTag, targetControllerName string) error
 	ValidateModelUpgrade(ctx context.Context, u *openfga.User, mt names.ModelTag, force bool) error
-
+	SupportedVersions(ctx context.Context, contextualVersion *string) (params.SupportedJujuVersionsResponse, error)
 	// Migration related methods
 
 	// ControllerDetailsForIncomingModel retrieves details about the

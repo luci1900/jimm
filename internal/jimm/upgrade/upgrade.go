@@ -94,12 +94,12 @@ func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, tar
 	// the upgrade was successful.
 	if targetVersion == semversion.Zero {
 
-		return errors.E(errors.CodeBadRequest, "target version cannot be zero")
+		return errors.Codef(errors.CodeBadRequest, "target version cannot be zero")
 	}
 
 	model := &dbmodel.Model{UUID: sql.NullString{Valid: true, String: modelUUID}}
 	if err := u.store.GetModel(ctx, model); err != nil {
-		return errors.E(errors.CodeNotFound, err, "model not found")
+		return errors.Codef(errors.CodeNotFound, "model not found: %w", err)
 	}
 
 	api, err := u.dialer.Dial(ctx, &model.Controller, names.ModelTag{}, nil)
@@ -159,7 +159,7 @@ func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, tar
 // This currently only works with non-kubernetes clouds.
 func (u *UpgradeManager) UpgradeTo(ctx context.Context, user *openfga.User, modelUUID string, targetControllerName string) (int64, error) {
 	if !names.IsValidModel(modelUUID) {
-		return 0, errors.E(errors.CodeBadRequest, "invalid model UUID")
+		return 0, errors.Codef(errors.CodeBadRequest, "invalid model UUID")
 	}
 	mt := names.NewModelTag(modelUUID)
 
@@ -177,7 +177,7 @@ func (u *UpgradeManager) UpgradeTo(ctx context.Context, user *openfga.User, mode
 		}
 	}
 	if targetController == nil {
-		return 0, errors.E(errors.CodeBadRequest, fmt.Sprintf("target controller %s is not a valid migration target for this model", targetControllerName))
+		return 0, errors.Codef(errors.CodeBadRequest, "target controller %s is not a valid migration target for this model", targetControllerName)
 	}
 
 	targetVersion, err := semversion.Parse(targetController.AgentVersion)
@@ -196,7 +196,7 @@ func (u *UpgradeManager) UpgradeTo(ctx context.Context, user *openfga.User, mode
 	}
 
 	if job.UniqueSkippedAsDuplicate {
-		return 0, errors.E("an upgrade job for this model is already in progress", errors.CodeInProgress)
+		return 0, errors.Codef(errors.CodeInProgress, "an upgrade job for this model is already in progress")
 	}
 
 	return job.Job.ID, nil
@@ -209,7 +209,7 @@ func (u *UpgradeManager) MigrateModel(ctx context.Context, user *openfga.User, m
 	ctx = zapctx.WithFields(ctx, zap.String("model_uuid", modelUUID), zap.String("target_controller_name", targetControllerName))
 
 	if !names.IsValidModel(modelUUID) {
-		return errors.E(errors.CodeBadRequest, "invalid model UUID")
+		return errors.Codef(errors.CodeBadRequest, "invalid model UUID")
 	}
 
 	// Fetch the model info to refresh current controller.

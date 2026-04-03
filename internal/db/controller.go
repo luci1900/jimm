@@ -51,13 +51,13 @@ func (d *Database) GetController(ctx context.Context, controller *dbmodel.Contro
 	case controller.Name != "":
 		db = db.Where("name = ?", controller.Name)
 	default:
-		return errors.E(errors.CodeBadRequest, "controller UUID or name must be provided")
+		return errors.Codef(errors.CodeBadRequest, "controller UUID or name must be provided")
 	}
 	db = db.Preload("CloudRegions").Preload("CloudRegions.CloudRegion").Preload("CloudRegions.CloudRegion.Cloud")
 	if err := db.First(&controller).Error; err != nil {
 		err = dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(err, "controller not found")
+			return errors.Codef(errors.CodeNotFound, "controller not found")
 		}
 		return err
 	}
@@ -70,7 +70,7 @@ func (d *Database) UpdateController(ctx context.Context, controller *dbmodel.Con
 	const op = "db.UpdateController"
 
 	if controller.ID == 0 {
-		return errors.E(errors.CodeNotFound, `controller not found`)
+		return errors.Codef(errors.CodeNotFound, `controller not found`)
 	}
 
 	if err := d.ready(); err != nil {
@@ -93,7 +93,7 @@ func (d *Database) UpdateController(ctx context.Context, controller *dbmodel.Con
 func (d *Database) DeleteController(ctx context.Context, controller *dbmodel.Controller) (err error) {
 	const op = "db.DeleteController"
 	if controller.ID == 0 {
-		return errors.E(errors.CodeNotFound, `controller not found`)
+		return errors.Codef(errors.CodeNotFound, `controller not found`)
 	}
 
 	if err := d.ready(); err != nil {
@@ -108,7 +108,7 @@ func (d *Database) DeleteController(ctx context.Context, controller *dbmodel.Con
 	if err := db.Delete(controller).Error; err != nil {
 		err := dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(err, "controller not found")
+			return errors.Codef(errors.CodeNotFound, "controller not found")
 		}
 		return err
 	}

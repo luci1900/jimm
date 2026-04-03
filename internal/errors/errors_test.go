@@ -3,6 +3,7 @@
 package errors_test
 
 import (
+	stderr "errors"
 	"fmt"
 	"testing"
 
@@ -12,46 +13,57 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 )
 
-func TestEEmptyArguments(t *testing.T) {
-	c := qt.New(t)
-
-	c.Assert(func() {
-		_ = errors.E()
-	}, qt.PanicMatches, `call to errors.E with no arguments`)
-}
-
-func TestEUnknownType(t *testing.T) {
-	c := qt.New(t)
-	c.Check(errors.E(42), qt.ErrorMatches, `unknown type \(int\) passed to errors.E`)
-}
-
-func TestE(t *testing.T) {
+func TestCodefWrapsError(t *testing.T) {
 	c := qt.New(t)
 
 	code := errors.Code("test code")
-	err := errors.E(code, "an error happened")
+	wrapped := errors.New("an error happened")
+	err := errors.Codef(code, "%w", wrapped)
 	c.Check(err, qt.ErrorMatches, `an error happened`)
 	c.Check(errors.ErrorCode(err), qt.Equals, code)
 
-	err = errors.E(err)
-	c.Check(err, qt.ErrorMatches, `an error happened`)
-	c.Check(errors.ErrorCode(err), qt.Equals, code)
+	errValue, ok := err.(*errors.Error)
+	c.Assert(ok, qt.IsTrue)
+	c.Check(errValue.Code, qt.Equals, code)
+	c.Assert(errValue.Err, qt.IsNotNil)
+	c.Check(errValue.Err.Error(), qt.Equals, wrapped.Error())
+	c.Check(errValue.Message, qt.Equals, "")
+	c.Check(stderr.Is(errValue.Err, wrapped), qt.IsTrue)
+	c.Check(stderr.Is(err, wrapped), qt.IsTrue)
 }
 
-func TestEWithInfo(t *testing.T) {
+func TestCodefFormatsString(t *testing.T) {
 	c := qt.New(t)
 
 	code := errors.Code("test code")
+	err := errors.Codef(code, "formatted %s", "message")
+	c.Check(err, qt.ErrorMatches, `formatted message`)
+	c.Check(errors.ErrorCode(err), qt.Equals, code)
+}
+
+func TestErrorInfo(t *testing.T) {
+	c := qt.New(t)
+
 	info := map[string]any{"key": "value"}
-	err := errors.E(code, "an error happened", info)
-	c.Check(err, qt.ErrorMatches, `an error happened`)
-	c.Check(errors.ErrorCode(err), qt.Equals, code)
-	c.Check(err.(*errors.Error).Info, qt.DeepEquals, info)
+	err := error(&errors.Error{
+		Message: "error with info",
+		Info:    info,
+	})
+	c.Check(err, qt.ErrorMatches, `error with info`)
 	c.Check(errors.ErrorInfo(err), qt.DeepEquals, info)
+}
 
-	err = errors.New("plain-error")
-	c.Check(err, qt.ErrorMatches, `plain-error`)
-	c.Check(errors.ErrorInfo(err), qt.DeepEquals, map[string]any(nil))
+func TestErrorMessageOrder(t *testing.T) {
+	c := qt.New(t)
+
+	err := &errors.Error{Code: errors.Code("a code")}
+	c.Check(err.Error(), qt.Equals, "a code")
+
+	err = &errors.Error{Err: errors.New("a wrapped err"), Code: errors.Code("a code")}
+	c.Check(err.Error(), qt.Equals, "a wrapped err")
+
+	err = &errors.Error{Message: "a message", Err: errors.New("a wrapped err"), Code: errors.Code("a code")}
+	c.Check(err.Error(), qt.Equals, "a message")
 }
 
 func TestErrorCodeWithJujuRPC(t *testing.T) {

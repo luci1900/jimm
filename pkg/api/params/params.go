@@ -751,3 +751,26 @@ type ListJobsResponse struct {
 	// If empty, there are no more results.
 	NextCursor string `json:"next_cursor,omitempty" yaml:"next_cursor,omitempty"`
 }
+
+// SupportedJujuVersionsResponse holds the response for a SupportedJujuVersions call.
+type SupportedJujuVersionsRequest struct {
+	// MinVersion is an optional lower-bound version filter.
+	// When set, only versions strictly greater than MinVersion are included in the response.
+	// Versions equal to or below MinVersion are excluded.
+	MinVersion *string `json:"min-version,omitempty"`
+}
+
+// VersionElem represents a single supported Juju version.
+type VersionElem struct {
+	// Version is the "x.x.x" version string.
+	Version string `json:"version"`
+	// Date is the release date of this version.
+	Date string `json:"date"`
+	// LinkToRelease is the URL to the release notes or page for this version.
+	LinkToRelease string `json:"link-to-release"`
+}
+
+// SupportedJujuVersionsResponse holds the response for a SupportedJujuVersions call.
+type SupportedJujuVersionsResponse struct {
+	Versions []VersionElem `json:"versions"`
+}

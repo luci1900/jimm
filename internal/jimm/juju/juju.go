@@ -26,6 +26,7 @@ type JujuManager struct {
 	Dialer                  Dialer
 	crossModelQueryTimeout  time.Duration
 	migrationTokenGenerator MigrationTokenGenerator
+	GitHubClient            GitHubClient
 }
 
 // NewJujuManager returns a new JIMM struct that manages business logic associated
@@ -80,7 +81,7 @@ func NewJujuManager(
 // code of CodeConnectionFailed will be returned.
 func (j *JujuManager) dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error) {
 	if j == nil || j.Dialer == nil {
-		return nil, errors.E(errors.CodeConnectionFailed, "no dialer configured")
+		return nil, errors.Codef(errors.CodeConnectionFailed, "no dialer configured")
 	}
 
 	return j.Dialer.Dial(ctx, ctl, modelTag, user)

@@ -68,13 +68,13 @@ func toAddModelArgs(args jujuparams.ModelCreateArgs, authenticatedUser names.Use
 	if args.CloudTag != "" {
 		ct, err := names.ParseCloudTag(args.CloudTag)
 		if err != nil {
-			return nil, errors.E(err, errors.CodeBadRequest)
+			return nil, errors.Codef(errors.CodeBadRequest, "%w", err)
 		}
 		a.Cloud = ct
 	}
 	if args.Qualifier != "" {
 		if !names.IsValidUser(args.Qualifier) {
-			return nil, errors.New(fmt.Sprintf("%q is not a valid user", args.Qualifier))
+			return nil, errors.Codef(errors.CodeBadRequest, "%q is not a valid user", args.Qualifier)
 		}
 		a.Owner = names.NewUserTag(args.Qualifier)
 	} else {
@@ -83,7 +83,7 @@ func toAddModelArgs(args jujuparams.ModelCreateArgs, authenticatedUser names.Use
 	if args.CloudCredentialTag != "" {
 		ct, err := names.ParseCloudCredentialTag(args.CloudCredentialTag)
 		if err != nil {
-			return nil, errors.E(err, "invalid cloud credential tag")
+			return nil, fmt.Errorf("invalid cloud credential tag: %w", err)
 		}
 		if a.Cloud.Id() != "" && ct.Cloud().Id() != a.Cloud.Id() {
 			return nil, errors.New("cloud credential cloud mismatch")

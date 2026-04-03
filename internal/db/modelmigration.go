@@ -65,7 +65,7 @@ func (d *Database) GetIncomingModelMigrationWithLock(ctx context.Context, modelM
 	case modelMigration.ModelUUID.Valid:
 		db = db.Where("model_uuid = ?", modelMigration.ModelUUID.String)
 	default:
-		return errors.E("missing uuid", errors.CodeBadRequest)
+		return errors.Codef(errors.CodeBadRequest, "missing uuid")
 	}
 
 	lockingClause := clause.Locking{Strength: "UPDATE"}
@@ -76,7 +76,7 @@ func (d *Database) GetIncomingModelMigrationWithLock(ctx context.Context, modelM
 	if err := db.Preload("TargetController").First(&modelMigration).Error; err != nil {
 		err = dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(err, "model migration not found")
+			return errors.Codef(errors.CodeNotFound, "model migration not found")
 		}
 		return err
 	}
@@ -99,13 +99,13 @@ func (d *Database) GetIncomingModelMigration(ctx context.Context, modelMigration
 	case modelMigration.ModelUUID.Valid:
 		db = db.Where("model_uuid = ?", modelMigration.ModelUUID.String)
 	default:
-		return errors.E("missing uuid", errors.CodeBadRequest)
+		return errors.Codef(errors.CodeBadRequest, "missing uuid")
 	}
 
 	if err := db.Preload("TargetController").First(&modelMigration).Error; err != nil {
 		err = dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(err, "model migration not found")
+			return errors.Codef(errors.CodeNotFound, "model migration not found")
 		}
 		return err
 	}

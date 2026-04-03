@@ -757,7 +757,7 @@ func TestImportModel(t *testing.T) {
 		modelUUID:      "00000002-0000-0000-0000-000000000001",
 		jimmAdmin:      true,
 		modelInfo: func(model names.ModelTag) (jujuclient.ModelInfo, error) {
-			return jujuclient.ModelInfo{}, errors.E(errors.CodeNotFound, "model not found")
+			return jujuclient.ModelInfo{}, errors.Codef(errors.CodeNotFound, "model not found")
 		},
 		expectedError: "model not found",
 	}, {
@@ -975,7 +975,7 @@ func TestImportModel(t *testing.T) {
 							}, nil
 						}
 					}
-					return jujuparams.ConsumeOfferDetails{}, errors.E(errors.CodeNotFound)
+					return jujuparams.ConsumeOfferDetails{}, errors.Codef(errors.CodeNotFound, "not found")
 				},
 			}
 
@@ -1240,7 +1240,6 @@ func TestInitiateMigration(t *testing.T) {
 	c := qt.New(t)
 
 	mt1 := names.NewModelTag("00000002-0000-0000-0000-000000000003")
-	// mt2 := names.NewModelTag("00000002-0000-0000-0000-000000000004")
 
 	migrationId1 := uuid.New().String()
 
@@ -1301,7 +1300,7 @@ func TestInitiateMigration(t *testing.T) {
 			},
 		},
 		initiateMigrationResults: []result{{}},
-		expectedError:            "unauthorized access",
+		expectedError:            "unauthorized",
 	}, {
 		about: "InitiateMigration call fails",
 		user: func(client *openfga.OFGAClient) *openfga.User {
@@ -1341,7 +1340,7 @@ func TestInitiateMigration(t *testing.T) {
 			},
 		},
 		initiateMigrationResults: []result{{}},
-		expectedError:            "unauthorized access",
+		expectedError:            "unauthorized",
 	}, {
 		about: "invalid model tag",
 		user: func(client *openfga.OFGAClient) *openfga.User {
@@ -1506,7 +1505,7 @@ func (c *testControllerClient) InitiateMigration(ctx context.Context, spec contr
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(c.initiateMigrationResults) == 0 {
-		return "", errors.E(errors.CodeNotImplemented)
+		return "", errors.Codef(errors.CodeNotImplemented, "not implemented")
 	}
 	var result result
 	result, c.initiateMigrationResults = c.initiateMigrationResults[0], c.initiateMigrationResults[1:]

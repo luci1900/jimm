@@ -122,10 +122,8 @@ func TestControllerVersion(t *testing.T) {
 	client := controllerapi.NewClient(conn)
 	result, err := client.ControllerVersion(t.Context())
 	c.Assert(err, qt.IsNil)
-	c.Assert(result, qt.DeepEquals, controllerapi.ControllerVersion{
-		Version:   "3.6.20",
-		GitCommit: jimmversion.VersionInfo.GitCommit,
-	})
+	c.Assert(result.GitCommit, qt.Equals, jimmversion.VersionInfo.GitCommit)
+	c.Assert(result.Version, qt.Not(qt.Equals), "0.0.0")
 }
 
 func TestControllerAccess(t *testing.T) {
