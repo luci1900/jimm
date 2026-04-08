@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/v69/github"
@@ -22,6 +23,17 @@ type GitHubClient interface {
 }
 
 const minSupportedVersion = "3.6.5"
+
+// cacheGithubResponse holds the cached GitHub releases and their expiry time.
+type cacheGithubResponse struct {
+	mu      sync.Mutex
+	exp     time.Time
+	entries []params.VersionElem
+}
+
+// releasesCacheTTL is how long the fetched GitHub releases are cached before
+// the next call to SupportedVersions triggers a fresh fetch.
+const releasesCacheTTL = 10 * time.Minute
 
 // blacklistedVersions lists specific releases that should be excluded even if they
 // otherwise meet the stable release criteria.
@@ -44,22 +56,59 @@ func (j *JujuManager) SupportedVersions(ctx context.Context, minVersion *string)
 		parsedMinVersion = &v
 	}
 
+	releases, err := j.fetchReleasesWithCache(ctx)
+	if err != nil {
+		return params.SupportedJujuVersionsResponse{}, err
+	}
+	return params.SupportedJujuVersionsResponse{Versions: filterByMinVersion(releases, parsedMinVersion)}, nil
+}
+
+// fetchReleasesWithCache returns the cached releases if they are still within the TTL,
+// otherwise it fetches fresh releases from GitHub, updates the cache, and returns them.
+func (j *JujuManager) fetchReleasesWithCache(ctx context.Context) ([]params.VersionElem, error) {
+	j.releaseCache.mu.Lock()
+	defer j.releaseCache.mu.Unlock()
+	if time.Now().Before(j.releaseCache.exp) {
+		return slices.Clone(j.releaseCache.entries), nil
+	}
+
 	client := j.GitHubClient
 	if client == nil {
 		client = github.NewClient(nil).Repositories
 	}
 
-	releases, err := fetchReleasesFromGitHub(ctx, client, parsedMinVersion)
+	releases, err := fetchReleasesFromGitHub(ctx, client)
 	if err != nil {
-		return params.SupportedJujuVersionsResponse{}, err
+		return nil, err
 	}
-	return params.SupportedJujuVersionsResponse{Versions: releases}, nil
+	j.releaseCache.entries = releases
+	j.releaseCache.exp = time.Now().Add(releasesCacheTTL)
+
+	return slices.Clone(releases), nil
+}
+
+// filterByMinVersion returns only those releases with a version strictly greater
+// than minVersion. If minVersion is nil, all releases are returned unchanged.
+func filterByMinVersion(releases []params.VersionElem, minVersion *version.Number) []params.VersionElem {
+	if minVersion == nil {
+		return releases
+	}
+	result := make([]params.VersionElem, 0, len(releases))
+	for _, r := range releases {
+		v, err := version.Parse(r.Version)
+		if err != nil {
+			continue
+		}
+		if v.Compare(*minVersion) > 0 {
+			result = append(result, r)
+		}
+	}
+	return result
 }
 
 // fetchReleasesFromGitHub queries the GitHub API for juju/juju releases and returns
 // a filtered, sorted slice of stable releases >= minSupportedVersion.
-// If minVersion is non-nil, only releases strictly greater than it are included.
-func fetchReleasesFromGitHub(ctx context.Context, client GitHubClient, minVersion *version.Number) ([]params.VersionElem, error) {
+func fetchReleasesFromGitHub(ctx context.Context, client GitHubClient) ([]params.VersionElem, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -91,9 +140,6 @@ func fetchReleasesFromGitHub(ctx context.Context, client GitHubClient, minVersio
 				continue
 			}
 			if slices.Contains(blacklistedVersions, v) {
-				continue
-			}
-			if minVersion != nil && v.Compare(*minVersion) != 1 {
 				continue
 			}
 			keyed = append(keyed, keyedRelease{
