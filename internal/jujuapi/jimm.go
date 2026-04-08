@@ -70,6 +70,10 @@ func init() {
 		stopBootstrap := rpc.Method(r.StopBootstrap)
 		startBootstrap := rpc.Method(r.StartBootstrap)
 		startDestroyController := rpc.Method(r.StartDestroyController)
+		saveControllerProfile := rpc.Method(r.SaveControllerProfile)
+		getControllerProfile := rpc.Method(r.GetControllerProfile)
+		listControllerProfiles := rpc.Method(r.ListControllerProfiles)
+		removeControllerProfile := rpc.Method(r.RemoveControllerProfile)
 		upgradeToMethod := rpc.Method(r.UpgradeTo)
 		listUserCloudsMethod := rpc.Method(r.ListUserClouds)
 		modelControllerInfoMethod := rpc.Method(r.ModelControllerInfo)
@@ -131,6 +135,11 @@ func init() {
 		r.AddMethod("JIMM", 4, "ListJobs", listJobsMethod)
 		// Versions
 		r.AddMethod("JIMM", 4, "SupportedJujuVersions", supportedVersionMethd)
+		// JIMM Controller Profiles
+		r.AddMethod("JIMM", 4, "GetControllerProfile", getControllerProfile)
+		r.AddMethod("JIMM", 4, "ListControllerProfiles", listControllerProfiles)
+		r.AddMethod("JIMM", 4, "RemoveControllerProfile", removeControllerProfile)
+		r.AddMethod("JIMM", 4, "SaveControllerProfile", saveControllerProfile)
 
 		return []int{4}
 	}
@@ -661,15 +670,15 @@ func (r *controllerRoot) StartBootstrap(ctx context.Context, req apiparams.Boots
 	// Validate request is not for a built in cloud.
 	// Using a fixed slice over `juju/cmd/juju/common.BuiltInClouds()` as that
 	// function requires providers to be registered in the environs global.
-	if slices.Contains(builtInClouds, req.CloudName) {
+	if slices.Contains(builtInClouds, req.Cloud.Name) {
 		return apiparams.StartBootstrapResponse{},
-			errors.Codef(errors.CodeIncompatibleClouds, "bootstrap via JIMM does not support built-in clouds like %q", req.CloudName)
+			errors.Codef(errors.CodeIncompatibleClouds, "bootstrap via JIMM does not support built-in clouds like %q", req.Cloud.Name)
 	}
 
-	cloudNameAndRegion := req.CloudName
+	cloudNameAndRegion := req.Cloud.Name
 
-	if req.RegionName != "" {
-		cloudNameAndRegion = fmt.Sprintf("%s/%s", req.CloudName, req.RegionName)
+	if req.Cloud.Region.Name != "" {
+		cloudNameAndRegion = fmt.Sprintf("%s/%s", req.Cloud.Name, req.Cloud.Region.Name)
 	}
 
 	params := bootstrap.BootstrapParams{
@@ -678,7 +687,7 @@ func (r *controllerRoot) StartBootstrap(ctx context.Context, req apiparams.Boots
 		CloudNameAndRegion: cloudNameAndRegion,
 		ControllerName:     req.ControllerName,
 
-		Cloud: cloudFromParams(req.CloudName, req.Cloud),
+		Cloud: bootstrapCloudFromParams(req.Cloud),
 		CloudCred: cloud.NewNamedCredential(
 			"bootstrap-credential",
 			cloud.AuthType(req.Credential.AuthType),
@@ -686,7 +695,16 @@ func (r *controllerRoot) StartBootstrap(ctx context.Context, req apiparams.Boots
 			false,
 		),
 
-		UserConfig: req.Config,
+		BootstrapOptions: bootstrap.BootstrapOptions{
+			BootstrapBase:         req.BootstrapOptions.BootstrapBase,
+			BootstrapConstraints:  req.BootstrapOptions.BootstrapConstraints,
+			ModelConstraints:      req.BootstrapOptions.ModelConstraints,
+			ModelDefault:          req.BootstrapOptions.ModelDefault,
+			StoragePool:           bootstrapStoragePoolFromParams(req.BootstrapOptions.StoragePool),
+			BootstrapConfig:       req.BootstrapOptions.BootstrapConfig,
+			ControllerConfig:      req.BootstrapOptions.ControllerConfig,
+			ControllerModelConfig: req.BootstrapOptions.ControllerModelConfig,
+		},
 	}
 
 	jobID, err := r.jimm.BootstrapManager().StartBootstrapJob(ctx, r.user, params)
@@ -696,6 +714,17 @@ func (r *controllerRoot) StartBootstrap(ctx context.Context, req apiparams.Boots
 	return apiparams.StartBootstrapResponse{
 		JobID: strconv.FormatInt(jobID, 10),
 	}, nil
+}
+
+func bootstrapStoragePoolFromParams(pool *apiparams.BootstrapStoragePool) *bootstrap.StoragePool {
+	if pool == nil {
+		return nil
+	}
+	return &bootstrap.StoragePool{
+		Name:       pool.Name,
+		Type:       pool.Type,
+		Attributes: pool.Attributes,
+	}
 }
 
 // StartDestroyController starts a destroy-controller job.
