@@ -21,7 +21,7 @@ const partialJujuVersionFormatMessage = "must be a partial/full version string w
 // SaveControllerProfile creates or replaces a saved controller profile.
 func (r *controllerRoot) SaveControllerProfile(ctx context.Context, req apiparams.SaveControllerProfileRequest) (apiparams.SaveControllerProfileResponse, error) {
 	if !r.user.JimmAdmin {
-		return apiparams.SaveControllerProfileResponse{}, errors.E(errors.CodeUnauthorized, "unauthorized")
+		return apiparams.SaveControllerProfileResponse{}, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 	if err := validateSaveControllerProfileRequest(req); err != nil {
 		return apiparams.SaveControllerProfileResponse{}, err
@@ -38,7 +38,7 @@ func (r *controllerRoot) SaveControllerProfile(ctx context.Context, req apiparam
 // GetControllerProfile retrieves a saved controller profile by name.
 func (r *controllerRoot) GetControllerProfile(ctx context.Context, req apiparams.GetControllerProfileRequest) (apiparams.GetControllerProfileResponse, error) {
 	if !r.user.JimmAdmin {
-		return apiparams.GetControllerProfileResponse{}, errors.E(errors.CodeUnauthorized, "unauthorized")
+		return apiparams.GetControllerProfileResponse{}, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 	profile, err := r.jimm.ControllerProfileManager().GetControllerProfile(ctx, req.Name)
 	if err != nil {
@@ -52,7 +52,7 @@ func (r *controllerRoot) GetControllerProfile(ctx context.Context, req apiparams
 // by Juju version.
 func (r *controllerRoot) ListControllerProfiles(ctx context.Context, req apiparams.ListControllerProfilesRequest) (apiparams.ListControllerProfilesResponse, error) {
 	if !r.user.JimmAdmin {
-		return apiparams.ListControllerProfilesResponse{}, errors.E(errors.CodeUnauthorized, "unauthorized")
+		return apiparams.ListControllerProfilesResponse{}, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 	if err := validateListControllerProfilesRequest(req); err != nil {
 		return apiparams.ListControllerProfilesResponse{}, err
@@ -72,7 +72,7 @@ func (r *controllerRoot) ListControllerProfiles(ctx context.Context, req apipara
 // RemoveControllerProfile removes a saved controller profile by name.
 func (r *controllerRoot) RemoveControllerProfile(ctx context.Context, req apiparams.RemoveControllerProfileRequest) error {
 	if !r.user.JimmAdmin {
-		return errors.E(errors.CodeUnauthorized, "unauthorized")
+		return errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 	if err := r.jimm.ControllerProfileManager().RemoveControllerProfile(ctx, req.Name); err != nil {
 		return fmt.Errorf("failed to remove controller profile: %w", err)
@@ -85,11 +85,11 @@ func validateSaveControllerProfileRequest(req apiparams.SaveControllerProfileReq
 		return err
 	}
 	if slices.Contains(builtInClouds, req.Cloud.Name) {
-		return errors.E(errors.CodeIncompatibleClouds, fmt.Errorf("controller profiles do not support built-in clouds like %q", req.Cloud.Name))
+		return errors.Codef(errors.CodeIncompatibleClouds, "controller profiles do not support built-in clouds like %q", req.Cloud.Name)
 	}
 	storagePool := req.BootstrapOptions.StoragePool
 	if storagePool != nil && (storagePool.Name == "") != (storagePool.Type == "") {
-		return errors.E(errors.CodeBadRequest, "controller profile storage pool requires both name and type")
+		return errors.Codef(errors.CodeBadRequest, "controller profile storage pool requires both name and type")
 	}
 	return nil
 }
@@ -103,13 +103,13 @@ func validatePartialJujuVersion(versionString, fieldName string, allowEmpty bool
 		if allowEmpty {
 			return nil
 		}
-		return errors.E(errors.CodeBadRequest, fmt.Sprintf("%s must be provided", fieldName))
+		return errors.Codef(errors.CodeBadRequest, "%s must be provided", fieldName)
 	}
 	if _, err := jujuversion.ParseNonStrict(versionString); err != nil {
-		return errors.E(errors.CodeBadRequest, fmt.Sprintf("%s %s", fieldName, partialJujuVersionFormatMessage))
+		return errors.Codef(errors.CodeBadRequest, "%s %s", fieldName, partialJujuVersionFormatMessage)
 	}
 	if strings.Contains(versionString, "-") || len(strings.Split(versionString, ".")) > 3 {
-		return errors.E(errors.CodeBadRequest, fmt.Sprintf("%s %s", fieldName, partialJujuVersionFormatMessage))
+		return errors.Codef(errors.CodeBadRequest, "%s %s", fieldName, partialJujuVersionFormatMessage)
 	}
 	return nil
 }

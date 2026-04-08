@@ -4,7 +4,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
@@ -13,17 +12,17 @@ import (
 
 func validateControllerProfile(profile *dbmodel.ControllerProfile) error {
 	if profile.Name == "" {
-		return errors.E(errors.CodeBadRequest, "controller profile name must be provided")
+		return errors.Codef(errors.CodeBadRequest, "controller profile name must be provided")
 	}
 	if profile.Cloud.Name == "" {
-		return errors.E(errors.CodeBadRequest, "controller profile cloud name must be provided")
+		return errors.Codef(errors.CodeBadRequest, "controller profile cloud name must be provided")
 	}
 	if profile.Cloud.Region.Name == "" {
-		return errors.E(errors.CodeBadRequest, "controller profile cloud region name must be provided")
+		return errors.Codef(errors.CodeBadRequest, "controller profile cloud region name must be provided")
 	}
 	storagePool := profile.BootstrapOptions.StoragePool
 	if (storagePool.Name == "") != (storagePool.Type == "") {
-		return errors.E(errors.CodeBadRequest, "controller profile storage pool requires both name and type")
+		return errors.Codef(errors.CodeBadRequest, "controller profile storage pool requires both name and type")
 	}
 	return nil
 }
@@ -36,7 +35,7 @@ func validateControllerProfile(profile *dbmodel.ControllerProfile) error {
 func (d *Database) CreateOrReplaceControllerProfile(ctx context.Context, profile *dbmodel.ControllerProfile) (err error) {
 	const op = "db.CreateOrReplaceControllerProfile"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 	if err := validateControllerProfile(profile); err != nil {
 		return err
@@ -51,23 +50,23 @@ func (d *Database) CreateOrReplaceControllerProfile(ctx context.Context, profile
 		err := d.ForUpdate().GetControllerProfile(ctx, &current)
 		if err != nil {
 			if errors.ErrorCode(err) != errors.CodeNotFound {
-				return errors.E(err)
+				return err
 			}
 			// When creating a new profile, Version must be 0. The database will assign Version 1 to the new profile.
 			if profile.Version != 0 {
-				return errors.E(errors.CodeBadRequest, fmt.Sprintf("controller profile %q does not exist", profile.Name))
+				return errors.Codef(errors.CodeBadRequest, "controller profile %q does not exist", profile.Name)
 			}
 			profile.Version = 1
 			if err := d.DB.WithContext(ctx).Create(profile).Error; err != nil {
-				return errors.E(dbError(err))
+				return dbError(err)
 			}
 			return nil
 		}
 
 		if profile.Version != current.Version {
-			return errors.E(
+			return errors.Codef(
 				errors.CodeBadRequest,
-				fmt.Sprintf("controller profile %q version mismatch: expected %d, got %d", profile.Name, current.Version, profile.Version),
+				"controller profile %q version mismatch: expected %d, got %d", profile.Name, current.Version, profile.Version,
 			)
 		}
 
@@ -76,13 +75,13 @@ func (d *Database) CreateOrReplaceControllerProfile(ctx context.Context, profile
 		updated.CreatedAt = current.CreatedAt
 		updated.Version = current.Version + 1
 		if err := d.DB.WithContext(ctx).Save(&updated).Error; err != nil {
-			return errors.E(dbError(err))
+			return dbError(err)
 		}
 		*profile = updated
 		return nil
 	})
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
@@ -92,10 +91,10 @@ func (d *Database) CreateOrReplaceControllerProfile(ctx context.Context, profile
 func (d *Database) GetControllerProfile(ctx context.Context, profile *dbmodel.ControllerProfile) (err error) {
 	const op = "db.GetControllerProfile"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 	if profile.Name == "" {
-		return errors.E(errors.CodeBadRequest, "controller profile name must be provided")
+		return errors.Codef(errors.CodeBadRequest, "controller profile name must be provided")
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -106,9 +105,9 @@ func (d *Database) GetControllerProfile(ctx context.Context, profile *dbmodel.Co
 	if err := db.First(profile).Error; err != nil {
 		err := dbError(err)
 		if errors.ErrorCode(err) == errors.CodeNotFound {
-			return errors.E(fmt.Sprintf("controller profile %q not found", profile.Name), err)
+			return errors.Codef(errors.CodeNotFound, "controller profile %q not found", profile.Name)
 		}
-		return errors.E(err)
+		return err
 	}
 	return nil
 }
@@ -119,7 +118,7 @@ func (d *Database) GetControllerProfile(ctx context.Context, profile *dbmodel.Co
 func (d *Database) ListControllerProfiles(ctx context.Context, jujuVersion string) (_ []dbmodel.ControllerProfile, err error) {
 	const op = "db.ListControllerProfiles"
 	if err := d.ready(); err != nil {
-		return nil, errors.E(err)
+		return nil, err
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -132,7 +131,7 @@ func (d *Database) ListControllerProfiles(ctx context.Context, jujuVersion strin
 		query = query.Where("juju_version IN ?", dbmodel.PartialJujuVersionPrefixes(jujuVersion))
 	}
 	if err := query.Find(&profiles).Error; err != nil {
-		return nil, errors.E(dbError(err))
+		return nil, dbError(err)
 	}
 	return profiles, nil
 }
@@ -142,10 +141,10 @@ func (d *Database) ListControllerProfiles(ctx context.Context, jujuVersion strin
 func (d *Database) RemoveControllerProfile(ctx context.Context, name string) (err error) {
 	const op = "db.RemoveControllerProfile"
 	if err := d.ready(); err != nil {
-		return errors.E(err)
+		return err
 	}
 	if name == "" {
-		return errors.E(errors.CodeBadRequest, "controller profile name must be provided")
+		return errors.Codef(errors.CodeBadRequest, "controller profile name must be provided")
 	}
 
 	durationObserver := servermon.DurationObserver(servermon.DBQueryDurationHistogram, op)
@@ -154,10 +153,10 @@ func (d *Database) RemoveControllerProfile(ctx context.Context, name string) (er
 
 	query := d.DB.WithContext(ctx).Where("name = ?", name).Delete(&dbmodel.ControllerProfile{})
 	if query.Error != nil {
-		return errors.E(dbError(query.Error))
+		return dbError(query.Error)
 	}
 	if query.RowsAffected == 0 {
-		return errors.E(errors.CodeNotFound, fmt.Sprintf("controller profile %q not found", name))
+		return errors.Codef(errors.CodeNotFound, "controller profile %q not found", name)
 	}
 	return nil
 }

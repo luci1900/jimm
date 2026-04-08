@@ -20,7 +20,7 @@ type ControllerProfileManager struct {
 // NewControllerProfileManager returns a new controller profile manager backed by the provided store.
 func NewControllerProfileManager(store *db.Database) (*ControllerProfileManager, error) {
 	if store == nil {
-		return nil, errors.E("controller profile store cannot be nil")
+		return nil, errors.New("controller profile store cannot be nil")
 	}
 	return &ControllerProfileManager{store: store}, nil
 }
