@@ -158,10 +158,10 @@ func TestPreChecks(t *testing.T) {
 	serialisedDescription, err := description.Serialize(modelDescription)
 	c.Assert(err, qt.IsNil)
 
-	args := jujuparams.MigrationModelInfo{
+	args := jujuparams.MigrationModelInfoLegacy{
 		UUID:                   "00000001-0000-0000-0000-000000000001",
 		Name:                   "test-model",
-		Qualifier:              "bob",
+		OwnerTag:               names.NewUserTag("bob").String(),
 		ControllerAgentVersion: semversion.MustParse("3.6.9"),
 		ModelDescription:       serialisedDescription,
 	}

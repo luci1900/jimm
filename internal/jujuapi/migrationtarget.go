@@ -41,16 +41,16 @@ func init() {
 		latestLogTime := rpc.Method(r.LatestLogTime)
 		abort := rpc.Method(r.Abort)
 
-		r.AddMethod("MigrationTarget", 7, "Prechecks", preChecks)
-		r.AddMethod("MigrationTarget", 7, "CACert", caCert)
-		r.AddMethod("MigrationTarget", 7, "Activate", activate)
-		r.AddMethod("MigrationTarget", 7, "AdoptResources", adoptResources)
-		r.AddMethod("MigrationTarget", 7, "Abort", abort)
-		r.AddMethod("MigrationTarget", 7, "CheckMachines", checkMachines)
-		r.AddMethod("MigrationTarget", 7, "Import", importMethod)
-		r.AddMethod("MigrationTarget", 7, "LatestLogTime", latestLogTime)
+		r.AddMethod("MigrationTarget", 6, "Prechecks", preChecks)
+		r.AddMethod("MigrationTarget", 6, "CACert", caCert)
+		r.AddMethod("MigrationTarget", 6, "Activate", activate)
+		r.AddMethod("MigrationTarget", 6, "AdoptResources", adoptResources)
+		r.AddMethod("MigrationTarget", 6, "Abort", abort)
+		r.AddMethod("MigrationTarget", 6, "CheckMachines", checkMachines)
+		r.AddMethod("MigrationTarget", 6, "Import", importMethod)
+		r.AddMethod("MigrationTarget", 6, "LatestLogTime", latestLogTime)
 
-		return []int{7}
+		return []int{6}
 	}
 }
 
@@ -148,21 +148,27 @@ func (r *controllerRoot) LatestLogTime(ctx context.Context, args jujuparams.Mode
 }
 
 // Prechecks implements the Prechecks method of the MigrationTarget facade.
-func (r *controllerRoot) Prechecks(ctx context.Context, args jujuparams.MigrationModelInfo) error {
+func (r *controllerRoot) Prechecks(ctx context.Context, args jujuparams.MigrationModelInfoLegacy) error {
 
 	if !r.user.JimmAdmin {
 		return errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 
+	userTag, err := names.ParseUserTag(args.OwnerTag)
+	if err != nil {
+		return err
+	}
+
 	model := juju.MigratingModelInfo{
 		UUID:                   args.UUID,
 		Name:                   args.Name,
-		Owner:                  args.Qualifier,
+		Owner:                  userTag.Id(),
 		AgentVersion:           args.AgentVersion,
 		ControllerAgentVersion: args.ControllerAgentVersion,
 		RawModelDescription:    args.ModelDescription,
+		FacadeVersions:         args.FacadeVersions,
 	}
-	err := r.jimm.JujuManager().Prechecks(ctx, r.user, model)
+	err = r.jimm.JujuManager().Prechecks(ctx, r.user, model)
 	if err != nil {
 		return err
 	}

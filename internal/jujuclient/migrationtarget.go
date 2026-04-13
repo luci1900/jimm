@@ -6,7 +6,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/juju/juju/api"
 	"github.com/juju/juju/api/controller/migrationtarget"
 	coremigration "github.com/juju/juju/core/migration"
 	"github.com/juju/juju/core/semversion"
@@ -22,15 +21,6 @@ import (
 // the model description, and we need to be able to accept different version
 // of the description depending on the target controller version.
 func (c Connection) Prechecks(ctx context.Context, model jujuparams.MigrationModelInfo) error {
-	// Pass all the known facade versions to the controller so that it
-	// can check that the target controller supports them. Passing all of them
-	// ensures that we don't have to update this code when new facades are
-	// added, or if the controller wants to change the logic service side.
-	supported := api.SupportedFacadeVersions()
-	versions := make(map[string][]int, len(supported))
-	for name, version := range supported {
-		versions[name] = version
-	}
 
 	args := jujuparams.MigrationModelInfo{
 		UUID:                   model.UUID,
@@ -38,10 +28,10 @@ func (c Connection) Prechecks(ctx context.Context, model jujuparams.MigrationMod
 		Qualifier:              model.Qualifier,
 		AgentVersion:           model.AgentVersion,
 		ControllerAgentVersion: model.ControllerAgentVersion,
-		FacadeVersions:         versions,
+		FacadeVersions:         model.FacadeVersions,
 		ModelDescription:       model.ModelDescription,
 	}
-	if err := c.CallHighestFacadeVersion(ctx, "MigrationTarget", []int{6}, "", "Prechecks", &args, nil); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "MigrationTarget", []int{7, 6}, "", "Prechecks", &args, nil); err != nil {
 		return err
 	}
 	return nil
@@ -61,7 +51,7 @@ func (c Connection) AdoptResources(ctx context.Context, modelUUID string, contro
 		ModelTag:                names.NewModelTag(modelUUID).String(),
 		SourceControllerVersion: controllerVersion,
 	}
-	if err := c.CallHighestFacadeVersion(ctx, "MigrationTarget", []int{6}, "", "AdoptResources", &args, nil); err != nil {
+	if err := c.CallHighestFacadeVersion(ctx, "MigrationTarget", []int{7, 6}, "", "AdoptResources", &args, nil); err != nil {
 		return err
 	}
 	return nil

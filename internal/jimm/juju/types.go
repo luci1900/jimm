@@ -18,6 +18,7 @@ type MigratingModelInfo struct {
 	AgentVersion           semversion.Number
 	ControllerAgentVersion semversion.Number
 	RawModelDescription    []byte
+	FacadeVersions         map[string][]int
 }
 
 // ControllerCreds represent the admin username and password

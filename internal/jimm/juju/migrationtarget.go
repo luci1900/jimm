@@ -216,6 +216,7 @@ func (j *JujuManager) Prechecks(ctx context.Context, user *openfga.User, model M
 		Name:                   model.Name,
 		AgentVersion:           model.AgentVersion,
 		ControllerAgentVersion: model.AgentVersion,
+		FacadeVersions:         model.FacadeVersions,
 		ModelDescription:       serializedModel,
 	})
 	if err != nil {

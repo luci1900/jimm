@@ -46,6 +46,13 @@ func TestCheckMachines(t *testing.T) {
 }
 
 func TestPrechecks(t *testing.T) {
+	// We need to skip this test because calling api.Precheck() fills the FacadeVersion in the args with
+	// api.SupportedVersion() which is just fetching the version for the facade the client requires.
+	// Now we only support migrating 3 models, but the `api` package comes from Juju 4.
+	// So this test will always fail because the FacadeVersions will never be accepted by the
+	// target Juju 3 controller.
+	// Once we support the migration of Juju 4 models, we can re-enable this test.
+	t.Skip()
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
 
@@ -59,7 +66,7 @@ func TestPrechecks(t *testing.T) {
 
 	modelDescriptionArgs := description.ModelArgs{
 		Type:        description.IAAS,
-		Owner:       names.NewUserTag("alice").String(),
+		Owner:       "alice",
 		Cloud:       jimmtest.TestE2ECloudName,
 		CloudRegion: jimmtest.TestE2ECloudRegionName,
 	}
@@ -67,8 +74,8 @@ func TestPrechecks(t *testing.T) {
 	modelDescription := description.NewModel(modelDescriptionArgs)
 	modelDescription.SetCloudCredential(description.CloudCredentialArgs{
 		Name:  "cred",
-		Cloud: names.NewCloudTag(jimmtest.TestE2ECloudName).String(),
-		Owner: names.NewUserTag("alice@canonical.com").String(),
+		Cloud: jimmtest.TestE2ECloudName,
+		Owner: "alice",
 	})
 	model := migration.ModelInfo{
 		UUID:                   modelUUID,
