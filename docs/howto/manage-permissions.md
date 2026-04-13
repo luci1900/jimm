@@ -19,6 +19,18 @@ To add a permission between an entity A (always a user, whether identified direc
 # Make Alice cloud admin:
 juju add-permission user-alice@canonical.com administrator cloud-mycloud
 
+# Let all users add models on the cloud:
+juju add-permission user-everyone@external can_addmodel cloud-mycloud
+
+# Make Alice model admin:
+juju add-permission user-alice@canonical.com administrator model-mycontroller/mymodel
+
+# Let all users with role myrole have read access to model mymodel:
+juju add-permission role-myrole#assignee reader model-mycontroller/mymodel
+
+# Let Alice consume offer myoffer:
+juju add-permission user-alice@canonical.com consumer applicationoffer-mycontroller/mymodel.myoffer
+
 # Add Bob and Cindy to the mygroup group:
 juju add-permission user-bob@canonical.com member group-mygroup
 juju add-permission user-cindy@canonical.com member group-mygroup
@@ -81,3 +93,24 @@ juju remove-permission user-alice@canonical.com member group-mygroup
 ```
 
 > See more: {ref}`view-all-the-current-permissions`, {doc}`juju remove-permission <../reference/jaas-plugin>`
+
+(control-user-access-to-a-cloud)=
+## Control user access to a cloud
+
+To grant a (collection of) user(s) access to a cloud, add a `can_addmodel` or `administrator` permission between the user(s) and the cloud.
+
+> See more: {ref}`add-a-permission`
+
+(control-user-access-to-a-model)=
+## Control user access to a model
+
+To grant a (collection of) user(s) access to a model, add a `reader`, `writer`, or `administrator` permission between the user(s) and the model.
+
+> See more: {ref}`add-a-permission`
+
+(control-user-access-to-an-offer)=
+## Control user access to an offer
+
+To grant a (collection of) user(s) access to an application offer, add a `reader`, `consumer`, or `administrator` permission between the user(s) and the offer.
+
+> See more: {ref}`add-a-permission`
