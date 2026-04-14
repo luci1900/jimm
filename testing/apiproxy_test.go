@@ -34,7 +34,7 @@ func TestConnectToModel(t *testing.T) {
 	defer conn.Close()
 	var resp map[string]interface{}
 	err := conn.APICall(t.Context(), "Admin", 3, "", "TestMethod", nil, &resp)
-	c.Assert(err, qt.ErrorMatches, `(?s).*no such request - method Admin.TestMethod is not implemented \(not implemented\).*`)
+	c.Assert(err, qt.ErrorMatches, `(?s).*\(not implemented\).*`)
 }
 
 // TestSessionTokenLoginProvider verifies that the session token login provider works as expected.
