@@ -112,6 +112,33 @@ func (c *Client) SetControllerDeprecated(ctx context.Context, req *params.SetCon
 	return info, err
 }
 
+// SaveControllerProfile creates or replaces a saved controller profile.
+func (c *Client) SaveControllerProfile(ctx context.Context, req *params.SaveControllerProfileRequest) (params.SaveControllerProfileResponse, error) {
+	var response params.SaveControllerProfileResponse
+	err := c.caller.APICall(ctx, "JIMM", 4, "", "SaveControllerProfile", req, &response)
+	return response, err
+}
+
+// GetControllerProfile retrieves a saved controller profile by name.
+func (c *Client) GetControllerProfile(ctx context.Context, req *params.GetControllerProfileRequest) (params.GetControllerProfileResponse, error) {
+	var response params.GetControllerProfileResponse
+	err := c.caller.APICall(ctx, "JIMM", 4, "", "GetControllerProfile", req, &response)
+	return response, err
+}
+
+// ListControllerProfiles lists saved controller profiles, optionally filtered
+// by Juju version.
+func (c *Client) ListControllerProfiles(ctx context.Context, req *params.ListControllerProfilesRequest) ([]params.ControllerProfileSummary, error) {
+	var response params.ListControllerProfilesResponse
+	err := c.caller.APICall(ctx, "JIMM", 4, "", "ListControllerProfiles", req, &response)
+	return response.Profiles, err
+}
+
+// RemoveControllerProfile removes a saved controller profile by name.
+func (c *Client) RemoveControllerProfile(ctx context.Context, req *params.RemoveControllerProfileRequest) error {
+	return c.caller.APICall(ctx, "JIMM", 4, "", "RemoveControllerProfile", req, nil)
+}
+
 // UpgradeTo initiates a controller upgrade to the specified version.
 func (c *Client) UpgradeTo(ctx context.Context, req *params.UpgradeToRequest) (params.UpgradeToResponse, error) {
 	var resp params.UpgradeToResponse

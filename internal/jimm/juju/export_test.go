@@ -17,6 +17,7 @@ var (
 	NewControllerClient       = &newControllerClient
 	FillMigrationTarget       = fillMigrationTarget
 	InitiateInternalMigration = &initiateInternalMigration
+	ReleasesCacheTTL          = releasesCacheTTL
 )
 
 func NewWatcherWithControllerUnavailableChan(db *db.Database, dialer Dialer, pubsub Publisher, testChannel chan error) *Watcher {

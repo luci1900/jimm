@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	qt "github.com/frankban/quicktest"
@@ -121,4 +122,45 @@ func TestSupportedVersions_GitHubAPIError(t *testing.T) {
 	j := &juju.JujuManager{GitHubClient: mockGH}
 	_, err := j.SupportedVersions(context.Background(), nil)
 	c.Assert(err, qt.ErrorMatches, `.*rate limit exceeded.*`)
+}
+
+// TestSupportedVersions_Caching verifies that GitHub is only called once within
+// the TTL window and again after the clock advances past it.
+func TestSupportedVersions_Caching(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		c := qt.New(t)
+		ctrl := gomock.NewController(t)
+
+		published := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
+		releases := []*github.RepositoryRelease{
+			makeRelease("v3.6.7", false, false, published, "https://github.com/juju/juju/releases/tag/v3.6.7"),
+		}
+
+		mockGH := mocks.NewMockGitHubClient(ctrl)
+		// Expect exactly two fetches: once on the cold start and once after TTL expiry.
+		mockGH.EXPECT().
+			ListReleases(gomock.Any(), "juju", "juju", gomock.Any()).
+			Return(releases, noNextPage(), nil).
+			Times(2)
+
+		j := &juju.JujuManager{GitHubClient: mockGH}
+
+		// First call: cold cache, hits GitHub.
+		resp, err := j.SupportedVersions(context.Background(), nil)
+		c.Assert(err, qt.IsNil)
+		c.Assert(len(resp.Versions), qt.Equals, 1)
+
+		// Second call within TTL: served from cache, no additional GitHub call.
+		resp, err = j.SupportedVersions(context.Background(), nil)
+		c.Assert(err, qt.IsNil)
+		c.Assert(len(resp.Versions), qt.Equals, 1)
+
+		// Advance the fake clock past the TTL.
+		time.Sleep(juju.ReleasesCacheTTL + time.Second)
+
+		// Third call: cache expired, hits GitHub again.
+		resp, err = j.SupportedVersions(context.Background(), nil)
+		c.Assert(err, qt.IsNil)
+		c.Assert(len(resp.Versions), qt.Equals, 1)
+	})
 }

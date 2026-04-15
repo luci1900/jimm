@@ -27,6 +27,7 @@ type JujuManager struct {
 	crossModelQueryTimeout  time.Duration
 	migrationTokenGenerator MigrationTokenGenerator
 	GitHubClient            GitHubClient
+	releaseCache            cacheGithubResponse
 }
 
 // NewJujuManager returns a new JIMM struct that manages business logic associated

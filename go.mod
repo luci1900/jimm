@@ -259,6 +259,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/renameio v1.0.1 // indirect
 	github.com/juju/tc v0.0.0-20251023013639-77c6a1d20e5a // indirect
 	github.com/juju/worker/v4 v4.3.0 // indirect
