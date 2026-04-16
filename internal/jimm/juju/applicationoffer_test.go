@@ -653,6 +653,111 @@ func TestGetApplicationOffer(t *testing.T) {
 	}
 }
 
+func TestGetApplicationOfferDangling(t *testing.T) {
+	c := qt.New(t)
+
+	ctx := context.Background()
+
+	j := newTestJujuManager(c, &parameters{
+		Dialer: &jimmtest.Dialer{
+			API: &jimmtest.API{
+				GetApplicationOffer_: func(ctx context.Context, s string) (*crossmodel.ApplicationOfferDetails, error) {
+					return nil, errors.Codef(errors.CodeNotFound, "application offer not found")
+				},
+			},
+		},
+	})
+
+	u, err := dbmodel.NewIdentity("alice@canonical.com")
+	c.Assert(err, qt.IsNil)
+	c.Assert(j.Database.DB.Create(&u).Error, qt.IsNil)
+
+	u1, err := dbmodel.NewIdentity("eve@canonical.com")
+	c.Assert(err, qt.IsNil)
+	c.Assert(j.Database.DB.Create(&u1).Error, qt.IsNil)
+
+	cloud := dbmodel.Cloud{
+		Name: "test-cloud",
+		Type: "test-provider",
+		Regions: []dbmodel.CloudRegion{{
+			Name: "test-region-1",
+		}},
+	}
+	c.Assert(j.Database.DB.Create(&cloud).Error, qt.IsNil)
+
+	controller := dbmodel.Controller{
+		Name:        "test-controller-1",
+		UUID:        "00000000-0000-0000-0000-000000000001",
+		CloudName:   "test-cloud",
+		CloudRegion: "test-region-1",
+		CloudRegions: []dbmodel.CloudRegionControllerPriority{{
+			Priority:      0,
+			CloudRegionID: cloud.Regions[0].ID,
+		}},
+	}
+	err = j.Database.AddController(ctx, &controller)
+	c.Assert(err, qt.IsNil)
+
+	cred := dbmodel.CloudCredential{
+		Name:              "test-credential-1",
+		CloudName:         cloud.Name,
+		OwnerIdentityName: u.Name,
+		AuthType:          "empty",
+	}
+	err = j.Database.SetCloudCredential(ctx, &cred)
+	c.Assert(err, qt.IsNil)
+
+	model := dbmodel.Model{
+		Name: "test-model",
+		UUID: sql.NullString{
+			String: "00000000-0000-0000-0000-000000000003",
+			Valid:  true,
+		},
+		OwnerIdentityName: u.Name,
+		ControllerID:      controller.ID,
+		CloudRegionID:     cloud.Regions[0].ID,
+		CloudCredentialID: cred.ID,
+	}
+	err = j.Database.AddModel(ctx, &model)
+	c.Assert(err, qt.IsNil)
+
+	offer := dbmodel.ApplicationOffer{
+		ID:      1,
+		ModelID: 1,
+		Name:    "test-application-offer",
+		UUID:    "00000000-0000-0000-0000-000000000004",
+		URL:     "test-offer-url",
+	}
+	err = j.Database.AddApplicationOffer(ctx, &offer)
+	c.Assert(err, qt.IsNil)
+
+	// user u is administrator of the test offer
+	err = openfga.NewUser(u, j.OpenFGAClient).SetApplicationOfferAccess(ctx, offer.ResourceTag(), ofganames.AdministratorRelation)
+	c.Assert(err, qt.IsNil)
+
+	// user u1 is reader of the test offer
+	err = openfga.NewUser(u1, j.OpenFGAClient).SetApplicationOfferAccess(ctx, offer.ResourceTag(), ofganames.ReaderRelation)
+	c.Assert(err, qt.IsNil)
+
+	// Offer is definitely dangling
+	danglingOffer := dbmodel.ApplicationOffer{
+		URL: "test-offer-url",
+	}
+	err = j.Database.GetApplicationOffer(ctx, &danglingOffer)
+	c.Assert(err, qt.IsNil)
+
+	// Trigger cleanup
+	_, err = j.GetApplicationOffer(ctx, openfga.NewUser(u, j.OpenFGAClient), "test-offer-url")
+	c.Assert(err, qt.ErrorMatches, "application offer not found")
+
+	// Offer no longer dangling
+	danglingOffer = dbmodel.ApplicationOffer{
+		URL: "test-offer-url",
+	}
+	err = j.Database.GetApplicationOffer(ctx, &danglingOffer)
+	c.Assert(err, qt.ErrorMatches, "application offer not found")
+}
+
 func TestOffer(t *testing.T) {
 	c := qt.New(t)
 
