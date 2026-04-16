@@ -105,10 +105,7 @@ func SetupJimmEnv(c *qt.C, opts ...SetupOption) JIMMEnv {
 		Expiry: jwtExpiry,
 	})
 
-	dialer := &jujuclient.Dialer{
-		ControllerCredentialsStore: credentialStore,
-		JWTService:                 jwtService,
-	}
+	dialer := jujuclient.NewDialer(credentialStore, jwtService, ControllerUUID)
 
 	deps := &jimmsvc.ServiceDependencies{
 		ControllerUUID:                params.ControllerUUID,
