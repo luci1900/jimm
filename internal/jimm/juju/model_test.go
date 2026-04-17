@@ -2686,8 +2686,8 @@ var destroyModelTests = []struct {
 	uuid:           "00000002-0000-0000-0000-000000000001",
 	destroyStorage: new(true),
 	force:          new(false),
-	maxWait:        newDuration(time.Second),
-	timeout:        newDuration(time.Second),
+	maxWait:        new(time.Second),
+	timeout:        new(time.Second),
 	expectedLife:   "dying",
 }, {
 	name: "SuperuserSuccess",
@@ -3626,16 +3626,6 @@ func TestListModels(t *testing.T) {
 			},
 		)
 	}
-}
-
-//go:fix inline
-func newBool(b bool) *bool {
-	return new(b)
-}
-
-//go:fix inline
-func newDuration(d time.Duration) *time.Duration {
-	return new(d)
 }
 
 // newDate wraps time.Date to return a *time.Time.
