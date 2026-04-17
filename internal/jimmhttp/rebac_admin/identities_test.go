@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/canonical/jimm/v3/internal/common/pagination"
-	"github.com/canonical/jimm/v3/internal/common/utils"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimmhttp/rebac_admin"
@@ -98,28 +97,28 @@ func TestListIdentities(t *testing.T) {
 	}{
 		{
 			desc:         "test with first page",
-			size:         utils.IntToPointer(2),
-			page:         utils.IntToPointer(0),
+			size:         new(2),
+			page:         new(0),
 			wantPage:     0,
 			wantSize:     2,
-			wantNextpage: utils.IntToPointer(1),
+			wantNextpage: new(1),
 			wantTotal:    len(testUsers),
 			emails:       []string{testUsers[0].Name, testUsers[1].Name},
 		},
 		{
 			desc:         "test with second page",
-			size:         utils.IntToPointer(2),
-			page:         utils.IntToPointer(1),
+			size:         new(2),
+			page:         new(1),
 			wantPage:     1,
 			wantSize:     2,
-			wantNextpage: utils.IntToPointer(2),
+			wantNextpage: new(2),
 			wantTotal:    len(testUsers),
 			emails:       []string{testUsers[2].Name, testUsers[3].Name},
 		},
 		{
 			desc:         "test with last page",
-			size:         utils.IntToPointer(2),
-			page:         utils.IntToPointer(2),
+			size:         new(2),
+			page:         new(2),
 			wantPage:     2,
 			wantSize:     1,
 			wantNextpage: nil,
