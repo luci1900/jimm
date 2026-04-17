@@ -67,6 +67,7 @@ func (s *JimmWithControllers) GetControllersConfig(c *qt.C) *ControllersConfig {
 			"Set it to the path of your controllers.yaml file or configure it in VS Code settings.",
 		ControllersConfigEnvVar))
 
+	// #nosec G703 Test-only config path is explicitly provided by the environment.
 	data, err := os.ReadFile(configPath)
 	c.Assert(err, qt.IsNil, qt.Commentf(
 		"failed to read controller config file: %s. "+

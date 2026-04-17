@@ -34,18 +34,21 @@ func TestProxySocketsAdminFacade(t *testing.T) {
 		clientSecret = "test-client-secret"
 	)
 
+	// #nosec G101
 	loginData, err := json.Marshal(params.LoginRequest{
 		AuthTag: names.NewUserTag("alice@wonderland.io").String(),
 		Token:   "dGVzdCB0b2tlbg==",
 	})
 	c.Assert(err, qt.IsNil)
 
+	// #nosec G101
 	serviceAccountLoginData, err := json.Marshal(params.LoginRequest{
 		AuthTag: names.NewUserTag("test-client-id@serviceaccount").String(),
 		Token:   "dGVzdCB0b2tlbg==",
 	})
 	c.Assert(err, qt.IsNil)
 
+	// #nosec G117
 	ccData, err := json.Marshal(apiparams.LoginWithClientCredentialsRequest{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
