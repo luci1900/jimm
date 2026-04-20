@@ -230,6 +230,7 @@ func SetupTestDashboardCallbackHandler(browserURL string, db *db.Database, sessi
 
 	// Remember redirect url to check it matches after test server starts
 	redirectURL := "http://127.0.0.1:" + port + jimmhttp.AuthResourceBasePath + jimmhttp.CallbackEndpoint
+	// #nosec G101 Test credentials
 	authSvc, err := auth.NewAuthenticationService(context.Background(), auth.AuthenticationServiceParams{
 		IssuerURL:          "http://localhost:8082/realms/jimm",
 		ClientID:           "jimm-device",

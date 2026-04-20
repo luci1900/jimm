@@ -180,6 +180,7 @@ func (c *registerControllerCommand) getControllerDetails(ctxt *cmd.Context) ([]b
 		info.PublicAddress = c.publicAddress
 	}
 
+	// #nosec G117 - intended marshalling of password over the wire
 	data, err := yaml.Marshal(info)
 	if err != nil {
 		return nil, errors.Mask(err)

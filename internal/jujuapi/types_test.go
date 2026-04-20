@@ -25,6 +25,7 @@ func TestModelCreateArgs(t *testing.T) {
 
 	authenticatedUser := names.NewUserTag("vorbis@canonical.com")
 
+	// #nosec G101 No secret fields
 	tests := []struct {
 		about         string
 		args          jujuparams.ModelCreateArgs

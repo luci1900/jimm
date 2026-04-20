@@ -730,6 +730,7 @@ func (p *clientProxy) handleAdminFacade(ctx context.Context, msg *message) (clie
 		if err != nil {
 			return errorFnc(err)
 		}
+		// #nosec G117 session token is sensitive but the data object is not logged.
 		data, err := json.Marshal(apiparams.GetDeviceSessionTokenResponse{
 			SessionToken: sessionToken,
 		})
