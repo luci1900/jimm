@@ -36,10 +36,6 @@ import (
 	jimmversion "github.com/canonical/jimm/v3/version"
 )
 
-const (
-	adminUser = "admin"
-)
-
 // A ControllerCredentialsStore is a store for controller credentials.
 type ControllerCredentialsStore interface {
 	// GetControllerCredentials retrieves the credentials for the given controller from a vault
@@ -52,8 +48,20 @@ type ControllerCredentialsStore interface {
 type Dialer struct {
 	ControllerCredentialsStore ControllerCredentialsStore
 	JWTService                 *jimmjwx.JWTService
+	AdminUsername              string
 }
 
+// NewDialer creates a new Dialer from dependencies.
+func NewDialer(store ControllerCredentialsStore, jwtService *jimmjwx.JWTService, controllerUUID string) *Dialer {
+	return &Dialer{
+		ControllerCredentialsStore: store,
+		JWTService:                 jwtService,
+		// The admin username is a Juju external user, just like the JIMM users.
+		AdminUsername: fmt.Sprintf("jaas-%s@external", controllerUUID),
+	}
+}
+
+// createLoginRequest creates a jujuparams.LoginRequest for the given controller, model and user.
 func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
 	// Always request superuser permissions, even when representing a non-admin user
 	// This is only safe because we have already checked the user's openfga permissions in a layer above.
@@ -95,7 +103,7 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	client := rpc.NewClient(conn)
 
 	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: adminUser}}
+		user = &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
 	}
 
 	var loginRequest *jujuparams.LoginRequest
