@@ -685,7 +685,7 @@ func TestApplicationOfferDangling(t *testing.T) {
 	err = everyoneUser.SetApplicationOfferAccess(ctx, offer.ResourceTag(), ofganames.ReaderRelation)
 	c.Assert(err, qt.IsNil)
 
-	// Trigger cleanup
+	// Trigger sync cleanup
 	_, err = client.ApplicationOffer(url)
 	c.Assert(err, qt.ErrorMatches, "application offer not found")
 
