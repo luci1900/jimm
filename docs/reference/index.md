@@ -27,7 +27,7 @@ You interact with JAAS through the JAAS plugin -- a CLI extension that provides 
 
 JIMM (Juju Intelligent Model Manager) is the server component that powers JAAS, providing the central controller that coordinates multiple Juju controllers.
 
-- [`jimm` charm](https://charmhub.io/jimm)
+- [`jimm` charm](https://charmhub.io/juju-jimm-k8s)
 
 ## Users
 
