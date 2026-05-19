@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -179,8 +178,7 @@ func (m *mockOAuthAuthenticator) VerifyClientCredentials(ctx context.Context, cl
 // newSessionToken returns a serialised JWT that can be used in tests.
 // Tests using a mock authenticator can provide an empty signatureSecret
 // while integration tests must provide the same secret used when verifying JWTs.
-func newSessionToken(c SimpleTester, username string, signatureSecret string) string {
-	email := ConvertUsernameToEmail(username)
+func newSessionToken(c SimpleTester, email string, signatureSecret string) string {
 	token, err := jwt.NewBuilder().
 		Subject(email).
 		Expiration(time.Now().Add(1 * time.Hour)).
@@ -206,14 +204,6 @@ func newSessionToken(c SimpleTester, username string, signatureSecret string) st
 func NewUserSessionLogin(c SimpleTester, username string) api.LoginProvider {
 	b64Token := newSessionToken(c, username, JWTTestSecret)
 	return api.NewSessionTokenLoginProvider(b64Token, nil, nil)
-}
-
-// ConvertUsernameToEmail appends an "@canonical.com" domain to a string if it doesn't already contain a domain.
-func ConvertUsernameToEmail(username string) string {
-	if !strings.Contains(username, "@") {
-		return username + "@canonical.com"
-	}
-	return username
 }
 
 func SetupTestDashboardCallbackHandler(browserURL string, db *db.Database, sessionStore sessions.Store) (*httptest.Server, error) {

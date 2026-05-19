@@ -31,7 +31,7 @@ import (
 func TestAddGroup(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -46,7 +46,7 @@ func TestAddGroup(t *testing.T) {
 func TestGetGroup(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -72,7 +72,7 @@ func TestGetGroup(t *testing.T) {
 func TestRemoveGroup(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -177,7 +177,7 @@ func TestRemoveGroupRemovesTuples(t *testing.T) {
 func TestRenameGroup(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -201,7 +201,7 @@ func TestRenameGroup(t *testing.T) {
 func TestListGroups(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
 	client := api.NewClient(conn)
@@ -1025,7 +1025,7 @@ func TestListRelationshipTuplesWithMissingGroups(t *testing.T) {
 func TestCheckRelationAsNonAdmin(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := api.NewClient(conn)
 
@@ -1530,10 +1530,10 @@ func setupModelWithCharlieAsAdmin(c *qt.C) (func(jujuparams.UserAccessPermission
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	connBob := s.Open(c, nil, "bob", nil)
+	connBob := s.Open(c, nil, "bob@canonical.com", nil)
 	bobClient := modelmanager.NewClient(connBob)
 
-	connCharlie := s.Open(c, nil, "charlie", nil)
+	connCharlie := s.Open(c, nil, "charlie@canonical.com", nil)
 	charlieClient := modelmanager.NewClient(connCharlie)
 
 	c.Cleanup(func() {
@@ -1680,7 +1680,7 @@ func createTestControllerEnvironment(c *qt.C, s jimmtest.JimmWithControllers) (
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(offer.UUID), qt.Equals, 36)
 
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	client := api.NewClient(conn)
 
 	return *u, group, controller, model, offer, cloud, cred, client, func() {
