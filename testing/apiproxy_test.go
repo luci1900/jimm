@@ -29,7 +29,7 @@ func TestConnectToModel(t *testing.T) {
 	conn := s.Open(c, &api.Info{
 		ModelTag:  model.ResourceTag(),
 		SkipLogin: true,
-	}, "test", nil)
+	}, "test@canonical.com", nil)
 	defer conn.Close()
 	var resp map[string]any
 	err := conn.APICall("Admin", 3, "", "TestMethod", nil, &resp)
@@ -54,7 +54,7 @@ func TestSessionTokenLoginProvider(t *testing.T) {
 	conn, err := s.OpenCustomLoginProvider(c, &api.Info{
 		ModelTag:  model.ResourceTag(),
 		SkipLogin: false,
-	}, "alice", api.NewSessionTokenLoginProvider("", &output, func(s string) {}))
+	}, "alice@canonical.com", api.NewSessionTokenLoginProvider("", &output, func(s string) {}))
 	c.Assert(err, qt.IsNil)
 	defer conn.Close()
 	c.Check(err, qt.Equals, nil)
@@ -144,7 +144,7 @@ func TestProxyModelStatusWithoutPermission(t *testing.T) {
 	conn, err := s.OpenCustomLoginProvider(c, &api.Info{
 		ModelTag:  model.ResourceTag(),
 		SkipLogin: false,
-	}, "foo", api.NewSessionTokenLoginProvider("", &output, func(s string) {}))
+	}, "foo@canonical.com", api.NewSessionTokenLoginProvider("", &output, func(s string) {}))
 	c.Check(err, qt.ErrorMatches, "permission denied .*")
 	if conn != nil {
 		defer conn.Close()

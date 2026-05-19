@@ -125,7 +125,7 @@ func TestAuthenticator(t *testing.T) {
 	}
 
 	conn, err := api.Open(&info, api.DialOpts{
-		LoginProvider:      jimmtest.NewUserSessionLogin(c, "alice"),
+		LoginProvider:      jimmtest.NewUserSessionLogin(c, "alice@canonical.com"),
 		InsecureSkipVerify: true,
 	})
 	c.Assert(err, qt.IsNil)
@@ -140,7 +140,7 @@ func TestAuthenticator(t *testing.T) {
 	c.Check(conn.ControllerAccess(), qt.Equals, "")
 
 	conn, err = api.Open(&info, api.DialOpts{
-		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob"),
+		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob@canonical.com"),
 		InsecureSkipVerify: true,
 	})
 	c.Assert(err, qt.IsNil)
@@ -191,7 +191,7 @@ func TestVault(t *testing.T) {
 	}
 
 	conn, err := api.Open(&info, api.DialOpts{
-		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob"),
+		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob@canonical.com"),
 		InsecureSkipVerify: true,
 	})
 	c.Assert(err, qt.IsNil)
@@ -265,7 +265,7 @@ func TestOpenFGA(t *testing.T) {
 	}
 
 	conn, err := api.Open(&info, api.DialOpts{
-		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob"),
+		LoginProvider:      jimmtest.NewUserSessionLogin(c, "bob@canonical.com"),
 		InsecureSkipVerify: true,
 	})
 	c.Assert(err, qt.IsNil)

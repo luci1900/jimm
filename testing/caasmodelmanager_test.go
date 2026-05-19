@@ -57,7 +57,7 @@ func SetupCaasModelTest(c *qt.C) caasModelManagerDeps {
 func TestCreateModelKubernetes(t *testing.T) {
 	c := qt.New(t)
 	s := SetupCaasModelTest(c)
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	client := modelmanager.NewClient(conn)
@@ -78,7 +78,7 @@ func TestCreateModelKubernetes(t *testing.T) {
 func TestListCAASModelSummaries(t *testing.T) {
 	c := qt.New(t)
 	s := SetupCaasModelTest(c)
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	client := modelmanager.NewClient(conn)
@@ -152,7 +152,7 @@ func TestListCAASModels(t *testing.T) {
 	s := SetupCaasModelTest(c)
 	model := s.CreateModelForBob(c)
 	model3 := s.CreateModelForCharlieWithBobReadAccess(c)
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	client := modelmanager.NewClient(conn)

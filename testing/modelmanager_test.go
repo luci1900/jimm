@@ -31,7 +31,7 @@ func TestListModelSummaries(t *testing.T) {
 	model := s.CreateModelForBob(c)
 	model3 := s.CreateModelForCharlieWithBobReadAccess(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	client := modelmanager.NewClient(conn)
@@ -106,12 +106,12 @@ func TestListModelSummariesWithoutControllerUUIDMasking(t *testing.T) {
 
 	s.CreateModelForBob(c)
 
-	conn1 := s.Open(c, nil, "bob", nil)
+	conn1 := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn1.Close()
 	err := conn1.APICall("JIMM", 4, "", "DisableControllerUUIDMasking", nil, nil)
 	c.Assert(err, qt.ErrorMatches, `unauthorized \(unauthorized access\)`)
 
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 
 	err = conn.APICall("JIMM", 4, "", "DisableControllerUUIDMasking", nil, nil)
@@ -169,7 +169,7 @@ func TestModelInfo(t *testing.T) {
 	model2 := s.CreateModelForCharlie(c)
 	model3 := s.CreateModelForCharlieWithBobReadAccess(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := modelmanager.NewClient(conn)
 	models, err := client.ModelInfo([]names.ModelTag{
@@ -243,7 +243,7 @@ func TestModelInfoDisableControllerUUIDMasking(t *testing.T) {
 	)
 	c.Assert(err, qt.Equals, nil)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	// Disable controller UUID masking
@@ -267,7 +267,7 @@ func TestCreateModel(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	// Generate unique model names for each test
@@ -401,7 +401,7 @@ func TestCreateDuplicateModelsFails(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelName := petname.Generate(2, "-")
@@ -425,11 +425,11 @@ func TestGrantAndRevokeModel(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := modelmanager.NewClient(conn)
 
-	conn2 := s.Open(c, nil, "charlie", nil)
+	conn2 := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn2.Close()
 	client2 := modelmanager.NewClient(conn2)
 
@@ -462,11 +462,11 @@ func TestUserCannotRevokeOwnAccessWithoutAdmin(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 	client := modelmanager.NewClient(conn)
 
-	conn2 := s.Open(c, nil, "charlie", nil)
+	conn2 := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn2.Close()
 	client2 := modelmanager.NewClient(conn2)
 
@@ -495,7 +495,7 @@ func TestModifyModelAccessErrors(t *testing.T) {
 	model := s.CreateModelForBob(c)
 	model2 := s.CreateModelForCharlie(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modifyModelAccessErrorTests := []struct {
@@ -589,7 +589,7 @@ func TestDestroyModel(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 
 	// Create a new model to destroy so we don't affect other tests
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelName := petname.Generate(2, "-")
@@ -624,7 +624,7 @@ func TestDumpModel(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	tag := model.ResourceTag()
@@ -639,7 +639,7 @@ func TestDumpModelUnauthorized(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "charlie", nil)
+	conn := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn.Close()
 
 	tag := model.ResourceTag()
@@ -654,7 +654,7 @@ func TestDumpModelDB(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	tag := model.ResourceTag()
@@ -669,7 +669,7 @@ func TestDumpModelDBUnauthorized(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "charlie", nil)
+	conn := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn.Close()
 
 	tag := model.ResourceTag()
@@ -684,7 +684,7 @@ func TestChangeModelCredential(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelTag := model.ResourceTag()
@@ -706,7 +706,7 @@ func TestChangeModelCredentialUnauthorizedModel(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "charlie", nil)
+	conn := s.Open(c, nil, "charlie@canonical.com", nil)
 	defer conn.Close()
 
 	modelTag := model.ResourceTag()
@@ -721,7 +721,7 @@ func TestChangeModelCredentialUnauthorizedCredential(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelTag := model.ResourceTag()
@@ -736,7 +736,7 @@ func TestChangeModelCredentialNotFoundModel(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelTag := names.NewModelTag("00000000-0000-0000-0000-000000000000")
@@ -751,7 +751,7 @@ func TestChangeModelCredentialNotFoundCredential(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelTag := model.ResourceTag()
@@ -766,7 +766,7 @@ func TestChangeModelCredentialLocalUserCredential(t *testing.T) {
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
 
-	conn := s.Open(c, nil, "bob", nil)
+	conn := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn.Close()
 
 	modelTag := model.ResourceTag()
@@ -791,7 +791,7 @@ func TestModelDefaults(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	conn := s.Open(c, nil, "alice", nil)
+	conn := s.Open(c, nil, "alice@canonical.com", nil)
 	defer conn.Close()
 	client := modelmanager.NewClient(conn)
 
@@ -855,7 +855,7 @@ func TestModelDefaults(t *testing.T) {
 		},
 	})
 
-	conn1 := s.Open(c, nil, "bob", nil)
+	conn1 := s.Open(c, nil, "bob@canonical.com", nil)
 	defer conn1.Close()
 	client1 := modelmanager.NewClient(conn1)
 
