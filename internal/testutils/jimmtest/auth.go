@@ -178,9 +178,9 @@ func (m *mockOAuthAuthenticator) VerifyClientCredentials(ctx context.Context, cl
 // newSessionToken returns a serialised JWT that can be used in tests.
 // Tests using a mock authenticator can provide an empty signatureSecret
 // while integration tests must provide the same secret used when verifying JWTs.
-func newSessionToken(c SimpleTester, email string, signatureSecret string) string {
+func newSessionToken(c SimpleTester, username string, signatureSecret string) string {
 	token, err := jwt.NewBuilder().
-		Subject(email).
+		Subject(username).
 		Expiration(time.Now().Add(1 * time.Hour)).
 		Build()
 	if err != nil {
