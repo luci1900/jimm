@@ -201,7 +201,11 @@ func newSessionToken(c SimpleTester, username string, signatureSecret string) st
 // NewUserSessionLogin returns a login provider than be used with Juju Dial Opts
 // to define how login will take place. In this case we login using a session token
 // that the JIMM server should verify with the same test secret.
+// The username must be a fully qualified external user (e.g. "alice@canonical.com").
 func NewUserSessionLogin(c SimpleTester, username string) api.LoginProvider {
+	if _, err := mail.ParseAddress(username); err != nil {
+		c.Fatalf("invalid username %q: must contain @", username)
+	}
 	b64Token := newSessionToken(c, username, JWTTestSecret)
 	return api.NewSessionTokenLoginProvider(b64Token, nil, nil)
 }
