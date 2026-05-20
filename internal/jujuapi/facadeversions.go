@@ -16,6 +16,7 @@ var SupportedFacadeVersions = map[string][]int{
 	"ModelConfig":         []int{3},
 	"ModelManager":        []int{9, 10},
 	"ModelSummaryWatcher": []int{1},
+	"ModelUpgrader":       []int{1},
 	"Pinger":              []int{1},
 	"UserManager":         []int{3},
 }

@@ -182,6 +182,9 @@ type API interface {
 	// cloud and credential name. Secrets will be included if requested.
 	CredentialContents(cloud string, credential string, withSecrets bool) ([]jujuparams.CredentialContentResult, error)
 
+	// AbortModelUpgrade aborts and archives any in-progress model upgrade.
+	AbortModelUpgrade(modelUUID string) error
+
 	// UpgradeModel upgrades the model to the provided agent version.
 	// The provided target version could be version.Zero, in which case the
 	// best version is selected by the controller and returned as ChosenVersion

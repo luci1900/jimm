@@ -16,6 +16,7 @@ import (
 	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/juju/state"
 	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 	"github.com/juju/zaputil"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
@@ -617,6 +618,30 @@ func (j *JujuManager) DumpModelDB(ctx context.Context, user *openfga.User, mt na
 		return nil, err
 	}
 	return dump, nil
+}
+
+// AbortModelUpgrade aborts and archives any in-progress upgrade synchronisation
+// record on the controller for the given model. The user must have writer access
+// to the model (equivalent to Juju's WriteAccess permission).
+func (j *JujuManager) AbortModelUpgrade(ctx context.Context, user *openfga.User, mt names.ModelTag) error {
+	return j.doModel(ctx, user, mt, ofganames.WriterRelation, func(_ *dbmodel.Model, api API) error {
+		return api.AbortModelUpgrade(mt.Id())
+	})
+}
+
+// UpgradeModel upgrades the model with the given model tag to the provided agent
+// version. If the given user does not have writer access to the model then an
+// error with the code CodeUnauthorized is returned. The targetVersion can be
+// version.Zero, in which case the best version is selected by the controller.
+// Writer access is equivalent to Juju's WriteAccess permission.
+func (j *JujuManager) UpgradeModel(ctx context.Context, user *openfga.User, mt names.ModelTag, targetVersion version.Number, stream string, ignoreAgentVersions bool, dryRun bool) (version.Number, error) {
+	var chosenVersion version.Number
+	err := j.doModel(ctx, user, mt, ofganames.WriterRelation, func(_ *dbmodel.Model, api API) error {
+		var err error
+		chosenVersion, err = api.UpgradeModel(mt.Id(), targetVersion, stream, ignoreAgentVersions, dryRun)
+		return err
+	})
+	return chosenVersion, err
 }
 
 // ValidateModelUpgrade validates that a model is in a state that can be

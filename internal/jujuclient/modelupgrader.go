@@ -7,6 +7,11 @@ import (
 	"github.com/juju/version/v2"
 )
 
+// AbortModelUpgrade aborts and archives any in-progress upgrade on the given model.
+func (c Connection) AbortModelUpgrade(modelUUID string) error {
+	return modelupgrader.NewClient(&c).AbortModelUpgrade(modelUUID)
+}
+
 // UpgradeModel upgrades the model to the provided agent version.
 // The provided target version could be version.Zero, in which case the
 // best version is selected by the controller and returned as ChosenVersion
