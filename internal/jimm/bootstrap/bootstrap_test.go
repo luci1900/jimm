@@ -144,6 +144,18 @@ func setupTest(c *qt.C) (
 		credentialStore: bootstrapmocks.NewMockCredentialStore(ctrl),
 		jobQueue:        bootstrapmocks.NewMockJobQueue(ctrl),
 	}
+	m.store.EXPECT().AddControllerBootstrap(gomock.Any(), gomock.AssignableToTypeOf(&dbmodel.ControllerBootstrap{})).Return(nil).AnyTimes()
+	m.store.EXPECT().DeleteControllerBootstrap(gomock.Any(), gomock.AssignableToTypeOf(&dbmodel.ControllerBootstrap{})).Return(nil).AnyTimes()
+	m.store.EXPECT().GetControllerBootstrap(gomock.Any(), gomock.AssignableToTypeOf(&dbmodel.ControllerBootstrap{})).DoAndReturn(
+		func(_ context.Context, bootstrap *dbmodel.ControllerBootstrap) error {
+			if bootstrap.JobID.Valid {
+				bootstrap.ID = 1
+				return nil
+			}
+			return errors.Codef(errors.CodeNotFound, "controller bootstrap not found")
+		},
+	).AnyTimes()
+	m.store.EXPECT().UpdateControllerBootstrap(gomock.Any(), gomock.AssignableToTypeOf(&dbmodel.ControllerBootstrap{})).Return(nil).AnyTimes()
 
 	i, err := dbmodel.NewIdentity("bob@canonical.com")
 	c.Assert(err, qt.IsNil)
@@ -198,6 +210,10 @@ func (s *bootstrapManagerSuite) TestStartBootstrapJob_EnqueuesJob(c *qt.C) {
 		Cloud:              jujucloud.Cloud{},
 		BootstrapOptions:   defaultBootstrapOptions(),
 	}
+	mocks.store.EXPECT().GetController(
+		gomock.Any(),
+		&dbmodel.Controller{Name: requested.ControllerName},
+	).Return(errors.Codef(errors.CodeNotFound, "test err"))
 
 	mocks.jobQueue.EXPECT().EnqueueBootstrap(gomock.Any(), rivertypes.BootstrapArgs{
 		Username:             "bob@canonical.com",
