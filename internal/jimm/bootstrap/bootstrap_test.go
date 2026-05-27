@@ -4,6 +4,7 @@ package bootstrap_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"runtime"
@@ -214,6 +215,8 @@ func (s *bootstrapManagerSuite) TestStartBootstrapJob_EnqueuesJob(c *qt.C) {
 		gomock.Any(),
 		&dbmodel.Controller{Name: requested.ControllerName},
 	).Return(errors.Codef(errors.CodeNotFound, "test err"))
+	expectedMetadata, err := json.Marshal(map[string]string{"controller-name": requested.ControllerName})
+	c.Assert(err, qt.IsNil)
 
 	mocks.jobQueue.EXPECT().EnqueueBootstrap(gomock.Any(), rivertypes.BootstrapArgs{
 		Username:             "bob@canonical.com",
@@ -225,7 +228,7 @@ func (s *bootstrapManagerSuite) TestStartBootstrapJob_EnqueuesJob(c *qt.C) {
 		Cloud:                requested.Cloud,
 		LoginTokenRefreshURL: loginTokenRefreshURLParam,
 		BootstrapOptions:     expectedRiverBootstrapOptions(requested.BootstrapOptions),
-	}).Return(&rivertype.JobInsertResult{
+	}, expectedMetadata).Return(&rivertype.JobInsertResult{
 		Job: &rivertype.JobRow{
 			ID: 99,
 		},

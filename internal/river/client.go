@@ -54,8 +54,8 @@ func (c *Client) EnqueueUpgradeTo(ctx context.Context, args rivertypes.UpgradeTo
 }
 
 // EnqueueBootstrap inserts a River job to bootstrap a new controller.
-func (c *Client) EnqueueBootstrap(ctx context.Context, args rivertypes.BootstrapArgs) (*rivertype.JobInsertResult, error) {
-	job, err := c.client.Insert(ctx, args, nil)
+func (c *Client) EnqueueBootstrap(ctx context.Context, args rivertypes.BootstrapArgs, metadata []byte) (*rivertype.JobInsertResult, error) {
+	job, err := c.client.Insert(ctx, args, &river.InsertOpts{Metadata: metadata})
 	return job, err
 }
 

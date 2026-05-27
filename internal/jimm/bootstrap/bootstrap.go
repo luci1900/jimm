@@ -7,6 +7,7 @@ package bootstrap
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"runtime"
@@ -62,11 +63,15 @@ type Store interface {
 
 // JobQueue defines the method to enqueue a bootstrap/destroy-controller job.
 type JobQueue interface {
-	EnqueueBootstrap(ctx context.Context, args rivertypes.BootstrapArgs) (*rivertype.JobInsertResult, error)
+	EnqueueBootstrap(ctx context.Context, args rivertypes.BootstrapArgs, metadata []byte) (*rivertype.JobInsertResult, error)
 	EnqueueDestroyController(ctx context.Context, args rivertypes.DestroyControllerArgs) (*rivertype.JobInsertResult, error)
 	WaitForJobCompletion(ctx context.Context, jobID int64) (*rivertype.JobRow, error)
 	GetJobInfo(ctx context.Context, jobID int64) (*rivertype.JobRow, error)
 	CancelJob(ctx context.Context, jobID int64) (*rivertype.JobRow, error)
+}
+
+type bootstrapJobMetadata struct {
+	ControllerName string `json:"controller-name"`
 }
 
 // JujuManager defines the juju manager methods required by the job.
@@ -312,7 +317,12 @@ func (b *BootstrapManager) StartBootstrapJob(ctx context.Context, user *openfga.
 			ControllerModelConfig: params.BootstrapOptions.ControllerModelConfig,
 		},
 	}
-	job, err := b.jobQueue.EnqueueBootstrap(ctx, bootstrapArgs)
+	metadata, err := json.Marshal(bootstrapJobMetadata{ControllerName: params.ControllerName})
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal bootstrap job metadata: %w", err)
+	}
+
+	job, err := b.jobQueue.EnqueueBootstrap(ctx, bootstrapArgs, metadata)
 	if err != nil {
 		return 0, fmt.Errorf("failed to enqueue bootstrap job: %w", err)
 	}
