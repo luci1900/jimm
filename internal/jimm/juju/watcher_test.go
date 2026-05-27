@@ -273,7 +273,7 @@ func TestWatcherClearsControllerUnavailable(t *testing.T) {
 		<-ctx.Done()
 		return nil, ctx.Err()
 	})
-	mockWatcher.EXPECT().Stop().Return(nil)
+	mockWatcher.EXPECT().Stop().Return(nil).AnyTimes()
 
 	w := juju.Watcher{
 		Database: &db.Database{
