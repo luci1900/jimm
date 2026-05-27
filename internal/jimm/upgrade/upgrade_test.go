@@ -95,11 +95,12 @@ func TestUpgradeTo_Success(t *testing.T) {
 		}, nil)
 
 	// Migration expectations.
-	s.enqueuer.EXPECT().EnqueueUpgradeTo(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, uta rivertypes.UpgradeToArgs) (*rivertype.JobInsertResult, error) {
+	s.enqueuer.EXPECT().EnqueueUpgradeTo(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, uta rivertypes.UpgradeToArgs, metadata rivertypes.JobModelUUIDMetadata) (*rivertype.JobInsertResult, error) {
 		c.Check(uta.ModelUUID, qt.Equals, modelUUID)
 		c.Check(uta.TargetVersion, qt.Equals, version.Number{Major: 4, Minor: 1, Patch: 0})
 		c.Check(uta.TargetControllerName, qt.Equals, targetController)
 		c.Check(uta.Username, qt.Equals, user.Name)
+		c.Check(metadata, qt.DeepEquals, rivertypes.JobModelUUIDMetadata{ModelUUID: modelUUID})
 		// Don't check target controller name since that is currently generated based on the current time.
 		return &rivertype.JobInsertResult{
 			Job: &rivertype.JobRow{ID: 1},

@@ -389,16 +389,20 @@ type RemoveControllerProfileRequest struct {
 
 // UpgradeToRequest holds the parameters for phase 1 for automated upgrades.
 type UpgradeToRequest struct {
-	// ModelTag is the tag of the model to upgrade.
-	ModelTag string `json:"model-tag"`
+	// ModelUUIDs are the UUIDs of the models to upgrade.
+	ModelUUIDs []string `json:"model-uuids" yaml:"model-uuids"`
 	// TargetControllerName is the target controller's name to upgrade to.
 	TargetControllerName string `json:"target-controller-name"`
 }
 
 // UpgradeToResponse holds the response for phase 1 of an automated upgrade.
 type UpgradeToResponse struct {
-	Success bool  `json:"success" yaml:"success"`
-	JobID   int64 `json:"job-id" yaml:"job-id"`
+	Results []UpgradeToResult `json:"results" yaml:"results"`
+}
+
+// UpgradeToResult holds the result for a single model in an UpgradeTo request.
+type UpgradeToResult struct {
+	Error *jujuparams.Error `json:"error,omitempty" yaml:"error,omitempty"`
 }
 
 // FullModelStatusRequest is the request that is sent in a FullModelStatus method.

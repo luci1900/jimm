@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"slices"
 	"testing"
 	"time"
@@ -1078,7 +1077,7 @@ func TestUpgradeTo_Unauthorized(t *testing.T) {
 
 	client := api.NewClient(conn)
 	req := apiparams.UpgradeToRequest{
-		ModelTag:             names.NewModelTag(model2.UUID.String).String(),
+		ModelUUIDs:           []string{model2.UUID.String},
 		TargetControllerName: model.Controller.Name,
 	}
 	_, err := client.UpgradeTo(&req)
@@ -1086,8 +1085,8 @@ func TestUpgradeTo_Unauthorized(t *testing.T) {
 	c.Assert(jujuparams.IsCodeUnauthorized(err), qt.Equals, true)
 }
 
-// TestUpgradeTo_InvalidModelTag verifies invalid model tags are rejected.
-func TestUpgradeTo_InvalidModelTag(t *testing.T) {
+// TestUpgradeTo_InvalidModelUUID verifies invalid model UUIDs are rejected.
+func TestUpgradeTo_InvalidModelUUID(t *testing.T) {
 	c := qt.New(t)
 	s := jimmtest.SetupJimmWithControllers(c)
 	model := s.CreateModelForBob(c)
@@ -1097,11 +1096,14 @@ func TestUpgradeTo_InvalidModelTag(t *testing.T) {
 
 	client := api.NewClient(conn)
 	req := apiparams.UpgradeToRequest{
-		ModelTag:             "invalid-model-tag",
+		ModelUUIDs:           []string{"invalid-model-uuid"},
 		TargetControllerName: model.Controller.Name,
 	}
-	_, err := client.UpgradeTo(&req)
-	c.Assert(err, qt.ErrorMatches, `(invalid model tag "invalid-model-tag": )?"invalid-model-tag" is not a valid tag \(bad request\)`)
+	resp, err := client.UpgradeTo(&req)
+	c.Assert(err, qt.IsNil)
+	c.Assert(resp.Results, qt.HasLen, 1)
+	c.Assert(resp.Results[0].Error, qt.IsNotNil)
+	c.Assert(resp.Results[0].Error.Code, qt.Equals, string(errors.CodeBadRequest))
 }
 
 // TestUpgradeTo_InvalidController verifies invalid controllers are rejected.
@@ -1115,11 +1117,14 @@ func TestUpgradeTo_InvalidController(t *testing.T) {
 
 	client := api.NewClient(conn)
 	req := apiparams.UpgradeToRequest{
-		ModelTag:             names.NewModelTag(model2.UUID.String).String(),
+		ModelUUIDs:           []string{model2.UUID.String},
 		TargetControllerName: "does-not-exist",
 	}
-	_, err := client.UpgradeTo(&req)
-	c.Assert(err, qt.ErrorMatches, regexp.QuoteMeta(`failed to run upgrade to: target controller does-not-exist is not a valid migration target for this model (bad request)`))
+	resp, err := client.UpgradeTo(&req)
+	c.Assert(err, qt.IsNil)
+	c.Assert(resp.Results, qt.HasLen, 1)
+	c.Assert(resp.Results[0].Error, qt.IsNotNil)
+	c.Assert(resp.Results[0].Error.Code, qt.Equals, string(errors.CodeBadRequest))
 }
 
 func TestCreateModelOnTargetController(t *testing.T) {

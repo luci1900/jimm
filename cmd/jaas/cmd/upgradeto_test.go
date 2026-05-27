@@ -17,17 +17,15 @@ func TestUpgradeTo(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	testModelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	testModelTag := "model-93608db4-f1cb-4da5-9926-8233981aef0a"
 	testTargetController := "test-controller"
 
 	upgradeToParams := &apiparams.UpgradeToRequest{
 		TargetControllerName: testTargetController,
-		ModelTag:             testModelTag,
+		ModelUUIDs:           []string{testModelUUID},
 	}
 
 	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{
-		Success: true,
-		JobID:   12345,
+		Results: []apiparams.UpgradeToResult{{}},
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 
@@ -39,7 +37,9 @@ func TestUpgradeTo(t *testing.T) {
 	ctx := newTestContext(c)
 	err := upgradeToCmd.Run(ctx)
 	c.Assert(err, qt.IsNil)
-	c.Assert(ctx.Stdout.(*bytes.Buffer).String(), qt.Matches, "success: true\njob-id: 12345\n")
+	c.Assert(ctx.Stdout.(*bytes.Buffer).String(), qt.Matches, `results:
+- \{\}
+`)
 }
 
 func TestUpgradeToWithFailureResponse(t *testing.T) {
@@ -47,13 +47,12 @@ func TestUpgradeToWithFailureResponse(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	testModelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	testModelTag := "model-93608db4-f1cb-4da5-9926-8233981aef0a"
 	testTargetController := "test-controller"
 	testErrorMessage := "upgrade failed: controller not ready"
 
 	upgradeToParams := &apiparams.UpgradeToRequest{
 		TargetControllerName: testTargetController,
-		ModelTag:             testModelTag,
+		ModelUUIDs:           []string{testModelUUID},
 	}
 
 	// Now the error is returned directly by UpgradeTo instead of embedded in the response.
@@ -74,12 +73,11 @@ func TestUpgradeToWithError(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	testModelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	testModelTag := "model-93608db4-f1cb-4da5-9926-8233981aef0a"
 	testTargetController := "test-controller"
 
 	upgradeToParams := &apiparams.UpgradeToRequest{
 		TargetControllerName: testTargetController,
-		ModelTag:             testModelTag,
+		ModelUUIDs:           []string{testModelUUID},
 	}
 	errorToReturn := errors.New("failed to initiate upgrade")
 	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{}, errorToReturn)
@@ -120,16 +118,15 @@ func TestUpgradeToWithPositionalArgs(t *testing.T) {
 	s := setupCmdMocks(c)
 
 	testModelUUID := "93608db4-f1cb-4da5-9926-8233981aef0a"
-	testModelTag := "model-93608db4-f1cb-4da5-9926-8233981aef0a"
 	testTargetController := "test-controller"
 
 	upgradeToParams := &apiparams.UpgradeToRequest{
 		TargetControllerName: testTargetController,
-		ModelTag:             testModelTag,
+		ModelUUIDs:           []string{testModelUUID},
 	}
 
 	s.client.EXPECT().UpgradeTo(upgradeToParams).Return(apiparams.UpgradeToResponse{
-		Success: true,
+		Results: []apiparams.UpgradeToResult{{}},
 	}, nil)
 	s.client.EXPECT().Close().Return(nil)
 

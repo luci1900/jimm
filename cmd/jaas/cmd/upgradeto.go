@@ -88,10 +88,9 @@ func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
 	}
 	defer client.Close()
 
-	modelTag := names.NewModelTag(c.modelUUID)
 	resp, err := client.UpgradeTo(&apiparams.UpgradeToRequest{
 		TargetControllerName: c.controllerName,
-		ModelTag:             modelTag.String(),
+		ModelUUIDs:           []string{c.modelUUID},
 	})
 	if err != nil {
 		return err

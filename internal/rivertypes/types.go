@@ -19,6 +19,11 @@ type UpgradeToArgs struct {
 	TargetControllerName string         `json:"target_controller_name"`
 }
 
+// JobModelUUIDMetadata contains model UUID metadata attached to supervisor jobs.
+type JobModelUUIDMetadata struct {
+	ModelUUID string `json:"model-uuid"`
+}
+
 const UpgradeToJobKind = "upgrade-to"
 
 // Kind implements the [river.JobArgs] interface.

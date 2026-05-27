@@ -48,7 +48,7 @@ type Store interface {
 
 // UpgradeEnqueuer defines the method to enqueue an upgrade job.
 type UpgradeEnqueuer interface {
-	EnqueueUpgradeTo(ctx context.Context, args rivertypes.UpgradeToArgs) (*rivertype.JobInsertResult, error)
+	EnqueueUpgradeTo(ctx context.Context, args rivertypes.UpgradeToArgs, metadata rivertypes.JobModelUUIDMetadata) (*rivertype.JobInsertResult, error)
 }
 
 // UpgradeManager provides a means to manage controller upgrades within JIMM.
@@ -189,7 +189,7 @@ func (u *UpgradeManager) UpgradeTo(ctx context.Context, user *openfga.User, mode
 		TargetVersion:        targetVersion,
 		Username:             user.Name,
 		TargetControllerName: targetControllerName,
-	})
+	}, rivertypes.JobModelUUIDMetadata{ModelUUID: modelUUID})
 	if err != nil {
 		return 0, fmt.Errorf("failed to enqueue model migration and upgrade job: %w", err)
 	}

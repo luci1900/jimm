@@ -778,19 +778,26 @@ func (r *controllerRoot) UpgradeTo(ctx context.Context, req apiparams.UpgradeToR
 		return apiparams.UpgradeToResponse{}, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	mt, err := names.ParseModelTag(req.ModelTag)
-	if err != nil {
-		return apiparams.UpgradeToResponse{}, errors.Codef(errors.CodeBadRequest, "invalid model tag %q: %w", req.ModelTag, err)
+	if len(req.ModelUUIDs) == 0 {
+		return apiparams.UpgradeToResponse{}, errors.Codef(errors.CodeBadRequest, "at least one model UUID must be provided")
 	}
 
-	jobID, err := r.jimm.UpgradeManager().UpgradeTo(ctx, r.user, mt.Id(), req.TargetControllerName)
-	if err != nil {
-		return apiparams.UpgradeToResponse{}, errors.Codef(errors.CodeBadRequest, "failed to run upgrade to: %w", err)
+	results := make([]apiparams.UpgradeToResult, len(req.ModelUUIDs))
+	for i, modelUUID := range req.ModelUUIDs {
+		if !names.IsValidModel(modelUUID) {
+			results[i].Error = r.mapError(ctx, errors.Codef(errors.CodeBadRequest, "invalid model UUID %q", modelUUID))
+			continue
+		}
+
+		_, err := r.jimm.UpgradeManager().UpgradeTo(ctx, r.user, modelUUID, req.TargetControllerName)
+		if err != nil {
+			results[i].Error = r.mapError(ctx, errors.Codef(errors.CodeBadRequest, "failed to run upgrade to for model %q: %w", modelUUID, err))
+			continue
+		}
 	}
 
 	return apiparams.UpgradeToResponse{
-		Success: true,
-		JobID:   jobID,
+		Results: results,
 	}, nil
 }
 
