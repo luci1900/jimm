@@ -4,11 +4,13 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/juju/cmd/v3"
 	"github.com/juju/gnuflag"
 	jujucmd "github.com/juju/juju/cmd"
 	"github.com/juju/juju/cmd/modelcmd"
+	"github.com/juju/juju/cmd/output"
 	"github.com/juju/juju/jujuclient"
 	"github.com/juju/names/v5"
 
@@ -17,11 +19,12 @@ import (
 
 const (
 	upgradeToDoc = `
-Upgrades a model by migrating it to a specific controller
-and upgrades the model to the controller's version.
+Upgrades models by migrating them to a specific controller
+and upgrades the models to the controller's version.
 `
 	upgradeToExample = `
     juju upgrade-to myController 2cb433a6-04eb-4ec4-9567-90426d20a004
+	juju upgrade-to myController 2cb433a6-04eb-4ec4-9567-90426d20a004 83cf3d62-ab16-4cb2-8e2f-df111fca1a32
 `
 )
 
@@ -39,13 +42,13 @@ type upgradeToCommand struct {
 	out cmd.Output
 
 	controllerName string
-	modelUUID      string
+	modelUUIDs     []string
 }
 
 func (c *upgradeToCommand) Info() *cmd.Info {
 	return jujucmd.Info(&cmd.Info{
 		Name:     "upgrade-to",
-		Args:     "<controller-name> <model-uuid>",
+		Args:     "<controller-name> <model-uuid> [<model-uuid>...]",
 		Purpose:  "Upgrades a model",
 		Doc:      upgradeToDoc,
 		Examples: upgradeToExample,
@@ -55,26 +58,25 @@ func (c *upgradeToCommand) Info() *cmd.Info {
 // SetFlags implements Command.SetFlags.
 func (c *upgradeToCommand) SetFlags(f *gnuflag.FlagSet) {
 	c.CommandBase.SetFlags(f)
-	c.out.AddFlags(f, "yaml", map[string]cmd.Formatter{
-		"yaml": cmd.FormatYaml,
-		"json": cmd.FormatJson,
+	c.out.AddFlags(f, "tabular", map[string]cmd.Formatter{
+		"yaml":    cmd.FormatYaml,
+		"json":    cmd.FormatJson,
+		"tabular": c.formatTabular,
 	})
 }
 
 // Init implements the cmd.Command interface.
 func (c *upgradeToCommand) Init(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("missing required arguments: controller name and model UUID")
-	}
-	if len(args) > 2 {
-		return fmt.Errorf("too many arguments")
+		return fmt.Errorf("missing required arguments: controller name and at least one model UUID")
 	}
 	c.controllerName = args[0]
-	c.modelUUID = args[1]
+	c.modelUUIDs = args[1:]
 
-	// Validate model UUID format
-	if !names.IsValidModel(c.modelUUID) {
-		return fmt.Errorf("invalid model UUID: %s", c.modelUUID)
+	for _, modelUUID := range c.modelUUIDs {
+		if !names.IsValidModel(modelUUID) {
+			return fmt.Errorf("invalid model UUID: %s", modelUUID)
+		}
 	}
 
 	return nil
@@ -88,18 +90,46 @@ func (c *upgradeToCommand) Run(ctxt *cmd.Context) error {
 	}
 	defer client.Close()
 
-	resp, err := client.UpgradeTo(&apiparams.UpgradeToRequest{
+	req := &apiparams.UpgradeToRequest{
 		TargetControllerName: c.controllerName,
-		ModelUUIDs:           []string{c.modelUUID},
-	})
-	if err != nil {
-		return err
+		ModelUUIDs:           c.modelUUIDs,
 	}
 
-	err = c.out.Write(ctxt, resp)
+	resp, err := client.UpgradeTo(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("upgrade-to request failed: %w", err)
 	}
+	if len(resp.Results) != len(req.ModelUUIDs) {
+		return fmt.Errorf("invalid upgrade-to response: got %d results for %d model UUIDs", len(resp.Results), len(req.ModelUUIDs))
+	}
+
+	if writeErr := c.out.Write(ctxt, resp); writeErr != nil {
+		return writeErr
+	}
+
+	return nil
+}
+
+func (c *upgradeToCommand) formatTabular(writer io.Writer, value any) error {
+	resp, ok := value.(apiparams.UpgradeToResponse)
+	if !ok {
+		return fmt.Errorf("expected apiparams.UpgradeToResponse, got %T", value)
+	}
+
+	tw := output.TabWriter(writer)
+	w := output.Wrapper{TabWriter: tw}
+
+	w.PrintHeaders(output.EmphasisHighlight.DefaultBold, "Model UUID", "Status", "Error")
+	for i, modelUUID := range c.modelUUIDs {
+		status := "success"
+		errMsg := ""
+		if resp.Results[i].Error != nil {
+			status = "failed"
+			errMsg = resp.Results[i].Error.Message
+		}
+		w.Println(modelUUID, status, errMsg)
+	}
+	w.Flush()
 
 	return nil
 }

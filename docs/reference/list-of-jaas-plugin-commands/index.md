@@ -1609,23 +1609,24 @@ externally to a different JAAS controller.
 Upgrades a model
 
 ## Usage
-```juju jaas upgrade-to [options] <controller-name> <model-uuid>```
+```juju jaas upgrade-to [options] <controller-name> <model-uuid> [<model-uuid>...]```
 
 ### Options
 | Flag | Default | Usage |
 | --- | --- | --- |
 | `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
-| `--format` | yaml | Specify output format (json&#x7c;yaml) |
+| `--format` | tabular | Specify output format (json&#x7c;tabular&#x7c;yaml) |
 | `-o`, `--output` |  | Specify an output file |
 
 ## Examples
 
     juju upgrade-to myController 2cb433a6-04eb-4ec4-9567-90426d20a004
+	juju upgrade-to myController 2cb433a6-04eb-4ec4-9567-90426d20a004 83cf3d62-ab16-4cb2-8e2f-df111fca1a32
 
 
 ## Details
 
-Upgrades a model by migrating it to a specific controller
-and upgrades the model to the controller's version.
+Upgrades models by migrating them to a specific controller
+and upgrades the models to the controller's version.
 
 
