@@ -479,6 +479,8 @@ Lists all controllers known to JIMM.
 
 Displays controller information for all controllers known to JIMM.
 
+For JAAS admins, this will also display controllers that are in the process of being bootstrapped.
+
 
 (command-jaas-destroy-controller)=
 # jaas destroy-controller
@@ -1452,6 +1454,35 @@ Sets controller deprecated status.
 ## Details
 
 Sets the deprecated status of a controller.
+
+
+(command-jaas-show-controller)=
+# jaas show-controller
+
+## Summary
+Displays information about a controller
+
+## Usage
+```juju jaas show-controller [options] <controller name>```
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | yaml | Specify output format (json&#x7c;yaml) |
+| `-o`, `--output` |  | Specify an output file |
+
+## Examples
+
+    juju jaas show-controller my-controller
+    juju jaas show-controller my-controller --format json
+
+
+## Details
+
+Displays information about a controller known to JIMM.
+
+For controllers with an active bootstrap status, some fields will be empty/missing.
 
 
 (command-jaas-show-controller-profile)=
