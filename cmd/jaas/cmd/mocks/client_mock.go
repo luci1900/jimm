@@ -896,6 +896,45 @@ func (c *MockJIMMAPIListMigrationTargetsCall) DoAndReturn(f func(*params.ListMig
 	return c
 }
 
+// ListModels mocks base method.
+func (m *MockJIMMAPI) ListModels() ([]params.ModelControllerInfoListItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModels")
+	ret0, _ := ret[0].([]params.ModelControllerInfoListItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListModels indicates an expected call of ListModels.
+func (mr *MockJIMMAPIMockRecorder) ListModels() *MockJIMMAPIListModelsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockJIMMAPI)(nil).ListModels))
+	return &MockJIMMAPIListModelsCall{Call: call}
+}
+
+// MockJIMMAPIListModelsCall wrap *gomock.Call
+type MockJIMMAPIListModelsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockJIMMAPIListModelsCall) Return(arg0 []params.ModelControllerInfoListItem, arg1 error) *MockJIMMAPIListModelsCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockJIMMAPIListModelsCall) Do(f func() ([]params.ModelControllerInfoListItem, error)) *MockJIMMAPIListModelsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockJIMMAPIListModelsCall) DoAndReturn(f func() ([]params.ModelControllerInfoListItem, error)) *MockJIMMAPIListModelsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // ListRelationshipTuples mocks base method.
 func (m *MockJIMMAPI) ListRelationshipTuples(req *params.ListRelationshipTuplesRequest) (*params.ListRelationshipTuplesResponse, error) {
 	m.ctrl.T.Helper()

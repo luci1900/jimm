@@ -1031,6 +1031,35 @@ Displays full model status
 Displays full model status.
 
 
+(command-jaas-models)=
+# jaas models
+
+**Aliases:** list-models
+
+## Summary
+Lists all models accessible via JIMM.
+
+## Usage
+```juju jaas models [options] ```
+
+### Options
+| Flag | Default | Usage |
+| --- | --- | --- |
+| `-B`, `--no-browser-login` | false | Do not use web browser for authentication |
+| `--format` | yaml | Specify output format (json&#x7c;tabular&#x7c;yaml) |
+| `-o`, `--output` |  | Specify an output file |
+
+## Examples
+
+    juju models
+    juju models --format json
+
+
+## Details
+
+Displays model and controller information for all models accessible to the authenticated user.
+
+
 (command-jaas-purge-audit-logs)=
 # jaas purge-audit-logs
 

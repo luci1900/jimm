@@ -46,6 +46,7 @@ type JIMMAPI interface {
 
 	// Model operations
 	FullModelStatus(req *params.FullModelStatusRequest) (jujuparams.FullStatus, error)
+	ListModels() ([]params.ModelControllerInfoListItem, error)
 	ModelControllerInfo(model string) (*params.ModelControllerInfo, error)
 	AddModelToController(req *params.AddModelToControllerRequest) (jujuparams.ModelInfo, error)
 
