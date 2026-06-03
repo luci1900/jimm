@@ -249,6 +249,7 @@ type JujuManager interface {
 	ModelDefaultsForCloud(ctx context.Context, user *dbmodel.Identity, cloudTag names.CloudTag) (jujuparams.ModelDefaultsResult, error)
 	ModelInfo(ctx context.Context, u *openfga.User, mt names.ModelTag) (jujuclient.ModelInfo, error)
 	ModelControllerInfo(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*params.ModelControllerInfo, error)
+	ListModelControllerInfo(ctx context.Context, user *openfga.User) ([]params.ModelControllerInfoListItem, error)
 	ListModelSummaries(ctx context.Context, user *openfga.User, maskingControllerUUID string) ([]base.UserModelSummary, error)
 	ModelStatus(ctx context.Context, u *openfga.User, mt names.ModelTag) (base.ModelStatus, error)
 	QueryModelsJq(ctx context.Context, models []string, jqQuery string) (params.CrossModelQueryResponse, error)
@@ -347,5 +348,6 @@ type JobManager interface {
 	GetJobInfo(ctx context.Context, jobID int64) (jobs.JobInfo, error)
 	GetActiveBootstrapStatusForController(ctx context.Context, controllerName string) (*params.BootstrapJobStatus, error)
 	GetUpgradeToStatusForModel(ctx context.Context, modelUUID string) (*params.UpgradeToJobStatus, error)
+	ListUpgradeToJobsForModels(ctx context.Context, modelUUIDs []string) (map[string]string, error)
 	ListJobs(ctx context.Context, params params.ListJobsRequest) (params.ListJobsResponse, error)
 }

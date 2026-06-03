@@ -1171,6 +1171,136 @@ func TestModelControllerInfo_UpgradeStatusError(t *testing.T) {
 	c.Assert(err, qt.ErrorMatches, "river query failed")
 }
 
+func TestListModelControllerInfo(t *testing.T) {
+	c := qt.New(t)
+
+	ctx := c.Context()
+	models := []apiparams.ModelControllerInfoListItem{{
+		ModelName:      "alpha",
+		ModelUUID:      "00000000-0000-0000-0000-000000000001",
+		ControllerName: "controller-a",
+		ControllerUUID: "10000000-0000-0000-0000-000000000001",
+	}, {
+		ModelName:      "beta",
+		ModelUUID:      "00000000-0000-0000-0000-000000000002",
+		ControllerName: "controller-b",
+		ControllerUUID: "10000000-0000-0000-0000-000000000002",
+	}}
+
+	jimm := &jimmtest.JIMM{
+		JujuManager_: func() jujuapi.JujuManager {
+			return &mocks.JujuManager{
+				ListModelControllerInfo_: func(ctx context.Context, user *openfga.User) ([]apiparams.ModelControllerInfoListItem, error) {
+					c.Assert(user.JimmAdmin, qt.Equals, false)
+					return append([]apiparams.ModelControllerInfoListItem(nil), models...), nil
+				},
+			}
+		},
+		JobManager_: func() jujuapi.JobManager {
+			return &mocks.JobManager{
+				ListUpgradeToJobsForModels_: func(ctx context.Context, modelUUIDs []string) (map[string]string, error) {
+					c.Assert(modelUUIDs, qt.DeepEquals, []string{
+						"00000000-0000-0000-0000-000000000001",
+						"00000000-0000-0000-0000-000000000002",
+					})
+					return map[string]string{
+						"00000000-0000-0000-0000-000000000002": jobs.UpgradeToModelStatusProgress,
+					}, nil
+				},
+			}
+		},
+	}
+
+	root := newTestControllerRoot(jimm, "alice@canonical.com", false)
+
+	resp, err := root.ListModelControllerInfo(ctx)
+	c.Assert(err, qt.IsNil)
+	c.Assert(resp, qt.DeepEquals, apiparams.ListModelsResponse{Models: []apiparams.ModelControllerInfoListItem{{
+		ModelName:      "alpha",
+		ModelUUID:      "00000000-0000-0000-0000-000000000001",
+		ControllerName: "controller-a",
+		ControllerUUID: "10000000-0000-0000-0000-000000000001",
+	}, {
+		ModelName:          "beta",
+		ModelUUID:          "00000000-0000-0000-0000-000000000002",
+		ControllerName:     "controller-b",
+		ControllerUUID:     "10000000-0000-0000-0000-000000000002",
+		UpgradeToJobStatus: jobs.UpgradeToModelStatusProgress,
+	}}})
+}
+
+func TestListModelControllerInfo_UpgradeJobFailed(t *testing.T) {
+	c := qt.New(t)
+
+	ctx := c.Context()
+	models := []apiparams.ModelControllerInfoListItem{{
+		ModelName:      "alpha",
+		ModelUUID:      "00000000-0000-0000-0000-000000000001",
+		ControllerName: "controller-a",
+		ControllerUUID: "10000000-0000-0000-0000-000000000001",
+	}}
+
+	jimm := &jimmtest.JIMM{
+		JujuManager_: func() jujuapi.JujuManager {
+			return &mocks.JujuManager{
+				ListModelControllerInfo_: func(ctx context.Context, user *openfga.User) ([]apiparams.ModelControllerInfoListItem, error) {
+					return append([]apiparams.ModelControllerInfoListItem(nil), models...), nil
+				},
+			}
+		},
+		JobManager_: func() jujuapi.JobManager {
+			return &mocks.JobManager{
+				ListUpgradeToJobsForModels_: func(ctx context.Context, modelUUIDs []string) (map[string]string, error) {
+					return map[string]string{
+						"00000000-0000-0000-0000-000000000001": jobs.UpgradeToModelStatusError,
+					}, nil
+				},
+			}
+		},
+	}
+
+	root := newTestControllerRoot(jimm, "alice@canonical.com", false)
+
+	resp, err := root.ListModelControllerInfo(ctx)
+	c.Assert(err, qt.IsNil)
+	c.Assert(resp, qt.DeepEquals, apiparams.ListModelsResponse{Models: []apiparams.ModelControllerInfoListItem{{
+		ModelName:          "alpha",
+		ModelUUID:          "00000000-0000-0000-0000-000000000001",
+		ControllerName:     "controller-a",
+		ControllerUUID:     "10000000-0000-0000-0000-000000000001",
+		UpgradeToJobStatus: jobs.UpgradeToModelStatusError,
+	}}})
+}
+
+func TestListModelControllerInfo_UpgradeJobError(t *testing.T) {
+	c := qt.New(t)
+
+	ctx := c.Context()
+	jimm := &jimmtest.JIMM{
+		JujuManager_: func() jujuapi.JujuManager {
+			return &mocks.JujuManager{
+				ListModelControllerInfo_: func(ctx context.Context, user *openfga.User) ([]apiparams.ModelControllerInfoListItem, error) {
+					return []apiparams.ModelControllerInfoListItem{{
+						ModelUUID: "00000000-0000-0000-0000-000000000001",
+					}}, nil
+				},
+			}
+		},
+		JobManager_: func() jujuapi.JobManager {
+			return &mocks.JobManager{
+				ListUpgradeToJobsForModels_: func(ctx context.Context, modelUUIDs []string) (map[string]string, error) {
+					return nil, errors.New("river query failed")
+				},
+			}
+		},
+	}
+
+	root := newTestControllerRoot(jimm, "alice@canonical.com", false)
+
+	_, err := root.ListModelControllerInfo(ctx)
+	c.Assert(err, qt.ErrorMatches, "river query failed")
+}
+
 func TestJobInfo(t *testing.T) {
 	c := qt.New(t)
 

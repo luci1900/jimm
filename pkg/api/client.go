@@ -365,6 +365,14 @@ func (c *Client) ModelControllerInfo(modelQualifier string) (*params.ModelContro
 	return &resp, err
 }
 
+// ListModels returns controller information for all models visible to the
+// authenticated user, including a lightweight upgrade-to status when present.
+func (c *Client) ListModels() ([]params.ModelControllerInfoListItem, error) {
+	var resp params.ListModelsResponse
+	err := c.caller.APICall("JIMM", 4, "", "ListModels", nil, &resp)
+	return resp.Models, err
+}
+
 // ShowController returns information about a controller or a pending bootstrap reservation.
 func (c *Client) ShowController(controllerName string) (*params.ControllerInfo, error) {
 	req := params.ShowControllerRequest{ControllerName: controllerName}

@@ -32,6 +32,18 @@ var finalizedUpgradeToJobStates = []rivertype.JobState{
 	rivertype.JobStateDiscarded,
 }
 
+const (
+	// UpgradeToModelStatusProgress indicates an upgrade-to job is currently in progress for the model.
+	// It maps to in-progress job states: available, pending, running, retryable, scheduled.
+	UpgradeToModelStatusProgress = "progress"
+	// UpgradeToModelStatusError indicates an upgrade-to job has encountered an error for the model.
+	// It maps to error job states: cancelled, discarded.
+	UpgradeToModelStatusError = "error"
+	// UpgradeToModelStatusCompleted indicates the latest upgrade-to job completed successfully.
+	// It maps to the completed job state.
+	UpgradeToModelStatusCompleted = "completed"
+)
+
 // JobQuerier defines the interface for querying and managing jobs in JIMM.
 type JobQuerier interface {
 	GetJobInfo(ctx context.Context, jobID int64) (*rivertype.JobRow, error)
@@ -145,6 +157,103 @@ func (j *JobManager) GetUpgradeToStatusForModel(ctx context.Context, modelUUID s
 	}
 
 	return status, nil
+}
+
+// ListUpgradeToJobsForModels returns a lightweight per-model status for the most
+// relevant upgrade-to supervisor job for each requested model.
+// Active jobs are loaded first so in-flight work takes precedence, then the most
+// recent finalized jobs fill in any remaining models.
+func (j *JobManager) ListUpgradeToJobsForModels(ctx context.Context, modelUUIDs []string) (map[string]string, error) {
+	jobsByModelUUID := make(map[string]string, len(modelUUIDs))
+	if len(modelUUIDs) == 0 {
+		return jobsByModelUUID, nil
+	}
+
+	requestedModelUUIDs := make(map[string]struct{}, len(modelUUIDs))
+	for _, modelUUID := range modelUUIDs {
+		requestedModelUUIDs[modelUUID] = struct{}{}
+	}
+
+	activeJobListResult, err := j.jobQuerier.ListJobs(
+		ctx,
+		river.NewJobListParams().
+			Kinds(rivertypes.UpgradeToJobKind).
+			First(maxListJobsCount).
+			States(activeJobStates...).
+			OrderBy(river.JobListOrderByTime, river.SortOrderDesc),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, job := range activeJobListResult.Jobs {
+		if job == nil {
+			continue
+		}
+		modelUUID, err := requestedUpgradeToModelUUID(job, requestedModelUUIDs)
+		if err != nil {
+			return nil, err
+		}
+		if modelUUID == "" {
+			continue
+		}
+		jobsByModelUUID[modelUUID] = UpgradeToModelStatusProgress
+	}
+
+	finalizedJobListResult, err := j.jobQuerier.ListJobs(
+		ctx,
+		river.NewJobListParams().
+			Kinds(rivertypes.UpgradeToJobKind).
+			First(maxListJobsCount).
+			States(finalizedUpgradeToJobStates...).
+			OrderBy(river.JobListOrderByTime, river.SortOrderDesc),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, job := range finalizedJobListResult.Jobs {
+		if job == nil {
+			continue
+		}
+		modelUUID, err := requestedUpgradeToModelUUID(job, requestedModelUUIDs)
+		if err != nil {
+			return nil, err
+		}
+		if modelUUID == "" {
+			continue
+		}
+		if _, ok := jobsByModelUUID[modelUUID]; ok {
+			continue
+		}
+
+		switch job.State {
+		case rivertype.JobStateCancelled, rivertype.JobStateDiscarded:
+			jobsByModelUUID[modelUUID] = UpgradeToModelStatusError
+		case rivertype.JobStateCompleted:
+			jobsByModelUUID[modelUUID] = UpgradeToModelStatusCompleted
+		case rivertype.JobStateAvailable, rivertype.JobStatePending, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled:
+			jobsByModelUUID[modelUUID] = UpgradeToModelStatusProgress
+		}
+	}
+
+	return jobsByModelUUID, nil
+}
+
+// requestedUpgradeToModelUUID checks if the job has metadata indicating it is an upgrade-to job for one of the requested
+// model UUIDs. If so, it returns that model UUID; otherwise, it returns an empty string.
+func requestedUpgradeToModelUUID(job *rivertype.JobRow, requestedModelUUIDs map[string]struct{}) (string, error) {
+	var metadata rivertypes.JobModelUUIDMetadata
+	if err := json.Unmarshal(job.Metadata, &metadata); err != nil {
+		return "", fmt.Errorf("failed to decode upgrade-to metadata: %w", err)
+	}
+	if metadata.ModelUUID == "" {
+		return "", nil
+	}
+	if _, ok := requestedModelUUIDs[metadata.ModelUUID]; !ok {
+		return "", nil
+	}
+	return metadata.ModelUUID, nil
 }
 
 // ListJobs returns a list of jobs based on the provided parameters. It converts the API parameters to the internal river job query parameters and retrieves the job list from the job querier.

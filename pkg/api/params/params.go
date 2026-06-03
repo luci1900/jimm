@@ -839,6 +839,28 @@ type ModelControllerInfo struct {
 	UpgradeToJobStatus *UpgradeToJobStatus `json:"upgrade-to-job-status,omitempty" yaml:"upgrade-to-job-status,omitempty"`
 }
 
+// ModelControllerInfoListItem holds lightweight controller information about a
+// model as returned by ListModels.
+type ModelControllerInfoListItem struct {
+	// ModelName is the name of the model.
+	ModelName string `json:"model-name" yaml:"model-name"`
+	// ModelUUID is the UUID of the model.
+	ModelUUID string `json:"model-uuid" yaml:"model-uuid"`
+	// ControllerName is the name of the controller hosting the model.
+	ControllerName string `json:"controller-name" yaml:"controller-name"`
+	// ControllerUUID is the UUID of the controller hosting the model.
+	ControllerUUID string `json:"controller-uuid" yaml:"controller-uuid"`
+
+	// UpgradeToJobStatus holds a lightweight status string for the latest relevant
+	// upgrade-to job associated with the model, such as progress, error, or completed.
+	UpgradeToJobStatus string `json:"upgrade-to-job-status,omitempty" yaml:"upgrade-to-job-status,omitempty"`
+}
+
+// ListModelsResponse holds the response for the JIMM ListModels method.
+type ListModelsResponse struct {
+	Models []ModelControllerInfoListItem `json:"models" yaml:"models"`
+}
+
 // JobInfoRequest holds the request to get information about a job.
 type JobInfoRequest struct {
 	// JobID is the ID of the job to get information about.

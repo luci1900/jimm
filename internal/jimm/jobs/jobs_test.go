@@ -4,6 +4,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/rivertypes"
 	apiparams "github.com/canonical/jimm/v3/pkg/api/params"
 )
 
@@ -169,4 +171,95 @@ func TestGetUpgradeToStatusForModel_ActiveQueryError(t *testing.T) {
 	status, err := deps.jobManager.GetUpgradeToStatusForModel(ctx, "model-uuid")
 	c.Assert(err, qt.ErrorMatches, "query error")
 	c.Assert(status, qt.IsNil)
+}
+
+func TestListUpgradeToJobsForModels_Success(t *testing.T) {
+	c := qt.New(t)
+	deps := setupDeps(c)
+
+	metadataOne, err := json.Marshal(rivertypes.JobModelUUIDMetadata{ModelUUID: "model-uuid-1"})
+	c.Assert(err, qt.IsNil)
+	metadataTwo, err := json.Marshal(rivertypes.JobModelUUIDMetadata{ModelUUID: "model-uuid-2"})
+	c.Assert(err, qt.IsNil)
+	metadataThree, err := json.Marshal(rivertypes.JobModelUUIDMetadata{ModelUUID: "model-uuid-3"})
+	c.Assert(err, qt.IsNil)
+	metadataCompleted, err := json.Marshal(rivertypes.JobModelUUIDMetadata{ModelUUID: "model-uuid-2"})
+	c.Assert(err, qt.IsNil)
+
+	gomock.InOrder(
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{Jobs: []*rivertype.JobRow{
+			{Metadata: metadataOne, State: rivertype.JobStateRunning},
+			{Metadata: metadataThree, State: rivertype.JobStateRunning},
+		}}, nil),
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{Jobs: []*rivertype.JobRow{
+			{Metadata: metadataTwo, State: rivertype.JobStateDiscarded},
+			{Metadata: metadataCompleted, State: rivertype.JobStateCompleted},
+		}}, nil),
+	)
+
+	jobsByModel, err := deps.jobManager.ListUpgradeToJobsForModels(context.Background(), []string{"model-uuid-1", "model-uuid-2"})
+	c.Assert(err, qt.IsNil)
+	c.Assert(jobsByModel, qt.DeepEquals, map[string]string{
+		"model-uuid-1": UpgradeToModelStatusProgress,
+		"model-uuid-2": UpgradeToModelStatusError,
+	})
+}
+
+func TestListUpgradeToJobsForModels_CompletedJobSuppressesOlderError(t *testing.T) {
+	c := qt.New(t)
+	deps := setupDeps(c)
+
+	metadata, err := json.Marshal(rivertypes.JobModelUUIDMetadata{ModelUUID: "model-uuid-1"})
+	c.Assert(err, qt.IsNil)
+
+	gomock.InOrder(
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{}, nil),
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{Jobs: []*rivertype.JobRow{
+			{Metadata: metadata, State: rivertype.JobStateCompleted},
+			{Metadata: metadata, State: rivertype.JobStateDiscarded},
+		}}, nil),
+	)
+
+	jobsByModel, err := deps.jobManager.ListUpgradeToJobsForModels(context.Background(), []string{"model-uuid-1"})
+	c.Assert(err, qt.IsNil)
+	c.Assert(jobsByModel, qt.DeepEquals, map[string]string{
+		"model-uuid-1": UpgradeToModelStatusCompleted,
+	})
+}
+
+func TestListUpgradeToJobsForModels_ActiveJobSuppressesOlderError(t *testing.T) {
+	c := qt.New(t)
+	deps := setupDeps(c)
+
+	metadata, err := json.Marshal(rivertypes.JobModelUUIDMetadata{ModelUUID: "model-uuid-1"})
+	c.Assert(err, qt.IsNil)
+
+	gomock.InOrder(
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{Jobs: []*rivertype.JobRow{
+			{Metadata: metadata, State: rivertype.JobStateRunning},
+		}}, nil),
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{Jobs: []*rivertype.JobRow{
+			{Metadata: metadata, State: rivertype.JobStateDiscarded},
+		}}, nil),
+	)
+
+	jobsByModel, err := deps.jobManager.ListUpgradeToJobsForModels(context.Background(), []string{"model-uuid-1"})
+	c.Assert(err, qt.IsNil)
+	c.Assert(jobsByModel, qt.DeepEquals, map[string]string{
+		"model-uuid-1": UpgradeToModelStatusProgress,
+	})
+}
+
+func TestListUpgradeToJobsForModels_QueryError(t *testing.T) {
+	c := qt.New(t)
+	deps := setupDeps(c)
+
+	gomock.InOrder(
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(&river.JobListResult{}, nil),
+		deps.jobQuerier.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return(nil, errors.New("query error")),
+	)
+
+	jobsByModel, err := deps.jobManager.ListUpgradeToJobsForModels(context.Background(), []string{"model-uuid"})
+	c.Assert(err, qt.ErrorMatches, "query error")
+	c.Assert(jobsByModel, qt.IsNil)
 }

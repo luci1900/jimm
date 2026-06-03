@@ -76,6 +76,7 @@ func init() {
 		removeControllerProfile := rpc.Method(r.RemoveControllerProfile)
 		upgradeToMethod := rpc.Method(r.UpgradeTo)
 		listUserCloudsMethod := rpc.Method(r.ListUserClouds)
+		listModelsMethod := rpc.Method(r.ListModelControllerInfo)
 		modelControllerInfoMethod := rpc.Method(r.ModelControllerInfo)
 		showControllerMethod := rpc.Method(r.ShowController)
 		jobInfoMethod := rpc.Method(r.JobInfo)
@@ -92,6 +93,7 @@ func init() {
 		r.AddMethod("JIMM", 4, "GrantAuditLogAccess", grantAuditLogAccessMethod)
 		r.AddMethod("JIMM", 4, "ImportModel", importModelMethod)
 		r.AddMethod("JIMM", 4, "ListControllers", listControllersMethod)
+		r.AddMethod("JIMM", 4, "ListModels", listModelsMethod)
 		r.AddMethod("JIMM", 4, "ListUserClouds", listUserCloudsMethod)
 		r.AddMethod("JIMM", 4, "MigrateModel", migrateModel)
 		r.AddMethod("JIMM", 4, "ModelControllerInfo", modelControllerInfoMethod)
@@ -868,6 +870,33 @@ func (r *controllerRoot) ModelControllerInfo(ctx context.Context, req apiparams.
 	response.UpgradeToJobStatus = upgradeToStatus
 
 	return *response, nil
+}
+
+// ListModelControllerInfo returns controller information for all models the
+// authenticated user can access.
+func (r *controllerRoot) ListModelControllerInfo(ctx context.Context) (apiparams.ListModelsResponse, error) {
+	models, err := r.jimm.JujuManager().ListModelControllerInfo(ctx, r.user)
+	if err != nil {
+		return apiparams.ListModelsResponse{}, err
+	}
+
+	modelUUIDs := make([]string, 0, len(models))
+	for _, model := range models {
+		modelUUIDs = append(modelUUIDs, model.ModelUUID)
+	}
+
+	activeUpgradeJobs, err := r.jimm.JobManager().ListUpgradeToJobsForModels(ctx, modelUUIDs)
+	if err != nil {
+		return apiparams.ListModelsResponse{}, err
+	}
+
+	for i := range models {
+		if status, ok := activeUpgradeJobs[models[i].ModelUUID]; ok {
+			models[i].UpgradeToJobStatus = status
+		}
+	}
+
+	return apiparams.ListModelsResponse{Models: models}, nil
 }
 
 // ShowController returns information about a controller or an in-progress bootstrap reservation.

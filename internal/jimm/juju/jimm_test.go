@@ -1317,3 +1317,26 @@ func TestModelControllerInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestListModelControllerInfo(t *testing.T) {
+	c := qt.New(t)
+
+	ctx := context.Background()
+
+	j := newTestJujuManager(c, nil)
+
+	env := jimmtest.ParseEnvironment(c, testModelControllerInfoEnv)
+	env.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
+
+	userIdentity := env.User("bob@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&userIdentity, j.OpenFGAClient)
+
+	info, err := j.ListModelControllerInfo(ctx, user)
+	c.Assert(err, qt.IsNil)
+	c.Assert(info, qt.DeepEquals, []params.ModelControllerInfoListItem{{
+		ModelName:      "model-2",
+		ModelUUID:      "00000002-0000-0000-0000-000000000002",
+		ControllerName: "controller-2",
+		ControllerUUID: "00000001-0000-0000-0000-000000000002",
+	}})
+}
