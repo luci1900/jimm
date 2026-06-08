@@ -801,9 +801,13 @@ func TestStartDestroyControllerJob(t *testing.T) {
 		AgentVersion:  "not-a-version",
 		PublicAddress: "not-an-address",
 		CACertificate: "not-even-close",
-		Models:        []dbmodel.Model{},
 	}
 
+	// modelCount is the number of models the controller is reported to host.
+	// The guard must consult the database (via ControllerModelCount) rather
+	// than the Controller.Models association, which ControllerInfo never
+	// preloads.
+	modelCount := 0
 	jimm := &jimmtest.JIMM{
 		BootstapManager_: func() jujuapi.BootstrapManager {
 			return &mocks.BootstapManager{
@@ -819,6 +823,10 @@ func TestStartDestroyControllerJob(t *testing.T) {
 						c.Check(user.JimmAdmin, qt.Equals, true)
 						return ctrlInfo, nil
 					},
+					ControllerModelCount_: func(ctx context.Context, ctl dbmodel.Controller) (int, error) {
+						c.Check(ctl.Name, qt.Equals, ctrlInfo.Name)
+						return modelCount, nil
+					},
 				},
 			}
 		},
@@ -831,7 +839,7 @@ func TestStartDestroyControllerJob(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Refuse to destroy controller with models
-	ctrlInfo.Models = append(ctrlInfo.Models, dbmodel.Model{})
+	modelCount = 1
 	_, err = root.StartDestroyController(ctx, req)
 	c.Assert(err, qt.ErrorMatches, "cannot destroy controller with models")
 }
