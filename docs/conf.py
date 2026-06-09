@@ -70,7 +70,9 @@ copyright = "%s CC-BY-SA, %s" % (datetime.date.today().year, author)
 # NOTE: The Open Graph Protocol (OGP) enhances page display in a social graph
 #       and is used by social media platforms; see https://ogp.me/
 
-ogp_site_url = "https://canonical.com/juju/docs/jaas/"
+version_slug = f"{os.environ.get('READTHEDOCS_VERSION', 'local')}"
+
+ogp_site_url = f"https://canonical.com/juju/docs/jaas/{version_slug}/"
 
 
 # Preview name of the documentation website
@@ -148,7 +150,7 @@ slug = 'juju/docs/jaas'
 
 # Base URL of RTD hosted project
 
-html_baseurl = 'https://canonical.com/juju/docs/jaas/'
+html_baseurl = f'https://canonical.com/juju/docs/jaas/{version_slug}/'
 
 # URL scheme. Add language and version scheme elements.
 # When configured with RTD variables, check for RTD environment so manual runs succeed:
