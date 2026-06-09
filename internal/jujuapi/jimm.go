@@ -752,7 +752,14 @@ func (r *controllerRoot) StartDestroyController(ctx context.Context, req apipara
 		return apiparams.StartBootstrapResponse{}, fmt.Errorf("failed to fetch controller info: %w", err)
 	}
 
-	if len(ctrl.Models) != 0 {
+	// ControllerInfo does not preload the controller's models, so query them
+	// explicitly; relying on ctrl.Models would always see an empty slice and
+	// silently allow destroying a controller that still hosts models.
+	modelCount, err := r.jimm.JujuManager().ControllerModelCount(ctx, *ctrl)
+	if err != nil {
+		return apiparams.StartBootstrapResponse{}, fmt.Errorf("failed to check controller models: %w", err)
+	}
+	if modelCount != 0 {
 		return apiparams.StartBootstrapResponse{}, errors.Codef(errors.CodeBadRequest, "cannot destroy controller with models")
 	}
 

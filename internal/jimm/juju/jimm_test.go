@@ -1340,3 +1340,59 @@ func TestListModelControllerInfo(t *testing.T) {
 		ControllerUUID: "00000001-0000-0000-0000-000000000002",
 	}})
 }
+
+const testControllerModelCountEnv = `clouds:
+- name: test-cloud
+  type: test-provider
+  regions:
+  - name: test-region
+cloud-credentials:
+- name: test-cred
+  cloud: test-cloud
+  owner: alice@canonical.com
+  type: empty
+controllers:
+- name: controller-with-models
+  uuid: 00000001-0000-0000-0000-000000000001
+  cloud: test-cloud
+  region: test-region
+- name: controller-without-models
+  uuid: 00000001-0000-0000-0000-000000000002
+  cloud: test-cloud
+  region: test-region
+models:
+- name: model-1
+  uuid: 00000002-0000-0000-0000-000000000001
+  controller: controller-with-models
+  cloud: test-cloud
+  region: test-region
+  cloud-credential: test-cred
+  owner: alice@canonical.com
+- name: model-2
+  uuid: 00000002-0000-0000-0000-000000000002
+  controller: controller-with-models
+  cloud: test-cloud
+  region: test-region
+  cloud-credential: test-cred
+  owner: alice@canonical.com
+`
+
+func TestControllerModelCount(t *testing.T) {
+	c := qt.New(t)
+	ctx := context.Background()
+
+	j := newTestJujuManager(c, nil)
+
+	env := jimmtest.ParseEnvironment(c, testControllerModelCountEnv)
+	env.PopulateDB(c, j.Database)
+
+	withModels := env.Controllers[0].DBObject(c, j.Database)
+	count, err := j.ControllerModelCount(ctx, withModels)
+	c.Assert(err, qt.IsNil)
+	c.Assert(count, qt.Equals, 2)
+
+	withoutModels := env.Controllers[1].DBObject(c, j.Database)
+	count, err = j.ControllerModelCount(ctx, withoutModels)
+	c.Assert(err, qt.IsNil)
+	c.Assert(count, qt.Equals, 0)
+}

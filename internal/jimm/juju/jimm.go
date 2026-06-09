@@ -75,6 +75,16 @@ func (j *JujuManager) ControllerInfo(ctx context.Context, user *openfga.User, na
 	return &ctl, nil
 }
 
+// ControllerModelCount returns the number of models hosted on the given
+// controller.
+func (j *JujuManager) ControllerModelCount(ctx context.Context, ctl dbmodel.Controller) (int, error) {
+	models, err := j.Database.GetModelsByController(ctx, ctl)
+	if err != nil {
+		return 0, err
+	}
+	return len(models), nil
+}
+
 // GetControllerBootstrap returns the pending bootstrap reservation for a controller.
 func (j *JujuManager) GetControllerBootstrap(ctx context.Context, name string) (*dbmodel.ControllerBootstrap, error) {
 	bootstrap := dbmodel.ControllerBootstrap{Name: name}
