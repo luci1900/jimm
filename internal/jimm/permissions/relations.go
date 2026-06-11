@@ -48,9 +48,10 @@ var resourceAdminRelations = map[ofga.Relation]bool{
 // restricting grantees to these kinds independently prevents a non-admin from
 // writing a structural tuple.
 var grantableObjectKinds = map[openfga.Kind]bool{
-	openfga.UserType:  true,
-	openfga.GroupType: true,
-	openfga.RoleType:  true,
+	openfga.UserType:     true,
+	openfga.GroupType:    true,
+	openfga.IdPGroupType: true,
+	openfga.RoleType:     true,
 }
 
 // authorizeRelationTargetAdmin authorizes a non-JIMM-admin to manage the given

@@ -475,6 +475,17 @@ func (s *permissionManagerSuite) TestRelationManagementAsResourceAdministrator(c
 			},
 		},
 		{
+			description: "model administrator can manage IDP group relations",
+			grantAdmin: func() error {
+				return grantor.SetModelAccess(ctx, model.ResourceTag(), names.AdministratorRelation)
+			},
+			tuple: apiparams.RelationshipTuple{
+				Object:       "idpgroup-engineering-team#member",
+				Relation:     names.ReaderRelation.String(),
+				TargetObject: model.ResourceTag().String(),
+			},
+		},
+		{
 			description: "application offer administrator can manage relations",
 			grantAdmin: func() error {
 				return grantor.SetApplicationOfferAccess(ctx, offer.ResourceTag(), names.AdministratorRelation)

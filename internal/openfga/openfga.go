@@ -17,7 +17,7 @@ import (
 
 var (
 	// resourceTypes contains a list of all resource kinds (i.e. tags) used throughout JIMM.
-	resourceTypes = [...]string{names.UserTagKind, names.ModelTagKind, names.ControllerTagKind, names.ApplicationOfferTagKind, jimmnames.GroupTagKind, jimmnames.RoleTagKind}
+	resourceTypes = [...]string{names.UserTagKind, names.ModelTagKind, names.ControllerTagKind, names.ApplicationOfferTagKind, jimmnames.GroupTagKind, jimmnames.IdPGroupTagKind, jimmnames.RoleTagKind}
 )
 
 // Tuple represents a relation between an object and a target.
@@ -45,6 +45,8 @@ var (
 	ModelType Kind = names.ModelTagKind
 	// GroupType represents a group object.
 	GroupType Kind = jimmnames.GroupTagKind
+	// IdPGroupType represents an IDP-owned group object.
+	IdPGroupType Kind = jimmnames.IdPGroupTagKind
 	// RoleType represents a role object.
 	RoleType Kind = jimmnames.RoleTagKind
 	// ApplicationOfferType represents an application offer object.
