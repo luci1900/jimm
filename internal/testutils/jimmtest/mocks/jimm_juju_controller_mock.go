@@ -21,6 +21,7 @@ type ControllerService struct {
 	ControllerDetailsForIncomingModel_ func(ctx context.Context, modelUUID string) (juju.ControllerConnectionDetails, error)
 	GetControllerBootstrap_            func(ctx context.Context, name string) (*dbmodel.ControllerBootstrap, error)
 	ControllerInfo_                    func(ctx context.Context, user *openfga.User, name string) (*dbmodel.Controller, error)
+	ControllerModelCount_              func(ctx context.Context, ctl dbmodel.Controller) (int, error)
 	EarliestControllerVersion_         func(ctx context.Context) (version.Number, error)
 	ListControllerBootstraps_          func(ctx context.Context) ([]dbmodel.ControllerBootstrap, error)
 	ListControllers_                   func(ctx context.Context, user *openfga.User) ([]dbmodel.Controller, error)
@@ -55,6 +56,13 @@ func (j *ControllerService) ControllerInfo(ctx context.Context, user *openfga.Us
 		return nil, errors.New("not implemented")
 	}
 	return j.ControllerInfo_(ctx, user, name)
+}
+
+func (j *ControllerService) ControllerModelCount(ctx context.Context, ctl dbmodel.Controller) (int, error) {
+	if j.ControllerModelCount_ == nil {
+		return 0, errors.New("not implemented")
+	}
+	return j.ControllerModelCount_(ctx, ctl)
 }
 
 func (j *ControllerService) GetControllerBootstrap(ctx context.Context, name string) (*dbmodel.ControllerBootstrap, error) {

@@ -441,6 +441,9 @@ func TestUpgradeModel_AlreadyAtTargetDoesNotCallUpgrade(t *testing.T) {
 		}, nil
 	})
 
+	// The dialed connection must be closed before returning.
+	s.api.EXPECT().Close().Return(nil)
+
 	err = upgradeMgr.UpgradeModel(ctx, modelUUID, targetVersion)
 	c.Assert(err, qt.IsNil)
 }
@@ -490,6 +493,9 @@ func TestUpgradeModel_RetriesUntilModelReportsTargetVersion(t *testing.T) {
 
 	s.api.EXPECT().UpgradeModel(modelUUID, targetVersion, "", false, false).Return(targetVersion, nil)
 
+	// The dialed connection must be closed before returning.
+	s.api.EXPECT().Close().Return(nil)
+
 	// Wrap the test in a synctest so that time advances instantly.
 	synctest.Test(t, (func(t *testing.T) {
 		err := upgradeMgr.UpgradeModel(ctx, modelUUID, targetVersion)
@@ -538,6 +544,9 @@ func TestUpgradeModel_AlreadyUpgraded(t *testing.T) {
 	})
 
 	s.api.EXPECT().UpgradeModel(modelUUID, targetVersion, "", false, false).Return(version.Number{}, jujuerrors.AlreadyExists)
+
+	// The dialed connection must be closed before returning.
+	s.api.EXPECT().Close().Return(nil)
 
 	err = upgradeMgr.UpgradeModel(ctx, modelUUID, targetVersion)
 	c.Assert(err, qt.IsNil)
