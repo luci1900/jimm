@@ -77,6 +77,7 @@ const (
 )
 
 type sessionIdentityContextKey struct{}
+type sessionGroupsContextKey struct{}
 
 // ContextWithSessionIdentity adds the session identity id to the provided context.
 func ContextWithSessionIdentity(ctx context.Context, sessionIdentityId any) context.Context {
@@ -95,6 +96,38 @@ func SessionIdentityFromContext(ctx context.Context) string {
 		return ""
 	}
 	return s
+}
+
+// SessionGroupsFromContext returns the session groups from the context.
+func SessionGroupsFromContext(ctx context.Context) []string {
+	groups, _ := ctx.Value(sessionGroupsContextKey{}).([]string)
+	return append([]string(nil), groups...)
+}
+
+// ContextWithSessionGroups adds the session groups to the provided context.
+func ContextWithSessionGroups(ctx context.Context, groups []string) context.Context {
+	return context.WithValue(ctx, sessionGroupsContextKey{}, append([]string(nil), groups...))
+}
+
+func sessionGroupsFromValue(value any) ([]string, error) {
+	if value == nil {
+		return nil, nil
+	}
+	if groups, ok := value.([]string); ok {
+		return append([]string(nil), groups...), nil
+	}
+	if groups, ok := value.([]any); ok {
+		parsedGroups := make([]string, 0, len(groups))
+		for i, group := range groups {
+			groupStr, ok := group.(string)
+			if !ok {
+				return nil, fmt.Errorf("invalid session group entry type at index %d: got %T", i, group)
+			}
+			parsedGroups = append(parsedGroups, groupStr)
+		}
+		return parsedGroups, nil
+	}
+	return nil, fmt.Errorf("invalid session groups type: got %T", value)
 }
 
 // AuthenticationService handles authentication within JIMM.
@@ -708,6 +741,11 @@ func (as *AuthenticationService) AuthenticateBrowserSession(ctx context.Context,
 	}
 
 	ctx = ContextWithSessionIdentity(ctx, identityId)
+	groups, err := sessionGroupsFromValue(session.Values[SessionGroupsKey])
+	if err != nil {
+		return ctx, err
+	}
+	ctx = ContextWithSessionGroups(ctx, groups)
 
 	if err := as.extendSession(session, w, req); err != nil {
 		return ctx, err

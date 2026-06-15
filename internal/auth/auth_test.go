@@ -20,14 +20,19 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	qt "github.com/frankban/quicktest"
 	"github.com/gorilla/sessions"
+	jujunames "github.com/juju/names/v5"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 
 	"github.com/canonical/jimm/v3/internal/auth"
 	"github.com/canonical/jimm/v3/internal/db"
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/jimm/login"
+	"github.com/canonical/jimm/v3/internal/openfga"
+	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 	"github.com/canonical/jimm/v3/internal/testutils/testdb"
+	jimmnames "github.com/canonical/jimm/v3/pkg/names"
 )
 
 const (
@@ -415,6 +420,52 @@ func TestBrowserLoginStoresExtractedGroups(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(session.Values[auth.SessionIdentityKey], qt.Equals, jimmtest.HardcodedGroupEmail)
 	c.Assert(session.Values[auth.SessionGroupsKey], qt.DeepEquals, []string{jimmtest.OIDCGroupsTestGroupName})
+}
+
+func TestKeycloakGroupUserAuthorisesViaIDPGroupContextualTuple(t *testing.T) {
+	c := qt.New(t)
+	ctx := context.Background()
+
+	authSvc, db, sessionStore, cleanup := setupTestAuthSvcWithGroupClaimKey(ctx, c, time.Hour, testGroupClaimKey)
+	defer cleanup()
+
+	ofgaClient, _, _, err := jimmtest.SetupTestOFGAClient(c.Name())
+	c.Assert(err, qt.IsNil)
+
+	loginManager, err := login.NewLoginManager(db, ofgaClient, authSvc, jujunames.NewControllerTag("jimm"))
+	c.Assert(err, qt.IsNil)
+
+	cookie, err := jimmtest.RunBrowserLogin(
+		db,
+		sessionStore,
+		jimmtest.HardcodedGroupUsername,
+		jimmtest.HardcodedGroupPassword,
+	)
+	c.Assert(err, qt.IsNil)
+
+	rec := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "", nil)
+	c.Assert(err, qt.IsNil)
+	req.AddCookie(jimmtest.ParseCookies(cookie)[0])
+
+	ctx, err = authSvc.AuthenticateBrowserSession(ctx, rec, req)
+	c.Assert(err, qt.IsNil)
+
+	user, err := loginManager.LoginWithSessionCookie(ctx, jimmtest.HardcodedGroupEmail)
+	c.Assert(err, qt.IsNil)
+	c.Assert(user.IDPGroupIDs, qt.DeepEquals, []string{jimmtest.OIDCGroupsTestGroupName})
+
+	modelTag := jujunames.NewModelTag("00000002-0000-0000-0000-000000000001")
+	err = ofgaClient.AddRelation(ctx, openfga.Tuple{
+		Object:   ofganames.ConvertTagWithRelation(jimmnames.NewIdPGroupTag(jimmtest.OIDCGroupsTestGroupName), ofganames.MemberRelation),
+		Relation: ofganames.ReaderRelation,
+		Target:   ofganames.ConvertTag(modelTag),
+	})
+	c.Assert(err, qt.IsNil)
+
+	allowed, err := user.IsModelReader(ctx, modelTag)
+	c.Assert(err, qt.IsNil)
+	c.Assert(allowed, qt.IsTrue)
 }
 
 func TestCreateBrowserSessionWithGroups(t *testing.T) {

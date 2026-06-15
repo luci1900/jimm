@@ -167,9 +167,11 @@ func (s *loginManagerSuite) TestLoginClientCredentials(c *qt.C) {
 func (s *loginManagerSuite) TestLoginWithSessionToken(c *qt.C) {
 	c.Parallel()
 	ctx := context.Background()
+	groups := []string{"engineering", "platform"}
 
 	token, err := jwt.NewBuilder().
 		Subject("alice@canonical.com").
+		Claim(auth.SessionTokenGroupsClaimKey, groups).
 		Build()
 	c.Assert(err, qt.IsNil)
 	serialisedToken, err := jwt.NewSerializer().Serialize(token)
@@ -182,6 +184,7 @@ func (s *loginManagerSuite) TestLoginWithSessionToken(c *qt.C) {
 	user, err := s.manager.LoginWithSessionToken(ctx, b64Token)
 	c.Assert(err, qt.IsNil)
 	c.Assert(user.Name, qt.Equals, "alice@canonical.com")
+	c.Assert(user.IDPGroupIDs, qt.DeepEquals, groups)
 }
 
 func (s *loginManagerSuite) TestLoginWithSessionCookie(c *qt.C) {

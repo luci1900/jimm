@@ -155,7 +155,7 @@ func (j *LoginManager) LoginClientCredentials(ctx context.Context, clientID stri
 		return nil, errors.Codef(errors.CodeFatalLoginError, "%w", err)
 	}
 
-	_, err = j.oAuthAuthenticator.VerifyClientCredentials(ctx, clientID, clientSecret)
+	groups, err := j.oAuthAuthenticator.VerifyClientCredentials(ctx, clientID, clientSecret)
 	if err != nil {
 		logger.LogFailedLogin(ctx, clientIdWithDomain)
 		return nil, errors.Codef(errors.CodeFatalLoginError, "%w", err)
@@ -165,6 +165,7 @@ func (j *LoginManager) LoginClientCredentials(ctx context.Context, clientID stri
 		logger.LogFailedLogin(ctx, clientIdWithDomain)
 		return nil, errors.Codef(errors.CodeFatalLoginError, "%w", err)
 	}
+	user.SetIDPGroups(groups)
 	logger.LogSuccessfulLogin(ctx, clientIdWithDomain)
 	return user, nil
 }
@@ -181,12 +182,19 @@ func (j *LoginManager) LoginWithSessionToken(ctx context.Context, sessionToken s
 		return nil, errors.Codef(errors.CodeFatalLoginError, "%w", err)
 	}
 
+	groups, err := auth.SessionGroupsFromToken(jwtToken)
+	if err != nil {
+		logger.LogFailedLogin(ctx, jwtToken.Subject())
+		return nil, errors.Codef(errors.CodeFatalLoginError, "%w", err)
+	}
+
 	email := jwtToken.Subject()
 	user, err := j.UserLogin(ctx, email)
 	if err != nil {
 		logger.LogFailedLogin(ctx, email)
 		return nil, errors.Codef(errors.CodeFatalLoginError, "%w", err)
 	}
+	user.SetIDPGroups(groups)
 	logger.LogSuccessfulLogin(ctx, email)
 	return user, nil
 }
@@ -207,6 +215,7 @@ func (j *LoginManager) LoginWithSessionCookie(ctx context.Context, identityID st
 		logger.LogFailedLogin(ctx, identityID)
 		return nil, err
 	}
+	user.SetIDPGroups(auth.SessionGroupsFromContext(ctx))
 	logger.LogSuccessfulLogin(ctx, identityID)
 	return user, nil
 }
@@ -216,7 +225,6 @@ func (j *LoginManager) LoginWithSessionCookie(ctx context.Context, identityID st
 // It will create a new identity if one does not exist.
 // The identity's last login time is updated.
 func (j *LoginManager) UserLogin(ctx context.Context, identifier string) (*openfga.User, error) {
-
 	ofgaUser, err := j.GetOrCreateIdentity(ctx, identifier)
 	if err != nil {
 		return nil, errors.Codef(errors.CodeUnauthorized, "%w", err)
@@ -229,7 +237,6 @@ func (j *LoginManager) UserLogin(ctx context.Context, identifier string) (*openf
 }
 
 func (j *LoginManager) GetOrCreateIdentity(ctx context.Context, identifier string) (*openfga.User, error) {
-
 	identity, err := dbmodel.NewIdentity(identifier)
 	if err != nil {
 		return nil, err
