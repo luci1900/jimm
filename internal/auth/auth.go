@@ -55,6 +55,7 @@ const (
 
 	// migrationTokenExpiry is the expiry time for migration tokens.
 	migrationTokenExpiry = 3 * time.Hour
+	idpGroupLimit        = 20
 )
 
 // AuthStyle determines how the client credentials are sent to the token endpoint.
@@ -310,25 +311,32 @@ func (as *AuthenticationService) extractGroupsFromAccessToken(ctx context.Contex
 		return nil, nil
 	}
 
-	// Normalize the group claim into a slice of strings
-	switch groups := groupClaim.(type) {
+	var groups []string
+
+	// Normalize the group claim into a slice of strings.
+	switch typedGroups := groupClaim.(type) {
 	case string:
-		return splitGroupClaimString(groups), nil
+		groups = splitGroupClaimString(typedGroups)
 	case []string:
-		return groups, nil
+		groups = typedGroups
 	case []any:
-		var normalizedGroups []string
-		for i, group := range groups {
+		groups = make([]string, 0, len(typedGroups))
+		for i, group := range typedGroups {
 			groupStr, ok := group.(string)
 			if !ok {
 				return nil, fmt.Errorf("invalid group claim entry type at index %d: got %T", i, group)
 			}
-			normalizedGroups = append(normalizedGroups, groupStr)
+			groups = append(groups, groupStr)
 		}
-		return normalizedGroups, nil
 	default:
 		return nil, fmt.Errorf("invalid group claim type: got %T", groupClaim)
 	}
+
+	if len(groups) > idpGroupLimit {
+		return nil, errors.Codef(errors.CodeUnauthorized, "authorization denied: IDP group claim contains %d groups, maximum supported is %d", len(groups), idpGroupLimit)
+	}
+
+	return groups, nil
 }
 
 // AuthCodeURL returns a URL that will be used to redirect a browser to the identity provider.
