@@ -75,6 +75,16 @@ func (j *JujuManager) ControllerInfo(ctx context.Context, user *openfga.User, na
 	return &ctl, nil
 }
 
+// ControllerModelCount returns the number of models hosted on the given
+// controller.
+func (j *JujuManager) ControllerModelCount(ctx context.Context, ctl dbmodel.Controller) (int, error) {
+	models, err := j.Database.GetModelsByController(ctx, ctl)
+	if err != nil {
+		return 0, err
+	}
+	return len(models), nil
+}
+
 // GetControllerBootstrap returns the pending bootstrap reservation for a controller.
 func (j *JujuManager) GetControllerBootstrap(ctx context.Context, name string) (*dbmodel.ControllerBootstrap, error) {
 	bootstrap := dbmodel.ControllerBootstrap{Name: name}
@@ -404,10 +414,6 @@ func WithOwnerAndModelName(ownerName, modelName string) ModelControllerInfoQuali
 // - WithModelUUID(uuid) to specify by model UUID
 // - WithOwnerAndModelName(owner, name) to specify by owner and model name
 func (j *JujuManager) ModelControllerInfo(ctx context.Context, user *openfga.User, qualifier ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
-	if !user.JimmAdmin {
-		return nil, errors.Codef(errors.CodeUnauthorized, "unauthorized")
-	}
-
 	var model dbmodel.Model
 	qualifier(&model)
 
@@ -418,6 +424,13 @@ func (j *JujuManager) ModelControllerInfo(ctx context.Context, user *openfga.Use
 	err := j.Database.GetModel(ctx, &model)
 	if err != nil {
 		return nil, err
+	}
+
+	if ok, err := user.IsModelAdmin(ctx, model.ResourceTag()); err != nil {
+		zapctx.Error(ctx, "error checking user permissions for model", zap.String("model", model.Name), zap.String("owner", model.OwnerIdentityName), zap.Error(err))
+		return nil, errors.New("error checking user permissions for model")
+	} else if !ok {
+		return nil, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 
 	return &apiparams.ModelControllerInfo{

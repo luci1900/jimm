@@ -801,9 +801,13 @@ func TestStartDestroyControllerJob(t *testing.T) {
 		AgentVersion:  "not-a-version",
 		PublicAddress: "not-an-address",
 		CACertificate: "not-even-close",
-		Models:        []dbmodel.Model{},
 	}
 
+	// modelCount is the number of models the controller is reported to host.
+	// The guard must consult the database (via ControllerModelCount) rather
+	// than the Controller.Models association, which ControllerInfo never
+	// preloads.
+	modelCount := 0
 	jimm := &jimmtest.JIMM{
 		BootstapManager_: func() jujuapi.BootstrapManager {
 			return &mocks.BootstapManager{
@@ -819,6 +823,10 @@ func TestStartDestroyControllerJob(t *testing.T) {
 						c.Check(user.JimmAdmin, qt.Equals, true)
 						return ctrlInfo, nil
 					},
+					ControllerModelCount_: func(ctx context.Context, ctl dbmodel.Controller) (int, error) {
+						c.Check(ctl.Name, qt.Equals, ctrlInfo.Name)
+						return modelCount, nil
+					},
 				},
 			}
 		},
@@ -831,7 +839,7 @@ func TestStartDestroyControllerJob(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Refuse to destroy controller with models
-	ctrlInfo.Models = append(ctrlInfo.Models, dbmodel.Model{})
+	modelCount = 1
 	_, err = root.StartDestroyController(ctx, req)
 	c.Assert(err, qt.ErrorMatches, "cannot destroy controller with models")
 }
@@ -959,9 +967,24 @@ func TestModelControllerInfo(t *testing.T) {
 		admin:          false,
 		modelQualifier: "12345678-1234-1234-1234-123456789abc",
 		jujuManager: func(c *qt.C) jujuapi.JujuManager {
-			return &mocks.JujuManager{}
+			return &mocks.JujuManager{
+				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
+					c.Assert(user.JimmAdmin, qt.Equals, false)
+					return &apiparams.ModelControllerInfo{
+						ModelName:      "test-model",
+						ModelUUID:      "12345678-1234-1234-1234-123456789abc",
+						ControllerName: "test-controller",
+						ControllerUUID: "87654321-4321-4321-4321-cba987654321",
+					}, nil
+				},
+			}
 		},
-		expectedError: "unauthorized",
+		expectedInfo: apiparams.ModelControllerInfo{
+			ModelName:      "test-model",
+			ModelUUID:      "12345678-1234-1234-1234-123456789abc",
+			ControllerName: "test-controller",
+			ControllerUUID: "87654321-4321-4321-4321-cba987654321",
+		},
 	}, {
 		about:          "invalid model uuid",
 		admin:          true,
@@ -984,12 +1007,12 @@ func TestModelControllerInfo(t *testing.T) {
 		expectedError: "model not found",
 	}, {
 		about:          "success with model tag",
-		admin:          true,
+		admin:          false,
 		modelQualifier: "12345678-1234-1234-1234-123456789abc",
 		jujuManager: func(c *qt.C) jujuapi.JujuManager {
 			return &mocks.JujuManager{
 				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
-					c.Assert(user.JimmAdmin, qt.Equals, true)
+					c.Assert(user.JimmAdmin, qt.Equals, false)
 					return &apiparams.ModelControllerInfo{
 						ModelName:      "test-model",
 						ModelUUID:      "12345678-1234-1234-1234-123456789abc",
@@ -1007,12 +1030,12 @@ func TestModelControllerInfo(t *testing.T) {
 		},
 	}, {
 		about:          "success with owner and model name",
-		admin:          true,
+		admin:          false,
 		modelQualifier: "alice@canonical.com/test-model",
 		jujuManager: func(c *qt.C) jujuapi.JujuManager {
 			return &mocks.JujuManager{
 				ModelControllerInfo_: func(ctx context.Context, user *openfga.User, qualifier juju.ModelControllerInfoQualifier) (*apiparams.ModelControllerInfo, error) {
-					c.Assert(user.JimmAdmin, qt.Equals, true)
+					c.Assert(user.JimmAdmin, qt.Equals, false)
 					return &apiparams.ModelControllerInfo{
 						ModelName:      "test-model",
 						ModelUUID:      "12345678-1234-1234-1234-123456789abc",
@@ -1040,12 +1063,6 @@ func TestModelControllerInfo(t *testing.T) {
 		modelQualifier: "/test-model",
 		jujuManager:    func(c *qt.C) jujuapi.JujuManager { return &mocks.JujuManager{} },
 		expectedError:  `invalid model UUID: invalid UUID length: 11`,
-	}, {
-		about:          "non-admin user with owner and model name",
-		admin:          false,
-		modelQualifier: "alice@canonical.com/test-model",
-		jujuManager:    func(c *qt.C) jujuapi.JujuManager { return &mocks.JujuManager{} },
-		expectedError:  "unauthorized",
 	}, {
 		about:          "model not found with owner and model name",
 		admin:          true,
