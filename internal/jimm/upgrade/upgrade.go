@@ -105,6 +105,7 @@ func (u *UpgradeManager) UpgradeModel(ctx context.Context, modelUUID string, tar
 	if err != nil {
 		return fmt.Errorf("failed to dial target controller: %w", err)
 	}
+	defer api.Close()
 
 	if err := retry.Call(
 		retry.CallArgs{
