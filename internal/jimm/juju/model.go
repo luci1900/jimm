@@ -634,6 +634,46 @@ func (j *JujuManager) AbortModelUpgrade(ctx context.Context, user *openfga.User,
 // error with the code CodeUnauthorized is returned. The targetVersion can be
 // version.Zero, in which case the best version is selected by the controller.
 // Writer access is equivalent to Juju's WriteAccess permission.
+// UpgradeController upgrades the agent of the named backing Juju controller.
+// It resolves the controller model UUID by dialling the controller and calling
+// ListModels as admin, selecting the model named "controller". The caller must
+// be a JIMM admin; this is enforced in the facade layer before this method is
+// called.
+func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User, controllerName string, targetVersion version.Number, stream string, ignoreAgentVersions bool, dryRun bool) (version.Number, error) {
+	controller, err := j.getControllerByName(ctx, controllerName)
+	if err != nil {
+		return version.Number{}, err
+	}
+
+	api, err := j.dialController(ctx, controller, user)
+	if err != nil {
+		return version.Number{}, err
+	}
+	defer api.Close()
+
+	models, err := api.ListModels(ctx)
+	if err != nil {
+		return version.Number{}, errors.Codef(errors.CodeNotFound, "failed to list models on controller %q: %w", controllerName, err)
+	}
+
+	var controllerModelUUID string
+	for _, m := range models {
+		if m.Name == "controller" {
+			controllerModelUUID = m.UUID
+			break
+		}
+	}
+	if controllerModelUUID == "" {
+		return version.Number{}, errors.Codef(errors.CodeNotFound, "controller model not found on controller %q", controllerName)
+	}
+
+	chosenVersion, err := api.UpgradeModel(controllerModelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
+	if err != nil {
+		return version.Number{}, err
+	}
+	return chosenVersion, nil
+}
+
 func (j *JujuManager) UpgradeModel(ctx context.Context, user *openfga.User, mt names.ModelTag, targetVersion version.Number, stream string, ignoreAgentVersions bool, dryRun bool) (version.Number, error) {
 	var chosenVersion version.Number
 	err := j.doModel(ctx, user, mt, ofganames.WriterRelation, func(_ *dbmodel.Model, api API) error {

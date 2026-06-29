@@ -138,6 +138,13 @@ func (c *Client) RemoveControllerProfile(req *params.RemoveControllerProfileRequ
 }
 
 // UpgradeTo initiates a controller upgrade to the specified version.
+// UpgradeController upgrades the agent of the named backing Juju controller.
+func (c *Client) UpgradeController(req *params.UpgradeControllerRequest) (params.UpgradeControllerResponse, error) {
+	var resp params.UpgradeControllerResponse
+	err := c.caller.APICall("JIMM", 4, "", "UpgradeController", req, &resp)
+	return resp, err
+}
+
 func (c *Client) UpgradeTo(req *params.UpgradeToRequest) (params.UpgradeToResponse, error) {
 	var resp params.UpgradeToResponse
 	err := c.caller.APICall("JIMM", 4, "", "UpgradeTo", req, &resp)
