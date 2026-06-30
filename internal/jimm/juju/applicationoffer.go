@@ -85,14 +85,19 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 		}
 		_, controllerErr := checkAPI.GetApplicationOffer(ctx, offerURL.String())
 		checkAPI.Close()
-		if controllerErr != nil && errors.ErrorCode(controllerErr) == errors.CodeNotFound {
-			// Dangling offer: clean it up and proceed to (re-)create it.
-			if cleanupErr := j.deleteApplicationOffer(ctx, &offerCheck); cleanupErr != nil {
-				zapctx.Error(ctx, "error cleaning up dangling offer on create", zap.Error(cleanupErr))
-				return cleanupErr
-			}
-		} else {
+		if controllerErr == nil {
+			// Offer exists on both sides — genuine duplicate.
 			return errors.Codef(errors.CodeAlreadyExists, "offer %s already exists, please use a different name", offerURL.String())
+		}
+		if errors.ErrorCode(controllerErr) != errors.CodeNotFound {
+			// Unexpected error talking to the controller — propagate it.
+			return controllerErr
+		}
+		// Dangling offer: controller does not know about it. Clean it up
+		// and proceed to (re-)create it.
+		if cleanupErr := j.deleteApplicationOffer(ctx, &offerCheck); cleanupErr != nil {
+			zapctx.Error(ctx, "error cleaning up dangling offer on create", zap.Error(cleanupErr))
+			return cleanupErr
 		}
 	} else if errors.ErrorCode(err) != errors.CodeNotFound {
 		// Anything besides Not Found is a problem.
