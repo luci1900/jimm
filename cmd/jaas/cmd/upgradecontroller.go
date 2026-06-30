@@ -1,4 +1,4 @@
-// Copyright 2026 Canonical.
+// Copyright 2025 Canonical.
 
 package cmd
 
@@ -104,8 +104,8 @@ func (c *upgradeControllerCommand) Run(ctxt *cmd.Context) error {
 	}
 
 	if c.dryRun {
-		fmt.Fprintf(ctxt.Stderr, "best version:\n    %v\n", resp.ChosenVersion)
-		fmt.Fprintf(ctxt.Stderr, "upgrade-controller --dry-run: no changes applied\n")
+		ctxt.Infof("best version:\n    %v", resp.ChosenVersion)
+		ctxt.Infof("upgrade-controller --dry-run: no changes applied")
 	} else {
 		fmt.Fprintf(ctxt.Stdout, "started upgrade to %s\n", resp.ChosenVersion)
 	}

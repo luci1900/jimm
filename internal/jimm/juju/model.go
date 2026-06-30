@@ -629,11 +629,6 @@ func (j *JujuManager) AbortModelUpgrade(ctx context.Context, user *openfga.User,
 	})
 }
 
-// UpgradeModel upgrades the model with the given model tag to the provided agent
-// version. If the given user does not have writer access to the model then an
-// error with the code CodeUnauthorized is returned. The targetVersion can be
-// version.Zero, in which case the best version is selected by the controller.
-// Writer access is equivalent to Juju's WriteAccess permission.
 // UpgradeController upgrades the agent of the named backing Juju controller.
 // It resolves the controller model UUID by dialling the controller and calling
 // ListModels as admin, selecting the model named "controller". The caller must
@@ -653,7 +648,7 @@ func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User,
 
 	models, err := api.ListModels(ctx)
 	if err != nil {
-		return version.Number{}, errors.Codef(errors.CodeNotFound, "failed to list models on controller %q: %w", controllerName, err)
+		return version.Number{}, errors.Codef(errors.CodeServerError, "failed to list models on controller %q: %w", controllerName, err)
 	}
 
 	var controllerModelUUID string
@@ -674,6 +669,11 @@ func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User,
 	return chosenVersion, nil
 }
 
+// UpgradeModel upgrades the model with the given model tag to the provided agent
+// version. If the given user does not have writer access to the model then an
+// error with the code CodeUnauthorized is returned. The targetVersion can be
+// version.Zero, in which case the best version is selected by the controller.
+// Writer access is equivalent to Juju's WriteAccess permission.
 func (j *JujuManager) UpgradeModel(ctx context.Context, user *openfga.User, mt names.ModelTag, targetVersion version.Number, stream string, ignoreAgentVersions bool, dryRun bool) (version.Number, error) {
 	var chosenVersion version.Number
 	err := j.doModel(ctx, user, mt, ofganames.WriterRelation, func(_ *dbmodel.Model, api API) error {
