@@ -74,7 +74,26 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 	offerCheck.URL = offerURL.String()
 	err = j.Database.GetApplicationOffer(ctx, &offerCheck)
 	if err == nil {
-		return errors.Codef(errors.CodeAlreadyExists, "offer %s already exists, please use a different name", offerURL.String())
+		// The offer exists in JIMM's database. Check whether it still
+		// exists on the controller — it may be dangling (e.g. the
+		// controller-side offer was destroyed but JIMM's cleanup did not
+		// complete). If the controller reports it as not found, remove
+		// the stale record and continue with the creation.
+		checkAPI, dialErr := j.dial(ctx, &model.Controller, names.ModelTag{}, user)
+		if dialErr != nil {
+			return dialErr
+		}
+		_, controllerErr := checkAPI.GetApplicationOffer(ctx, offerURL.String())
+		checkAPI.Close()
+		if controllerErr != nil && errors.ErrorCode(controllerErr) == errors.CodeNotFound {
+			// Dangling offer: clean it up and proceed to (re-)create it.
+			if cleanupErr := j.deleteApplicationOffer(ctx, &offerCheck); cleanupErr != nil {
+				zapctx.Error(ctx, "error cleaning up dangling offer on create", zap.Error(cleanupErr))
+				return cleanupErr
+			}
+		} else {
+			return errors.Codef(errors.CodeAlreadyExists, "offer %s already exists, please use a different name", offerURL.String())
+		}
 	} else if errors.ErrorCode(err) != errors.CodeNotFound {
 		// Anything besides Not Found is a problem.
 		return err
