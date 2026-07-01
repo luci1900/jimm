@@ -630,10 +630,9 @@ func (j *JujuManager) AbortModelUpgrade(ctx context.Context, user *openfga.User,
 }
 
 // UpgradeController upgrades the agent of the named backing Juju controller.
-// It resolves the controller model UUID by dialling the controller and calling
-// ListModels as admin, selecting the model named "controller". The caller must
-// be a JIMM admin; this is enforced in the facade layer before this method is
-// called.
+// It resolves the controller model UUID by dialling the controller and reading
+// the controller model's configuration. The caller must be a JIMM admin; this
+// is enforced in the facade layer before this method is called.
 func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User, controllerName string, targetVersion version.Number, stream string, ignoreAgentVersions bool, dryRun bool) (version.Number, error) {
 	controller, err := j.getControllerByName(ctx, controllerName)
 	if err != nil {
@@ -646,20 +645,9 @@ func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User,
 	}
 	defer api.Close()
 
-	models, err := api.ListModels(ctx)
+	controllerModelUUID, err := api.ControllerModelUUID(ctx)
 	if err != nil {
-		return version.Number{}, errors.Codef(errors.CodeServerError, "failed to list models on controller %q: %w", controllerName, err)
-	}
-
-	var controllerModelUUID string
-	for _, m := range models {
-		if m.Name == "controller" {
-			controllerModelUUID = m.UUID
-			break
-		}
-	}
-	if controllerModelUUID == "" {
-		return version.Number{}, errors.Codef(errors.CodeNotFound, "controller model not found on controller %q", controllerName)
+		return version.Number{}, errors.Codef(errors.CodeServerError, "failed to get controller model UUID on controller %q: %w", controllerName, err)
 	}
 
 	chosenVersion, err := api.UpgradeModel(controllerModelUUID, targetVersion, stream, ignoreAgentVersions, dryRun)
