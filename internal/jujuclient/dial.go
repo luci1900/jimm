@@ -28,6 +28,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/rpc"
@@ -40,30 +41,43 @@ import (
 type Dialer struct {
 	JWTService    *jimmjwx.JWTService
 	AdminUsername string
+	// AuthFactory is used to mint tokens carrying the user's
+	// real OpenFGA permissions for outbound dials on behalf of a user.
+	AuthFactory *jujuauth.Factory
 }
 
 // NewDialer creates a new Dialer from dependencies.
-func NewDialer(jwtService *jimmjwx.JWTService, controllerUUID string) *Dialer {
+func NewDialer(jwtService *jimmjwx.JWTService, controllerUUID string, authFactory *jujuauth.Factory) *Dialer {
 	return &Dialer{
 		JWTService: jwtService,
 		// The admin username is a Juju external user, just like the JIMM users.
 		AdminUsername: fmt.Sprintf("jaas-%s@external", controllerUUID),
+		AuthFactory:   authFactory,
 	}
 }
 
-func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, userTag string) (string, error) {
-	// Always request superuser permissions, even when representing a non-admin user
-	// This is only safe because we have already checked the user's openfga permissions in a layer above.
+func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
+	if user != nil {
+		// Mint a token with the user's real OpenFGA permissions, using the  same
+		// conversion path as the model proxy.
+		jwt, err := d.AuthFactory.NewLoginToken(ctx, modelTag, ctl.ResourceTag(), user)
+		if err != nil {
+			return "", err
+		}
+		return base64.StdEncoding.EncodeToString(jwt), nil
+	}
+
+	// Background/service dial, like watcher, model-import, controller-registration, etc.
+	// Use a superuser token under the JIMM service identity.
 	permissions := map[string]string{
 		ctl.ResourceTag().String(): "superuser",
 	}
 	if modelTag.Id() != "" {
 		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
 	}
-
 	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
 		Controller: ctl.ResourceTag().Id(),
-		User:       userTag,
+		User:       d.AdminUsername,
 		Access:     permissions,
 	})
 	if err != nil {
@@ -74,12 +88,14 @@ func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Control
 
 // createLoginRequest creates a jujuparams.LoginRequest for the given controller, model and user.
 func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
-	userTag := user.ResourceTag().String()
-	jwtString, err := d.newControllerJWTToken(ctx, ctl, modelTag, userTag)
+	jwtString, err := d.newControllerJWTToken(ctx, ctl, modelTag, user)
 	if err != nil {
 		return nil, err
 	}
-
+	userTag := d.AdminUsername
+	if user != nil {
+		userTag = user.ResourceTag().String()
+	}
 	return &jujuparams.LoginRequest{
 		AuthTag:       userTag,
 		ClientVersion: jimmversion.ControllerVersion,
@@ -99,10 +115,6 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	}
 
 	client := rpc.NewClient(conn)
-
-	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
-	}
 
 	var loginRequest *jujuparams.LoginRequest
 	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
@@ -312,12 +324,7 @@ func (c *Connection) Context() context.Context {
 }
 
 func (c *Connection) authorizationHeader(modelTag names.ModelTag, extraHeaders http.Header) (http.Header, error) {
-	user := c.user
-	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: c.dialer.AdminUsername}}
-	}
-
-	jwtString, err := c.dialer.newControllerJWTToken(c.ctx, c.ctl, modelTag, user.ResourceTag().String())
+	jwtString, err := c.dialer.newControllerJWTToken(c.ctx, c.ctl, modelTag, c.user)
 	if err != nil {
 		return nil, err
 	}

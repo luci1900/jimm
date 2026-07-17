@@ -39,7 +39,9 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm/config"
 	jimmcreds "github.com/canonical/jimm/v3/internal/jimm/credentials"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
+	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimm/login"
+	"github.com/canonical/jimm/v3/internal/jimm/permissions"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
 	"github.com/canonical/jimm/v3/internal/jimmhttp/rebac_admin"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
@@ -258,7 +260,10 @@ type ServiceDependencies struct {
 	PublicDNSName                 string
 	PublicDNSHost                 string
 	// Clients/Services
-	Client                  juju.Dialer
+	Client juju.Dialer
+	// AuthFactory is a pre-constructed JWT auth factory shared between
+	// the Dialer and JIMM so outbound dials use real per-user permissions.
+	AuthFactory             *jujuauth.Factory
 	CredentialStore         jimmcreds.CredentialStore
 	Database                *db.Database
 	RiverClient             *river.Client
@@ -481,9 +486,20 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 		JWKS:   jwksService,
 	})
 
-	dialer := jujuclient.NewDialer(jwtService, controllerUUID)
+	// Pre-construct the auth factory so the dialer can mint tokens with
+	// the user's real OpenFGA permissions. The same instance is passed to
+	// jimm.New via Parameters.AuthFactory so JIMM reuses it.
+	jimmResourceTag := names.NewControllerTag(controllerUUID)
+	permManager, err := permissions.NewManager(db, openFGAclient, controllerUUID, jimmResourceTag)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create permission manager: %w", err)
+	}
+	authFactory := jujuauth.NewFactory(db, jwtService, permManager)
+
+	dialer := jujuclient.NewDialer(jwtService, controllerUUID, authFactory)
 
 	deps := &ServiceDependencies{
+		AuthFactory:                   authFactory,
 		ControllerUUID:                controllerUUID,
 		PublicDNSName:                 p.PublicDNSName,
 		PublicDNSHost:                 publicDNS.Host,
@@ -599,6 +615,7 @@ func NewServiceFromDependencies(ctx context.Context, deps *ServiceDependencies) 
 		ControllerConfig:              deps.ControllerConfig,
 		CrossModelQueryTimeout:        deps.CrossModelQueryTimeout,
 		BootstrapLoginTokenRefreshURL: deps.BootstrapLoginTokenRefreshURL,
+		AuthFactory:                   deps.AuthFactory,
 	}
 	jimmParameters.AuditLogRetentionDays = deps.AuditLogRetentionDays
 

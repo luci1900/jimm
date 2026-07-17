@@ -95,6 +95,12 @@ type Parameters struct {
 	// CrossModelQueryTimeout is the timeout for cross model queries.
 	CrossModelQueryTimeout time.Duration
 
+	// AuthFactory is an optional pre-constructed JWT auth factory. When
+	// provided, jimm.New uses it directly instead of constructing a new
+	// one, allowing the same instance to be shared with the Dialer so
+	// that outbound dials use real per-user OpenFGA permissions.
+	AuthFactory *jujuauth.Factory
+
 	// BootstrapLoginTokenRefreshURL is the URL when bootstrapping a controller via JIMM.
 	// It should look something like:
 	// <scheme><ip/dns>[<port>]/.well-known/jwks.json"
@@ -140,6 +146,10 @@ func (p *Parameters) Validate() error {
 
 	if p.CrossModelQueryTimeout <= 0 {
 		return errors.New("missing cross model query timeout")
+	}
+
+	if p.AuthFactory == nil {
+		return errors.New("missing auth factory")
 	}
 
 	return nil
@@ -193,7 +203,7 @@ func New(p Parameters) (*JIMM, error) {
 	}
 	j.PermissionManager = permissionManager
 
-	j.JujuAuthFactory = jujuauth.NewFactory(j.Database, j.JWTService, permissionManager)
+	j.JujuAuthFactory = p.AuthFactory
 	jujuManager, err := juju.NewJujuManager(
 		j.Database,
 		j.OpenFGAClient,

@@ -29,6 +29,8 @@ import (
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
+	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
+	"github.com/canonical/jimm/v3/internal/jimm/permissions"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/jujuclient"
@@ -107,9 +109,17 @@ func SetupJimmEnv(c *qt.C, opts ...SetupOption) JIMMEnv {
 		JWKS:   jwksService,
 	})
 
-	dialer := jujuclient.NewDialer(jwtService, ControllerUUID)
+	// Pre-construct the auth factory so the dialer uses real per-user
+	// OpenFGA permissions on outbound dials.
+	jimmResourceTag := names.NewControllerTag(ControllerUUID)
+	permManager, err := permissions.NewManager(database, s.OFGAClient, ControllerUUID, jimmResourceTag)
+	c.Assert(err, qt.IsNil)
+	authFactory := jujuauth.NewFactory(database, jwtService, permManager)
+
+	dialer := jujuclient.NewDialer(jwtService, ControllerUUID, authFactory)
 
 	deps := &jimmsvc.ServiceDependencies{
+		AuthFactory:                   authFactory,
 		ControllerUUID:                params.ControllerUUID,
 		PublicDNSName:                 params.PublicDNSName,
 		PublicDNSHost:                 params.PublicDNSName,
