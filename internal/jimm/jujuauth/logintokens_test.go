@@ -106,6 +106,7 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 	tests := []struct {
 		about             string
 		username          string
+		controllerLevel   bool
 		database          *testDatabase
 		accessChecker     *testAccessChecker
 		jwtService        *testJWTService
@@ -143,6 +144,38 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 			Access: map[string]string{
 				ct.String():                              "superuser",
 				mt.String():                              "admin",
+				names.NewCloudTag("test-cloud").String(): "add-model",
+			},
+		},
+	}, {
+		about:           "controller-level dial, no model tag",
+		username:        "eve@canonical.com",
+		controllerLevel: true,
+		database: &testDatabase{
+			ctl: dbmodel.Controller{
+				CloudRegions: []dbmodel.CloudRegionControllerPriority{{
+					CloudRegion: dbmodel.CloudRegion{
+						Cloud: dbmodel.Cloud{
+							Name: "test-cloud",
+						},
+					},
+				}},
+			},
+		},
+		accessChecker: &testAccessChecker{
+			controllerAccess: map[string]string{
+				ct.String(): "superuser",
+			},
+			cloudAccess: map[string]string{
+				names.NewCloudTag("test-cloud").String(): "add-model",
+			},
+		},
+		jwtService: &testJWTService{},
+		expectedJWTParams: jimmjwx.JWTParams{
+			Controller: ct.Id(),
+			User:       names.NewUserTag("eve@canonical.com").String(),
+			Access: map[string]string{
+				ct.String():                              "superuser",
 				names.NewCloudTag("test-cloud").String(): "add-model",
 			},
 		},
@@ -237,7 +270,11 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 	for _, test := range tests {
 		authFactory := jujuauth.NewFactory(test.database, test.jwtService, test.accessChecker)
 		generator := authFactory.NewLoginGenerator()
-		generator.SetTags(mt, ct)
+		modelTag := mt
+		if test.controllerLevel {
+			modelTag = names.ModelTag{}
+		}
+		generator.SetTags(modelTag, ct)
 
 		i, err := dbmodel.NewIdentity(test.username)
 		c.Assert(err, qt.IsNil)

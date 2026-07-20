@@ -123,16 +123,19 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 	auth.accessMapCache = make(map[string]string)
 	var authErr error
 
-	var modelAccess string
-	if auth.mt.Id() == "" {
-		return nil, errors.New("model not set")
+	// The model tag is optional. Controller-level dials (e.g. adding a
+	// controller, cloud administration, listing offers) do not target a
+	// specific model, so we mint a token carrying only the user's real
+	// controller and cloud access.
+	if auth.mt.Id() != "" {
+		var modelAccess string
+		modelAccess, authErr = auth.accessChecker.GetUserModelAccess(ctx, auth.user, auth.mt)
+		if authErr != nil {
+			zapctx.Error(ctx, "model access check failed", zap.Error(authErr))
+			return nil, authErr
+		}
+		auth.accessMapCache[auth.mt.String()] = modelAccess
 	}
-	modelAccess, authErr = auth.accessChecker.GetUserModelAccess(ctx, auth.user, auth.mt)
-	if authErr != nil {
-		zapctx.Error(ctx, "model access check failed", zap.Error(authErr))
-		return nil, authErr
-	}
-	auth.accessMapCache[auth.mt.String()] = modelAccess
 
 	if auth.ct.Id() == "" {
 		return nil, errors.New("controller not set")

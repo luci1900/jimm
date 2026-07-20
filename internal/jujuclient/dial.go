@@ -58,8 +58,10 @@ func NewDialer(jwtService *jimmjwx.JWTService, controllerUUID string, authFactor
 
 func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
 	if user != nil {
-		// Mint a token with the user's real OpenFGA permissions, using the  same
-		// conversion path as the model proxy.
+		// Mint a token with the user's real OpenFGA permissions, using the same
+		// conversion path as the model proxy. The model tag may be empty for
+		// controller-level dials, in which case the token carries only the
+		// user's controller and cloud access.
 		jwt, err := d.AuthFactory.NewLoginToken(ctx, modelTag, ctl.ResourceTag(), user)
 		if err != nil {
 			return "", err
