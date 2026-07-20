@@ -149,13 +149,18 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 
 	var ctl dbmodel.Controller
 	ctl.SetTag(auth.ct)
-	err := auth.database.GetController(ctx, &ctl)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch controller: %w", err)
-	}
 	clouds := make(map[names.CloudTag]bool)
-	for _, cloudRegion := range ctl.CloudRegions {
-		clouds[cloudRegion.CloudRegion.Cloud.ResourceTag()] = true
+	// When adding a controller, it is not yet present in JIMM's database.
+	// In that case there are no clouds to enumerate, so skip it.
+	if err := auth.database.GetController(ctx, &ctl); err != nil {
+
+		if errors.ErrorCode(err) != errors.CodeNotFound {
+			return nil, fmt.Errorf("failed to fetch controller: %w", err)
+		}
+	} else {
+		for _, cloudRegion := range ctl.CloudRegions {
+			clouds[cloudRegion.CloudRegion.Cloud.ResourceTag()] = true
+		}
 	}
 	for cloudTag := range clouds {
 		accessLevel, err := auth.accessChecker.GetUserCloudAccess(ctx, auth.user, cloudTag)

@@ -180,6 +180,26 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 			},
 		},
 	}, {
+		about:           "controller not yet in database (adding a controller)",
+		username:        "eve@canonical.com",
+		controllerLevel: true,
+		database: &testDatabase{
+			err: errors.Codef(errors.CodeNotFound, "controller not found"),
+		},
+		accessChecker: &testAccessChecker{
+			controllerAccess: map[string]string{
+				ct.String(): "superuser",
+			},
+		},
+		jwtService: &testJWTService{},
+		expectedJWTParams: jimmjwx.JWTParams{
+			Controller: ct.Id(),
+			User:       names.NewUserTag("eve@canonical.com").String(),
+			Access: map[string]string{
+				ct.String(): "superuser",
+			},
+		},
+	}, {
 		about:    "model access check fails",
 		username: "eve@canonical.com",
 		accessChecker: &testAccessChecker{
