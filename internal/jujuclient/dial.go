@@ -79,7 +79,7 @@ func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Control
 	}
 	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
 		Controller: ctl.ResourceTag().Id(),
-		User:       d.AdminUsername,
+		User:       names.NewUserTag(d.AdminUsername).String(),
 		Access:     permissions,
 	})
 	if err != nil {
