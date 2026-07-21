@@ -234,7 +234,12 @@ func (j *JujuManager) GetApplicationOfferConsumeDetails(ctx context.Context, use
 		return errors.Codef(errors.CodeNotFound, "not found")
 	}
 
-	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, user)
+	// Offer-consume authorization was already enforced via OpenFGA above;
+	// the controller authorizes the caller against its own state DB, where
+	// the user has no record, so fetch the consume details on a
+	// service-level connection. The returned users list is rewritten from
+	// OpenFGA below.
+	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return err
 	}
@@ -566,7 +571,12 @@ func (j *JujuManager) queryControllersForOffers(ctx context.Context, user *openf
 			// Return early if a single controller has an error
 			// to avoid misleading clients about what exists which
 			// could cause unneeded reconciliation.
-			api, err := j.dial(ctx, ctl, names.ModelTag{}, user)
+			//
+			// The controller's offer listing is model-admin gated against
+			// its own state DB, which the user has no record in. Use a
+			// service-level connection: results are filtered per user via
+			// OpenFGA in enrichOfferDetails below.
+			api, err := j.dial(ctx, ctl, names.ModelTag{}, nil)
 			if err != nil {
 				return err
 			}
