@@ -386,3 +386,10 @@ func NewDialerAdapter(dialer *jujuclient.Dialer) *DialerAdapter {
 func (d *DialerAdapter) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (juju.API, error) {
 	return d.dialer.Dial(ctx, ctl, modelTag, user)
 }
+
+// DialService implements the juju.Dialer interface for the DialerAdapter.
+// It establishes a connection to the Juju controller on behalf of JIMM
+// itself, using the JIMM service identity.
+func (d *DialerAdapter) DialService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (juju.API, error) {
+	return d.dialer.DialService(ctx, ctl, modelTag)
+}

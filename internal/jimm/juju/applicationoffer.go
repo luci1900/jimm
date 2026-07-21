@@ -78,7 +78,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 		// It's possible for an offer record in JIMM to dangle. This check is
 		// performed on a service-level connection for the same reason as
 		// the Offer call below.
-		checkAPI, dialErr := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+		checkAPI, dialErr := j.dialService(ctx, &model.Controller, names.ModelTag{})
 		if dialErr != nil {
 			return dialErr
 		}
@@ -107,7 +107,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 	// its own state DB (superseding token claims), which the user has no
 	// record in, so this internal operation requires a service-level
 	// connection.
-	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &model.Controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (j *JujuManager) GetApplicationOfferConsumeDetails(ctx context.Context, use
 	// the user has no record, so fetch the consume details on a
 	// service-level connection. The returned users list is rewritten from
 	// OpenFGA below.
-	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &offer.Model.Controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (j *JujuManager) GetApplicationOffer(ctx context.Context, user *openfga.Use
 	// Offer-read authorization was already enforced via OpenFGA above; the
 	// controller authorizes against its own state DB, so use a
 	// service-level connection.
-	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &offer.Model.Controller, names.ModelTag{})
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +576,7 @@ func (j *JujuManager) queryControllersForOffers(ctx context.Context, user *openf
 			// its own state DB, which the user has no record in. Use a
 			// service-level connection: results are filtered per user via
 			// OpenFGA in enrichOfferDetails below.
-			api, err := j.dial(ctx, ctl, names.ModelTag{}, nil)
+			api, err := j.dialService(ctx, ctl, names.ModelTag{})
 			if err != nil {
 				return err
 			}
@@ -636,7 +636,7 @@ func (j *JujuManager) doApplicationOfferAdmin(ctx context.Context, user *openfga
 	// Offer-admin authorization was already enforced via OpenFGA above;
 	// the controller authorizes against its own state DB, so use a
 	// service-level connection.
-	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &offer.Model.Controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}

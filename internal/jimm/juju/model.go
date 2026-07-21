@@ -221,7 +221,7 @@ func (j *JujuManager) ModelInfo(ctx context.Context, user *openfga.User, mt name
 	// than the user's token assertions may satisfy, and mergeModelInfo
 	// rebuilds the users list from OpenFGA, so fetch the model info on a
 	// service-level connection.
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &m.Controller, names.ModelTag{})
 	if err != nil {
 		return jujuclient.ModelInfo{}, err
 	}
@@ -270,7 +270,7 @@ func (j *JujuManager) reactToModelInfoError(ctx context.Context, user *openfga.U
 		if err := j.Database.GetModel(ctx, model); err != nil {
 			return jujuclient.ModelInfo{}, err
 		}
-		api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+		api, err := j.dialService(ctx, &model.Controller, names.ModelTag{})
 		if err != nil {
 			return jujuclient.ModelInfo{}, err
 		}
@@ -501,7 +501,7 @@ func (j *JujuManager) ModelStatus(ctx context.Context, user *openfga.User, mt na
 	// Authorization has already been checked via OpenFGA above, so fetch
 	// the model status on a service-level connection: the controller's
 	// server-side checks may be stricter than the user's token assertions.
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &m.Controller, names.ModelTag{})
 	if err != nil {
 		return base.ModelStatus{}, err
 	}
@@ -721,7 +721,7 @@ func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User,
 	// The caller was already authorized as a JIMM admin in the facade
 	// layer. The controller model is not modelled in JIMM's OpenFGA, so the
 	// user's token carries no access to it; use a service-level connection.
-	api, err := j.dialController(ctx, controller, nil)
+	api, err := j.dialServiceController(ctx, controller)
 	if err != nil {
 		return version.Number{}, err
 	}
@@ -808,7 +808,7 @@ func (j *JujuManager) doModel(ctx context.Context, user *openfga.User, mt names.
 	// Authorization was already enforced via OpenFGA above. The controller
 	// authorizes most model operations against its own state DB, which
 	// the user has no record in, so use a service-level connection.
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &m.Controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}

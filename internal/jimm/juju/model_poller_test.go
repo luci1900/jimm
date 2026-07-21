@@ -44,7 +44,11 @@ func newPerControllerDialer(api juju.API) *perControllerDialer {
 	}
 }
 
-func (d *perControllerDialer) Dial(_ context.Context, ctl *dbmodel.Controller, _ names.ModelTag, _ *openfga.User) (juju.API, error) {
+func (d *perControllerDialer) Dial(ctx context.Context, ctl *dbmodel.Controller, _ names.ModelTag, _ *openfga.User) (juju.API, error) {
+	return d.DialService(ctx, ctl, names.ModelTag{})
+}
+
+func (d *perControllerDialer) DialService(_ context.Context, ctl *dbmodel.Controller, _ names.ModelTag) (juju.API, error) {
 	name := ctl.Name
 	d.mu.Lock()
 	defer d.mu.Unlock()

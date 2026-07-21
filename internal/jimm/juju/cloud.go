@@ -348,7 +348,7 @@ func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Contr
 	// controller's AddCloud requires controller superuser in its own state
 	// DB, which the user has no record in, so use a service-level
 	// connection.
-	api, err := j.dial(ctx, ctl, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, ctl, names.ModelTag{})
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +408,7 @@ func (j *JujuManager) doCloudAdmin(ctx context.Context, user *openfga.User, ct n
 	// Authorization was already enforced via OpenFGA above. The controller
 	// authorizes cloud operations against its own state DB, which the user
 	// has no record in, so use a service-level connection.
-	api, err := j.dial(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -561,7 +561,7 @@ func (j *JujuManager) RemoveCloudFromController(ctx context.Context, user *openf
 	// Authorization was already enforced via OpenFGA above; use a
 	// service-level connection because the controller authorizes cloud
 	// removal against its own state DB.
-	api, err := j.dial(ctx, &controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}

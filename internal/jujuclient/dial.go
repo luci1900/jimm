@@ -56,20 +56,26 @@ func NewDialer(jwtService *jimmjwx.JWTService, controllerUUID string, authFactor
 	}
 }
 
-func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
-	if user != nil {
-		// Mint a token with the user's real OpenFGA permissions, using the same
-		// conversion path as the model proxy. The model tag may be empty for
-		// controller-level dials, in which case the token carries only the
-		// user's controller and cloud access.
-		jwt, err := d.AuthFactory.NewLoginToken(ctx, modelTag, ctl.ResourceTag(), user)
-		if err != nil {
-			return "", err
-		}
-		return base64.StdEncoding.EncodeToString(jwt), nil
-	}
+// serviceUser returns the identity JIMM dials controllers as when acting on
+// its own behalf rather than on behalf of a user.
+func (d *Dialer) serviceUser() *openfga.User {
+	return &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
+}
 
-	// Background/service dial, like watcher, model-import, controller-registration, etc.
+func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
+	// Mint a token with the user's real OpenFGA permissions, using the same
+	// conversion path as the model proxy. The model tag may be empty for
+	// controller-level dials, in which case the token carries only the
+	// user's controller and cloud access.
+	jwt, err := d.AuthFactory.NewLoginToken(ctx, modelTag, ctl.ResourceTag(), user)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(jwt), nil
+}
+
+func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (string, error) {
+	// Service dial, like watcher, model-import, controller-registration, etc.
 	// Use a superuser token under the JIMM service identity.
 	permissions := map[string]string{
 		ctl.ResourceTag().String(): "superuser",
@@ -94,20 +100,55 @@ func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller
 	if err != nil {
 		return nil, err
 	}
-	userTag := d.AdminUsername
-	if user != nil {
-		userTag = user.ResourceTag().String()
-	}
 	return &jujuparams.LoginRequest{
-		AuthTag:       userTag,
+		AuthTag:       user.ResourceTag().String(),
 		ClientVersion: jimmversion.ControllerVersion,
 		Token:         jwtString,
 	}, nil
 }
 
-// Dial implements jimm.Dialer.
-func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+// createServiceLoginRequest creates a jujuparams.LoginRequest for a
+// service-level dial to the given controller and model.
+func (d *Dialer) createServiceLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*jujuparams.LoginRequest, error) {
+	jwtString, err := d.newServiceJWTToken(ctx, ctl, modelTag)
+	if err != nil {
+		return nil, err
+	}
+	return &jujuparams.LoginRequest{
+		AuthTag:       d.serviceUser().ResourceTag().String(),
+		ClientVersion: jimmversion.ControllerVersion,
+		Token:         jwtString,
+	}, nil
+}
 
+// Dial dials a controller on behalf of the given user, minting a token
+// carrying the user's real OpenFGA permissions. The user must be non-nil;
+// to dial on behalf of JIMM itself use DialService.
+func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+	if user == nil {
+		return nil, errors.New("user is required: use DialService to dial on behalf of JIMM")
+	}
+	loginRequest, err := d.createLoginRequest(ctx, ctl, modelTag, user)
+	if err != nil {
+		return nil, err
+	}
+	return d.dialWithLogin(ctx, ctl, modelTag, user, false, loginRequest)
+}
+
+// DialService dials a controller on behalf of JIMM itself, using a
+// superuser token under the JIMM service identity. Callers must have
+// already authorized the operation themselves (e.g. via OpenFGA).
+func (d *Dialer) DialService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+	loginRequest, err := d.createServiceLoginRequest(ctx, ctl, modelTag)
+	if err != nil {
+		return nil, err
+	}
+	return d.dialWithLogin(ctx, ctl, modelTag, d.serviceUser(), true, loginRequest)
+}
+
+// dialWithLogin establishes the websocket connection and performs the login
+// handshake with the given login request.
+func (d *Dialer) dialWithLogin(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User, isService bool, loginRequest *jujuparams.LoginRequest) (*Connection, error) {
 	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
 	if err != nil {
 		return nil, err
@@ -117,13 +158,6 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	}
 
 	client := rpc.NewClient(conn)
-
-	var loginRequest *jujuparams.LoginRequest
-	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
 
 	var res jujuparams.LoginResult
 	if err := client.Call(ctx, "Admin", 3, "", "Login", loginRequest, &res); err != nil {
@@ -156,6 +190,7 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 		ctx:                ctx,
 		client:             client,
 		user:               user,
+		isService:          isService,
 		facadeVersions:     facades,
 		bestFacadeVersions: bestFacadeVersions,
 		monitorC:           monitorC,
@@ -218,8 +253,11 @@ type Connection struct {
 
 	dialer *Dialer
 	user   *openfga.User
-	ctl    *dbmodel.Controller
-	mt     names.ModelTag
+	// isService is true when the connection was established on behalf of
+	// JIMM itself (via DialService) rather than on behalf of a user.
+	isService bool
+	ctl       *dbmodel.Controller
+	mt        names.ModelTag
 }
 
 // Close closes the connection.
@@ -326,7 +364,13 @@ func (c *Connection) Context() context.Context {
 }
 
 func (c *Connection) authorizationHeader(modelTag names.ModelTag, extraHeaders http.Header) (http.Header, error) {
-	jwtString, err := c.dialer.newControllerJWTToken(c.ctx, c.ctl, modelTag, c.user)
+	var jwtString string
+	var err error
+	if c.isService {
+		jwtString, err = c.dialer.newServiceJWTToken(c.ctx, c.ctl, modelTag)
+	} else {
+		jwtString, err = c.dialer.newControllerJWTToken(c.ctx, c.ctl, modelTag, c.user)
+	}
 	if err != nil {
 		return nil, err
 	}

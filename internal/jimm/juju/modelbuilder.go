@@ -596,7 +596,7 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	// This is an internal operation performed on a service-level
 	// connection: the user's token was minted before the model existed, so
 	// it carries no access for the new model UUID.
-	serviceAPI, err := b.jujuManager.dial(b.ctx, b.controller, names.ModelTag{}, nil)
+	serviceAPI, err := b.jujuManager.dialService(b.ctx, b.controller, names.ModelTag{})
 	if err != nil {
 		zapctx.Error(b.ctx, "leaked model", zap.String("model", info.UUID), zaputil.Error(err))
 		b.err = err
@@ -619,7 +619,7 @@ func (b *modelBuilder) updateCredential(ctx context.Context, cred *dbmodel.Cloud
 	// controller only permits force updates from controller superusers.
 	// The user's token carries only their real permissions, so perform the
 	// update on a service-level connection.
-	serviceAPI, err := b.jujuManager.dial(ctx, b.controller, names.ModelTag{}, nil)
+	serviceAPI, err := b.jujuManager.dialService(ctx, b.controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}

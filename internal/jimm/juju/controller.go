@@ -248,7 +248,7 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 	// yet registered in JIMM, so the user's OpenFGA permissions have not
 	// been set up for it.
 	// Authorization was already enforced by the caller as JIMM admin.
-	api, err := j.dialController(ctx, ctl, nil)
+	api, err := j.dialServiceController(ctx, ctl)
 	if err != nil {
 		return fmt.Errorf("failed to dial the controller: %v", err)
 	}
@@ -636,7 +636,7 @@ func (j *JujuManager) UpdateMigratedModel(ctx context.Context, user *openfga.Use
 	}
 
 	// check the model is known to the controller
-	api, err := j.dial(ctx, &targetController, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &targetController, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -735,7 +735,7 @@ func (j *JujuManager) initiateMigration(ctx context.Context, user *openfga.User,
 		}
 	}
 
-	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+	api, err := j.dialService(ctx, &model.Controller, names.ModelTag{})
 	if err != nil {
 		rollbackMigrationMode()
 		return result, fmt.Errorf("failed to dial the controller: %w", err)
@@ -773,7 +773,7 @@ func (j *JujuManager) ControllerConfig(ctx context.Context, user *openfga.User, 
 	// The controller config is fetched for internal purposes (e.g. SSH
 	// dial info); the controller restricts it to superusers in its own
 	// state DB, so use a service-level connection.
-	api, err := j.dialController(ctx, controller, nil)
+	api, err := j.dialServiceController(ctx, controller)
 	if err != nil {
 		return jujucontroller.Config{}, err
 	}

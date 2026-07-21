@@ -78,14 +78,29 @@ func NewJujuManager(
 }
 
 // dial dials the controller and model specified by the given Controller
-// and ModelTag. If no Dialer has been configured then an error with a
-// code of CodeConnectionFailed will be returned.
+// and ModelTag on behalf of the given user, using a token carrying the
+// user's real OpenFGA permissions. If no Dialer has been configured then
+// an error with a code of CodeConnectionFailed will be returned.
 func (j *JujuManager) dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error) {
 	if j == nil || j.Dialer == nil {
 		return nil, errors.Codef(errors.CodeConnectionFailed, "no dialer configured")
 	}
 
 	return j.Dialer.Dial(ctx, ctl, modelTag, user)
+}
+
+// dialService dials the controller and model specified by the given
+// Controller and ModelTag on behalf of JIMM itself, using a superuser
+// token under the JIMM service identity. Callers must have already
+// authorized the operation themselves (e.g. via OpenFGA). If no Dialer has
+// been configured then an error with a code of CodeConnectionFailed will
+// be returned.
+func (j *JujuManager) dialService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (API, error) {
+	if j == nil || j.Dialer == nil {
+		return nil, errors.Codef(errors.CodeConnectionFailed, "no dialer configured")
+	}
+
+	return j.Dialer.DialService(ctx, ctl, modelTag)
 }
 
 // ResourceTag returns JIMM's controller tag stating its UUID.
