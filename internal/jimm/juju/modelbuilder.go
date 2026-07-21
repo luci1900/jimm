@@ -592,7 +592,18 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	// attempts to create a model with the same name again.
 	// TODO(JUJU-8869): We need to keep this despite encoding permissions in
 	// JWTs because Juju returns a different result on migrated models otherwise.
-	if err := api.GrantJIMMModelAdmin(b.ctx, names.NewModelTag(info.UUID)); err != nil {
+	//
+	// This is an internal operation performed on a service-level
+	// connection: the user's token was minted before the model existed, so
+	// it carries no access for the new model UUID.
+	serviceAPI, err := b.jujuManager.dial(b.ctx, b.controller, names.ModelTag{}, nil)
+	if err != nil {
+		zapctx.Error(b.ctx, "leaked model", zap.String("model", info.UUID), zaputil.Error(err))
+		b.err = err
+		return b
+	}
+	defer serviceAPI.Close()
+	if err := serviceAPI.GrantJIMMModelAdmin(b.ctx, names.NewModelTag(info.UUID)); err != nil {
 		zapctx.Error(b.ctx, "leaked model", zap.String("model", info.UUID), zaputil.Error(err))
 		b.err = err
 		return b
