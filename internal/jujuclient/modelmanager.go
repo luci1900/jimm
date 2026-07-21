@@ -118,7 +118,13 @@ func (c Connection) DumpModelDB(ctx context.Context, tag names.ModelTag) (map[st
 
 // ListModelSummaries retrieves the list of model summaries from the controler
 func (c Connection) ListModelSummaries(ctx context.Context, ms jujuparams.ModelSummariesRequest) ([]base.UserModelSummary, error) {
-	return modelmanager.NewClient(&c).ListModelSummaries(c.user.ResourceTag().String(), ms.All)
+	// Service-level connections have no user; use the JIMM admin identity,
+	// which has visibility of all models on the controller.
+	userTag := names.NewUserTag(c.dialer.AdminUsername).String()
+	if c.user != nil {
+		userTag = c.user.ResourceTag().String()
+	}
+	return modelmanager.NewClient(&c).ListModelSummaries(userTag, ms.All)
 }
 
 // ValidateModelUpgrade validates if a model is allowed to perform an upgrade. It
