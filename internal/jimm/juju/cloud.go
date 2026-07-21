@@ -344,7 +344,11 @@ func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, ta
 // the controller. No error will be returned if the cloud already exists on
 // the controller or the user already has access to the cloud.
 func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Controller, user *openfga.User, tag names.CloudTag, cloud jujucloud.Cloud, force bool) (*jujucloud.Cloud, error) {
-	api, err := j.dial(ctx, ctl, names.ModelTag{}, user)
+	// Authorization was already enforced by the callers via OpenFGA. The
+	// controller's AddCloud requires controller superuser in its own state
+	// DB, which the user has no record in, so use a service-level
+	// connection.
+	api, err := j.dial(ctx, ctl, names.ModelTag{}, nil)
 	if err != nil {
 		return nil, err
 	}
