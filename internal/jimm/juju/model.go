@@ -636,16 +636,7 @@ func (j *JujuManager) DestroyModel(ctx context.Context, user *openfga.User, mt n
 			zapctx.Error(ctx, "failed to store model change", zaputil.Error(err))
 			return err
 		}
-		// Model-admin authorization was already enforced via OpenFGA in
-		// doModelAdmin. The controller authorizes DestroyModels against
-		// its own state DB, which the user has no record in, so destroy
-		// the model on a service-level connection.
-		serviceAPI, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
-		if err != nil {
-			return err
-		}
-		defer serviceAPI.Close()
-		if err := serviceAPI.DestroyModel(ctx, mt, destroyStorage, force, maxWait, timeout); err != nil {
+		if err := api.DestroyModel(ctx, mt, destroyStorage, force, maxWait, timeout); err != nil {
 			// If the model is not found on the controller, it has already
 			// been deleted. In that case we can perform an immediate
 			// deletion from JIMM's database and OpenFGA.
@@ -727,7 +718,10 @@ func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User,
 		return version.Number{}, err
 	}
 
-	api, err := j.dialController(ctx, controller, user)
+	// The caller was already authorized as a JIMM admin in the facade
+	// layer. The controller model is not modelled in JIMM's OpenFGA, so the
+	// user's token carries no access to it; use a service-level connection.
+	api, err := j.dialController(ctx, controller, nil)
 	if err != nil {
 		return version.Number{}, err
 	}
@@ -811,7 +805,10 @@ func (j *JujuManager) doModel(ctx context.Context, user *openfga.User, mt names.
 		return errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, user)
+	// Authorization was already enforced via OpenFGA above. The controller
+	// authorizes most model operations against its own state DB, which
+	// the user has no record in, so use a service-level connection.
+	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return err
 	}
@@ -839,17 +836,7 @@ func (j *JujuManager) ChangeModelCredential(ctx context.Context, user *openfga.U
 
 	var m *dbmodel.Model
 	err = j.doModelAdmin(ctx, user, modelTag, func(model *dbmodel.Model, api API) error {
-		// The forced credential update is an internal operation: the
-		// credential was already validated, and the controller only permits
-		// force updates from controller superusers. The user's token
-		// carries only their real permissions, so perform the update on a
-		// service-level connection.
-		serviceAPI, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
-		if err != nil {
-			return err
-		}
-		defer serviceAPI.Close()
-		_, err = j.updateControllerCloudCredential(ctx, &credential, serviceAPI.UpdateCloudsCredentialForce)
+		_, err = j.updateControllerCloudCredential(ctx, &credential, api.UpdateCloudsCredentialForce)
 		if err != nil {
 			return err
 		}

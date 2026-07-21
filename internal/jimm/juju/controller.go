@@ -770,7 +770,10 @@ func (j *JujuManager) ControllerConfig(ctx context.Context, user *openfga.User, 
 		return jujucontroller.Config{}, err
 	}
 
-	api, err := j.dialController(ctx, controller, user)
+	// The controller config is fetched for internal purposes (e.g. SSH
+	// dial info); the controller restricts it to superusers in its own
+	// state DB, so use a service-level connection.
+	api, err := j.dialController(ctx, controller, nil)
 	if err != nil {
 		return jujucontroller.Config{}, err
 	}

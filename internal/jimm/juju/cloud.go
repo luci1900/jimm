@@ -405,7 +405,10 @@ func (j *JujuManager) doCloudAdmin(ctx context.Context, user *openfga.User, ct n
 		}
 		return fmt.Errorf("cloud administration not available for %s", ct.Id())
 	}
-	api, err := j.dial(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{}, user)
+	// Authorization was already enforced via OpenFGA above. The controller
+	// authorizes cloud operations against its own state DB, which the user
+	// has no record in, so use a service-level connection.
+	api, err := j.dial(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return err
 	}
@@ -555,7 +558,10 @@ func (j *JujuManager) RemoveCloudFromController(ctx context.Context, user *openf
 		return errors.Codef(errors.CodeNotFound, "cloud not hosted by controller")
 	}
 
-	api, err := j.dial(ctx, &controller, names.ModelTag{}, user)
+	// Authorization was already enforced via OpenFGA above; use a
+	// service-level connection because the controller authorizes cloud
+	// removal against its own state DB.
+	api, err := j.dial(ctx, &controller, names.ModelTag{}, nil)
 	if err != nil {
 		return err
 	}
