@@ -244,7 +244,11 @@ func (j *JujuManager) AddController(ctx context.Context, user *openfga.User, ctl
 		}
 	}
 
-	api, err := j.dialController(ctx, ctl, user)
+	// Use a service-level dial (nil user) because the controller is not
+	// yet registered in JIMM, so the user's OpenFGA permissions have not
+	// been set up for it.
+	// Authorization was already enforced by the caller as JIMM admin.
+	api, err := j.dialController(ctx, ctl, nil)
 	if err != nil {
 		return fmt.Errorf("failed to dial the controller: %v", err)
 	}
