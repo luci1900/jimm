@@ -216,7 +216,12 @@ func (j *JujuManager) ModelInfo(ctx context.Context, user *openfga.User, mt name
 		return jujuclient.ModelInfo{}, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, user)
+	// Authorization has already been checked via OpenFGA above. The
+	// controller's ModelInfo has stricter server-side permission checks
+	// than the user's token assertions may satisfy, and mergeModelInfo
+	// rebuilds the users list from OpenFGA, so fetch the model info on a
+	// service-level connection.
+	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return jujuclient.ModelInfo{}, err
 	}
@@ -260,10 +265,12 @@ func (j *JujuManager) reactToModelInfoError(ctx context.Context, user *openfga.U
 		}
 		// If the model has been migrated internally, we call api.ModelInfo again
 		// to get the updated model information from the new controller.
+		// This is an internal follow-up call, so use a service-level
+		// connection.
 		if err := j.Database.GetModel(ctx, model); err != nil {
 			return jujuclient.ModelInfo{}, err
 		}
-		api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, user)
+		api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
 		if err != nil {
 			return jujuclient.ModelInfo{}, err
 		}
@@ -491,7 +498,10 @@ func (j *JujuManager) ModelStatus(ctx context.Context, user *openfga.User, mt na
 		return base.ModelStatus{}, errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 
-	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, user)
+	// Authorization has already been checked via OpenFGA above, so fetch
+	// the model status on a service-level connection: the controller's
+	// server-side checks may be stricter than the user's token assertions.
+	api, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return base.ModelStatus{}, err
 	}
