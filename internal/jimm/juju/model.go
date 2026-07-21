@@ -636,7 +636,16 @@ func (j *JujuManager) DestroyModel(ctx context.Context, user *openfga.User, mt n
 			zapctx.Error(ctx, "failed to store model change", zaputil.Error(err))
 			return err
 		}
-		if err := api.DestroyModel(ctx, mt, destroyStorage, force, maxWait, timeout); err != nil {
+		// Model-admin authorization was already enforced via OpenFGA in
+		// doModelAdmin. The controller authorizes DestroyModels against
+		// its own state DB, which the user has no record in, so destroy
+		// the model on a service-level connection.
+		serviceAPI, err := j.dial(ctx, &m.Controller, names.ModelTag{}, nil)
+		if err != nil {
+			return err
+		}
+		defer serviceAPI.Close()
+		if err := serviceAPI.DestroyModel(ctx, mt, destroyStorage, force, maxWait, timeout); err != nil {
 			// If the model is not found on the controller, it has already
 			// been deleted. In that case we can perform an immediate
 			// deletion from JIMM's database and OpenFGA.
