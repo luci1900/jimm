@@ -75,8 +75,10 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 	err = j.Database.GetApplicationOffer(ctx, &offerCheck)
 	if err == nil {
 		// The offer exists in JIMM's database, check against the Juju controller
-		// It's possible for an offer record in JIMM to dangle
-		checkAPI, dialErr := j.dial(ctx, &model.Controller, names.ModelTag{}, user)
+		// It's possible for an offer record in JIMM to dangle. This check is
+		// performed on a service-level connection for the same reason as
+		// the Offer call below.
+		checkAPI, dialErr := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
 		if dialErr != nil {
 			return dialErr
 		}
@@ -100,7 +102,12 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 		return err
 	}
 
-	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, user)
+	// Model-admin authorization was already enforced via OpenFGA above.
+	// The controller's Offer implementation authorizes the offerer against
+	// its own state DB (superseding token claims), which the user has no
+	// record in, so this internal operation requires a service-level
+	// connection.
+	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return err
 	}
@@ -385,7 +392,10 @@ func (j *JujuManager) GetApplicationOffer(ctx context.Context, user *openfga.Use
 	// controller. The all-watcher events do not include enough
 	// information to reasonably keep the local database up-to-date,
 	// and it would be non-trivial to make it do so.
-	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, user)
+	// Offer-read authorization was already enforced via OpenFGA above; the
+	// controller authorizes against its own state DB, so use a
+	// service-level connection.
+	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -613,8 +623,10 @@ func (j *JujuManager) doApplicationOfferAdmin(ctx context.Context, user *openfga
 	if !isOfferAdmin {
 		return errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
-	// add offer admin claim
-	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, user)
+	// Offer-admin authorization was already enforced via OpenFGA above;
+	// the controller authorizes against its own state DB, so use a
+	// service-level connection.
+	api, err := j.dial(ctx, &offer.Model.Controller, names.ModelTag{}, nil)
 	if err != nil {
 		return err
 	}
