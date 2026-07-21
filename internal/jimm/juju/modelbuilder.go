@@ -548,7 +548,7 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	defer api.Close()
 
 	if b.credential != nil {
-		if err := b.updateCredential(b.ctx, api, b.credential); err != nil {
+		if err := b.updateCredential(b.ctx, b.credential); err != nil {
 			b.err = fmt.Errorf("failed to update cloud credential: %w", err)
 			return b
 		}
@@ -602,10 +602,19 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	return b
 }
 
-func (b *modelBuilder) updateCredential(ctx context.Context, api API, cred *dbmodel.CloudCredential) error {
-	var err error
+func (b *modelBuilder) updateCredential(ctx context.Context, cred *dbmodel.CloudCredential) error {
+	// The forced credential update is an internal operation: JIMM has
+	// already validated the credential with CheckCredentialModels, and the
+	// controller only permits force updates from controller superusers.
+	// The user's token carries only their real permissions, so perform the
+	// update on a service-level connection.
+	serviceAPI, err := b.jujuManager.dial(ctx, b.controller, names.ModelTag{}, nil)
+	if err != nil {
+		return err
+	}
+	defer serviceAPI.Close()
 
-	_, err = b.jujuManager.updateControllerCloudCredential(ctx, cred, api.UpdateCloudsCredentialForce)
+	_, err = b.jujuManager.updateControllerCloudCredential(ctx, cred, serviceAPI.UpdateCloudsCredentialForce)
 	return err
 }
 

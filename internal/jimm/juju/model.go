@@ -820,7 +820,17 @@ func (j *JujuManager) ChangeModelCredential(ctx context.Context, user *openfga.U
 
 	var m *dbmodel.Model
 	err = j.doModelAdmin(ctx, user, modelTag, func(model *dbmodel.Model, api API) error {
-		_, err = j.updateControllerCloudCredential(ctx, &credential, api.UpdateCloudsCredentialForce)
+		// The forced credential update is an internal operation: the
+		// credential was already validated, and the controller only permits
+		// force updates from controller superusers. The user's token
+		// carries only their real permissions, so perform the update on a
+		// service-level connection.
+		serviceAPI, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+		if err != nil {
+			return err
+		}
+		defer serviceAPI.Close()
+		_, err = j.updateControllerCloudCredential(ctx, &credential, serviceAPI.UpdateCloudsCredentialForce)
 		if err != nil {
 			return err
 		}
