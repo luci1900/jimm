@@ -28,7 +28,6 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
-	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/rpc"
@@ -36,26 +35,28 @@ import (
 	jimmversion "github.com/canonical/jimm/v3/version"
 )
 
+// ScopedTokenMinter mints a caller-scoped JWT for a user operating on a
+// specific controller and (optional) model. It is satisfied by
+// *jujuauth.Factory.
+type ScopedTokenMinter interface {
+	NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
+}
+
 // A Dialer is an implementation of a jimm.Dialer that adapts a juju API
 // connection to provide a jimm API.
 type Dialer struct {
-	// Database is used to fetch the controller's cloud-region associations
-	// when building caller-scoped JWT access claims.
-	Database jujuauth.GeneratorDatabase
-	// AccessChecker resolves the caller's OpenFGA-derived Juju access levels
-	// for models, controllers, and clouds.
-	AccessChecker jujuauth.GeneratorAccessChecker
-	// JWTService signs all JWT tokens.
+	// TokenMinter mints caller-scoped JWT tokens for on-behalf-of-user dials.
+	TokenMinter ScopedTokenMinter
+	// JWTService signs superuser JWT tokens for JIMM service-identity dials.
 	JWTService    *jimmjwx.JWTService
 	AdminUsername string
 }
 
 // NewDialer creates a new Dialer from dependencies.
-func NewDialer(jwtService *jimmjwx.JWTService, db jujuauth.GeneratorDatabase, accessChecker jujuauth.GeneratorAccessChecker, controllerUUID string) *Dialer {
+func NewDialer(jwtService *jimmjwx.JWTService, tokenMinter ScopedTokenMinter, controllerUUID string) *Dialer {
 	return &Dialer{
-		JWTService:    jwtService,
-		Database:      db,
-		AccessChecker: accessChecker,
+		JWTService:  jwtService,
+		TokenMinter: tokenMinter,
 		// The admin username is a Juju external user, just like the JIMM users.
 		AdminUsername: fmt.Sprintf("jaas-%s@external", controllerUUID),
 	}
@@ -85,22 +86,7 @@ func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller
 // newCallerJWTToken mints a caller-scoped JWT reflecting the user's real
 // OpenFGA-derived permissions on the given controller and optional model.
 func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
-	// Fetch the controller with CloudRegions populated so BuildAccessMap can
-	// enumerate clouds and resolve cloud-access claims.
-	ctlWithClouds := dbmodel.Controller{}
-	ctlWithClouds.SetTag(ctl.ResourceTag())
-	if err := d.Database.GetController(ctx, &ctlWithClouds); err != nil {
-		return "", fmt.Errorf("failed to fetch controller for access map: %w", err)
-	}
-	accessMap, err := jujuauth.BuildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), ctlWithClouds, d.AccessChecker)
-	if err != nil {
-		return "", err
-	}
-	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
-		Controller: ctl.ResourceTag().Id(),
-		User:       user.Tag().String(),
-		Access:     accessMap,
-	})
+	jwt, err := d.TokenMinter.NewScopedLoginToken(ctx, modelTag, ctl, user)
 	if err != nil {
 		return "", err
 	}

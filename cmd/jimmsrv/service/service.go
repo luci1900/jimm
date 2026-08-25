@@ -39,6 +39,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm/config"
 	jimmcreds "github.com/canonical/jimm/v3/internal/jimm/credentials"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
+	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimm/login"
 	"github.com/canonical/jimm/v3/internal/jimm/permissions"
 	"github.com/canonical/jimm/v3/internal/jimmhttp"
@@ -482,13 +483,15 @@ func NewServiceDependencies(ctx context.Context, p Params) (*ServiceDependencies
 		JWKS:   jwksService,
 	})
 
-	// Build a PermissionManager so the dialer can mint caller-scoped JWT
-	// tokens without going through the full JIMM struct.
+	// Build a PermissionManager and JujuAuthFactory so the dialer can mint
+	// caller-scoped JWT tokens without going through the full JIMM struct.
+	// JIMM.New constructs its own stateless Factory for its other uses.
 	dialerPermManager, err := permissions.NewManager(db, openFGAclient, controllerUUID, names.NewControllerTag(controllerUUID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dialer permission manager: %w", err)
 	}
-	dialer := jujuclient.NewDialer(jwtService, db, dialerPermManager, controllerUUID)
+	dialerFactory := jujuauth.NewFactory(db, jwtService, dialerPermManager)
+	dialer := jujuclient.NewDialer(jwtService, dialerFactory, controllerUUID)
 
 	deps := &ServiceDependencies{
 		ControllerUUID:                controllerUUID,

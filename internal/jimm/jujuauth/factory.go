@@ -4,10 +4,13 @@ package jujuauth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/juju/names/v5"
 	"github.com/juju/version/v2"
 
+	"github.com/canonical/jimm/v3/internal/dbmodel"
+	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
 )
 
@@ -69,6 +72,31 @@ func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.Mod
 	generator := f.NewLoginGenerator()
 	generator.SetTags(modelTag, controllerTag)
 	return generator.makeSuperuserToken(ctx, user)
+}
+
+// NewScopedLoginToken mints a caller-scoped login token for the given user
+// on the specified controller. The controller's CloudRegions are fetched
+// from the database so cloud-access claims can be resolved.
+//
+// The model tag is optional: pass a zero-value names.ModelTag when the
+// operation is not model-specific (e.g. cloud or controller-level calls).
+func (f *Factory) NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+	// Fetch the controller with CloudRegions populated so buildAccessMap can
+	// enumerate clouds and resolve cloud-access claims.
+	ctlWithClouds := dbmodel.Controller{}
+	ctlWithClouds.SetTag(ctl.ResourceTag())
+	if err := f.db.GetController(ctx, &ctlWithClouds); err != nil {
+		return nil, fmt.Errorf("failed to fetch controller for access map: %w", err)
+	}
+	accessMap, err := buildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), ctlWithClouds, f.accessChecker)
+	if err != nil {
+		return nil, err
+	}
+	return f.jwtService.NewJWT(ctx, jimmjwx.JWTParams{
+		Controller: ctl.ResourceTag().Id(),
+		User:       user.Tag().String(),
+		Access:     accessMap,
+	})
 }
 
 // NewLoginTokenForController mints a login token for the given user on the

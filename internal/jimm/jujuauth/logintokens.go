@@ -107,7 +107,7 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, user *o
 	})
 }
 
-// BuildAccessMap resolves the caller's OpenFGA permissions for the given
+// buildAccessMap resolves the caller's OpenFGA permissions for the given
 // controller (and optional model) and returns a JWT access-claim map.
 //
 // If mt is the zero value (empty ID) the model-access lookup is skipped,
@@ -117,7 +117,7 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, user *o
 // The returned map contains at least the controller access entry, plus one
 // entry per cloud known to the controller, and (when mt is non-zero) the
 // model access entry.
-func BuildAccessMap(
+func buildAccessMap(
 	ctx context.Context,
 	user *openfga.User,
 	mt names.ModelTag,
@@ -181,7 +181,7 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 
 	// Recreate the accessMapCache to prevent leaking permissions across multiple login requests.
 	var err error
-	auth.accessMapCache, err = BuildAccessMap(ctx, auth.user, auth.mt, auth.ct, ctl, auth.accessChecker)
+	auth.accessMapCache, err = buildAccessMap(ctx, auth.user, auth.mt, auth.ct, ctl, auth.accessChecker)
 	if err != nil {
 		return nil, err
 	}
