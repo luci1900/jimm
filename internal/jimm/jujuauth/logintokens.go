@@ -169,9 +169,6 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 	}
 	auth.user = user
 
-	if auth.mt.Id() == "" {
-		return nil, errors.New("model not set")
-	}
 	if auth.ct.Id() == "" {
 		return nil, errors.New("controller not set")
 	}

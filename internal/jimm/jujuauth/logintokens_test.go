@@ -100,6 +100,10 @@ func (t *testJWTService) NewJWT(ctx context.Context, params jimmjwx.JWTParams) (
 func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 	c := qt.New(t)
 
+	// Note: error-path cases for the model/controller access checks use an
+	// empty testDatabase so the DB fetch inside MakeLoginToken succeeds before
+	// BuildAccessMap runs. The returned controller has no CloudRegions, which
+	// keeps cloud lookups out of the path and makes these cases robust.
 	ct := names.NewControllerTag(uuid.New().String())
 	mt := names.NewModelTag(uuid.New().String())
 

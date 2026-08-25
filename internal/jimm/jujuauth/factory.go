@@ -8,8 +8,6 @@ import (
 	"github.com/juju/names/v5"
 	"github.com/juju/version/v2"
 
-	"github.com/canonical/jimm/v3/internal/dbmodel"
-	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
 )
 
@@ -73,33 +71,14 @@ func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.Mod
 	return generator.makeSuperuserToken(ctx, user)
 }
 
-// NewScopedLoginToken mints a caller-scoped login token using a pre-fetched
-// controller (which already contains CloudRegion associations). The model tag
-// is optional: pass a zero-value names.ModelTag when the operation is not
-// model-specific (e.g. cloud or controller-level operations).
-//
-// This is the preferred path for code that already holds a *dbmodel.Controller
-// (such as the jujuclient dialer) and wants to avoid a redundant DB lookup.
-func (f *Factory) NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
-	accessMap, err := BuildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), *ctl, f.accessChecker)
-	if err != nil {
-		return nil, err
-	}
-	return f.jwtService.NewJWT(ctx, jimmjwx.JWTParams{
-		Controller: ctl.ResourceTag().Id(),
-		User:       user.Tag().String(),
-		Access:     accessMap,
-	})
-}
-
 // NewLoginTokenForController mints a login token for the given user on the
 // specified controller. If the controller's agent version supports caller-scoped
 // tokens (>= minJujuVersionForScopedToken) a properly-scoped token is minted;
 // otherwise a superuser token is returned as a fallback for older Juju versions
 // that do not correctly honour model-level JWT claims.
 //
-// The model tag is required for the superuser fallback path; it may be zero for
-// newer controllers.
+// The model tag is required for both the caller-scoped and superuser fallback
+// paths.
 func (f *Factory) NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error) {
 	ctrlVersion, err := version.Parse(controllerAgentVersion)
 	if err != nil || ctrlVersion.Compare(minJujuVersionForScopedToken) < 0 {
