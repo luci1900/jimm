@@ -47,6 +47,9 @@ type ControllerConnectionDetails struct {
 	// Addresses holds the known addresses on which the controller is
 	// listening.
 	Addresses []network.MachineHostPorts
+	// AgentVersion is the Juju agent version reported by the controller.
+	// Used to gate JWT minting behaviour for older controllers.
+	AgentVersion string
 }
 
 func toControllerConnectionDetails(controller dbmodel.Controller) ControllerConnectionDetails {
@@ -57,5 +60,6 @@ func toControllerConnectionDetails(controller dbmodel.Controller) ControllerConn
 		PublicAddress:  controller.PublicAddress,
 		TLSHostname:    controller.TLSHostname,
 		Addresses:      addresses,
+		AgentVersion:   controller.AgentVersion,
 	}
 }

@@ -6,9 +6,23 @@ import (
 	"context"
 
 	"github.com/juju/names/v5"
+	"github.com/juju/version/v2"
 
+	"github.com/canonical/jimm/v3/internal/dbmodel"
+	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
 )
+
+// minJujuVersionForScopedToken is the first Juju controller version that
+// correctly honours model-level access in a JWT during permission checks.
+// Controllers older than this version incorrectly reject tokens that carry
+// model-admin access without a controller-superuser claim, so a superuser
+// fallback token must be minted for them instead.
+//
+// TODO(de-proxy): Once the minimum supported Juju controller version
+// exceeds this boundary, remove NewSuperuserLoginToken and
+// makeSuperuserToken entirely.
+var minJujuVersionForScopedToken = version.MustParse("3.6.24")
 
 // Factory holds the necessary components for producing
 // Juju authenticator objects. Currently a login token generator
@@ -48,14 +62,51 @@ func (f *Factory) NewLoginToken(ctx context.Context, modelTag names.ModelTag, co
 
 // NewSuperuserLoginToken creates a login token for the provided user with controller superuser and model admin permissions.
 //
-// NB: Avoid using method and prefer NewLoginToken to mint a token with the user's real perwmissions.
+// NB: Avoid using this method and prefer NewLoginTokenForController to mint a token with the
+// user's real permissions when the controller version supports it.
 //
-// This is only used as a fallback for avoiding a bug in Juju 3.6.23 and below where Juju does not check the model admin
-// permission for a JWT.
+// This is only used as a fallback for avoiding a bug in Juju 3.6.23 and below where Juju does
+// not correctly check the model admin permission for a JWT.
 func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User) ([]byte, error) {
 	generator := f.NewLoginGenerator()
 	generator.SetTags(modelTag, controllerTag)
 	return generator.makeSuperuserToken(ctx, user)
+}
+
+// NewScopedLoginToken mints a caller-scoped login token using a pre-fetched
+// controller (which already contains CloudRegion associations). The model tag
+// is optional: pass a zero-value names.ModelTag when the operation is not
+// model-specific (e.g. cloud or controller-level operations).
+//
+// This is the preferred path for code that already holds a *dbmodel.Controller
+// (such as the jujuclient dialer) and wants to avoid a redundant DB lookup.
+func (f *Factory) NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+	accessMap, err := BuildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), *ctl, f.accessChecker)
+	if err != nil {
+		return nil, err
+	}
+	return f.jwtService.NewJWT(ctx, jimmjwx.JWTParams{
+		Controller: ctl.ResourceTag().Id(),
+		User:       user.Tag().String(),
+		Access:     accessMap,
+	})
+}
+
+// NewLoginTokenForController mints a login token for the given user on the
+// specified controller. If the controller's agent version supports caller-scoped
+// tokens (>= minJujuVersionForScopedToken) a properly-scoped token is minted;
+// otherwise a superuser token is returned as a fallback for older Juju versions
+// that do not correctly honour model-level JWT claims.
+//
+// The model tag is required for the superuser fallback path; it may be zero for
+// newer controllers.
+func (f *Factory) NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error) {
+	ctrlVersion, err := version.Parse(controllerAgentVersion)
+	if err != nil || ctrlVersion.Compare(minJujuVersionForScopedToken) < 0 {
+		// Unknown version or too old: use the superuser fallback.
+		return f.NewSuperuserLoginToken(ctx, modelTag, controllerTag, user)
+	}
+	return f.NewLoginToken(ctx, modelTag, controllerTag, user)
 }
 
 // NewSSHGenerator returns a new token generator for Juju SSH connections.

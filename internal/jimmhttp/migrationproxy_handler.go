@@ -90,10 +90,13 @@ func (hph *MigrationHTTPProxyHandler) ProxyHTTP(w http.ResponseWriter, req *http
 		return
 	}
 
-	// Mint a superuser token since the user is already authorized as a JIMM admin.
+	// Mint a login token scoped to the caller's real permissions. For
+	// controllers below the fix boundary (Juju <=3.6.23), a superuser
+	// token is used as a fallback due to a Juju bug where model-admin
+	// JWT claims are not honoured.
 	mt := names.NewModelTag(modelUUID)
 	ct := names.NewControllerTag(controllerDetails.ControllerUUID)
-	jwt, err := hph.loginTokenProvider.NewSuperuserLoginToken(ctx, mt, ct, user)
+	jwt, err := hph.loginTokenProvider.NewLoginTokenForController(ctx, mt, ct, user, controllerDetails.AgentVersion)
 	if err != nil {
 		writeError(ctx, w, http.StatusInternalServerError, err, "failed to generate login token")
 		return

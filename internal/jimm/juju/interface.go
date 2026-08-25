@@ -24,13 +24,20 @@ import (
 
 // A Dialer provides a connection to a controller.
 type Dialer interface {
-	// Dial creates an API connection to a controller. If the given
-	// model-tag is non-zero the connection will be to that model,
-	// otherwise the connection is to the controller. After successfully
-	// dialing the controller the UUID, AgentVersion and HostPorts fields
-	// in the given controller should be updated to the values provided
-	// by the controller.
+	// Dial creates an API connection to a controller on behalf of a real
+	// user. The user must not be nil. If the given model-tag is non-zero
+	// the connection will be to that model, otherwise the connection is
+	// to the controller. After successfully dialing the controller the
+	// UUID, AgentVersion and HostPorts fields in the given controller
+	// should be updated to the values provided by the controller.
 	Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
+
+	// DialAsService creates an API connection to a controller using
+	// JIMM's own service identity (no user). It mints a superuser token
+	// under the JIMM admin username and is intended solely for internal
+	// housekeeping operations (watcher, upgrade, model-status polling,
+	// etc.) that are not initiated by a real user.
+	DialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (API, error)
 }
 
 // An API is the interface JIMM uses to access the API on a controller.

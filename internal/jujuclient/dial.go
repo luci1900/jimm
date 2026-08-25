@@ -28,6 +28,7 @@ import (
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
+	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
 	"github.com/canonical/jimm/v3/internal/rpc"
@@ -38,33 +39,67 @@ import (
 // A Dialer is an implementation of a jimm.Dialer that adapts a juju API
 // connection to provide a jimm API.
 type Dialer struct {
+	// Database is used to fetch the controller's cloud-region associations
+	// when building caller-scoped JWT access claims.
+	Database jujuauth.GeneratorDatabase
+	// AccessChecker resolves the caller's OpenFGA-derived Juju access levels
+	// for models, controllers, and clouds.
+	AccessChecker jujuauth.GeneratorAccessChecker
+	// JWTService signs all JWT tokens.
 	JWTService    *jimmjwx.JWTService
 	AdminUsername string
 }
 
 // NewDialer creates a new Dialer from dependencies.
-func NewDialer(jwtService *jimmjwx.JWTService, controllerUUID string) *Dialer {
+func NewDialer(jwtService *jimmjwx.JWTService, db jujuauth.GeneratorDatabase, accessChecker jujuauth.GeneratorAccessChecker, controllerUUID string) *Dialer {
 	return &Dialer{
-		JWTService: jwtService,
+		JWTService:    jwtService,
+		Database:      db,
+		AccessChecker: accessChecker,
 		// The admin username is a Juju external user, just like the JIMM users.
 		AdminUsername: fmt.Sprintf("jaas-%s@external", controllerUUID),
 	}
 }
 
-func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, userTag string) (string, error) {
-	// Always request superuser permissions, even when representing a non-admin user
-	// This is only safe because we have already checked the user's openfga permissions in a layer above.
+// newServiceJWTToken mints a superuser JWT for JIMM's own service-identity
+// operations (watcher, upgrade, housekeeping). The token is issued under the
+// JIMM admin username, not a real user.
+func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (string, error) {
 	permissions := map[string]string{
 		ctl.ResourceTag().String(): "superuser",
 	}
 	if modelTag.Id() != "" {
 		permissions[modelTag.String()] = string(jujuparams.ModelAdminAccess)
 	}
-
 	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
 		Controller: ctl.ResourceTag().Id(),
-		User:       userTag,
+		User:       d.AdminUsername,
 		Access:     permissions,
+	})
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(jwt), nil
+}
+
+// newCallerJWTToken mints a caller-scoped JWT reflecting the user's real
+// OpenFGA-derived permissions on the given controller and optional model.
+func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
+	// Fetch the controller with CloudRegions populated so BuildAccessMap can
+	// enumerate clouds and resolve cloud-access claims.
+	ctlWithClouds := dbmodel.Controller{}
+	ctlWithClouds.SetTag(ctl.ResourceTag())
+	if err := d.Database.GetController(ctx, &ctlWithClouds); err != nil {
+		return "", fmt.Errorf("failed to fetch controller for access map: %w", err)
+	}
+	accessMap, err := jujuauth.BuildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), ctlWithClouds, d.AccessChecker)
+	if err != nil {
+		return "", err
+	}
+	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
+		Controller: ctl.ResourceTag().Id(),
+		User:       user.Tag().String(),
+		Access:     accessMap,
 	})
 	if err != nil {
 		return "", err
@@ -74,21 +109,38 @@ func (d *Dialer) newControllerJWTToken(ctx context.Context, ctl *dbmodel.Control
 
 // createLoginRequest creates a jujuparams.LoginRequest for the given controller, model and user.
 func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
-	userTag := user.ResourceTag().String()
-	jwtString, err := d.newControllerJWTToken(ctx, ctl, modelTag, userTag)
+	jwtString, err := d.newCallerJWTToken(ctx, ctl, modelTag, user)
 	if err != nil {
 		return nil, err
 	}
-
 	return &jujuparams.LoginRequest{
-		AuthTag:       userTag,
+		AuthTag:       user.ResourceTag().String(),
 		ClientVersion: jimmversion.ControllerVersion,
 		Token:         jwtString,
 	}, nil
 }
 
-// Dial implements jimm.Dialer.
+// createServiceLoginRequest creates a jujuparams.LoginRequest for JIMM's own
+// service-identity (no real user). It always mints a superuser token under
+// the JIMM admin username.
+func (d *Dialer) createServiceLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*jujuparams.LoginRequest, error) {
+	jwtString, err := d.newServiceJWTToken(ctx, ctl, modelTag)
+	if err != nil {
+		return nil, err
+	}
+	return &jujuparams.LoginRequest{
+		AuthTag:       d.AdminUsername,
+		ClientVersion: jimmversion.ControllerVersion,
+		Token:         jwtString,
+	}, nil
+}
+
+// Dial implements jimm.Dialer. The user must be non-nil; use DialAsService for
+// JIMM's own internal operations that have no associated user.
 func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+	if user == nil {
+		return nil, errors.New("Dial requires a non-nil user; use DialAsService for JIMM internal operations")
+	}
 
 	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
 	if err != nil {
@@ -99,10 +151,6 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	}
 
 	client := rpc.NewClient(conn)
-
-	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
-	}
 
 	var loginRequest *jujuparams.LoginRequest
 	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
@@ -142,6 +190,70 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 		ctx:                ctx,
 		client:             client,
 		user:               user,
+		facadeVersions:     facades,
+		bestFacadeVersions: bestFacadeVersions,
+		monitorC:           monitorC,
+		broken:             broken,
+		dialer:             d,
+		ctl:                ctl,
+		mt:                 modelTag,
+	}, nil
+}
+
+// DialAsService dials the given controller on behalf of JIMM itself (no user).
+// It mints a superuser token under the JIMM service identity (jaas-<uuid>@external).
+// Use this for internal housekeeping operations such as the watcher, upgrade
+// worker, model-status polling, and controller/model admin tasks that are not
+// initiated by a real user.
+func (d *Dialer) DialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if conn == nil {
+		return nil, errors.Codef(errors.CodeConnectionFailed, "%w", err)
+	}
+
+	client := rpc.NewClient(conn)
+
+	loginRequest, err := d.createServiceLoginRequest(ctx, ctl, modelTag)
+	if err != nil {
+		client.Close()
+		return nil, err
+	}
+
+	var res jujuparams.LoginResult
+	if err := client.Call(ctx, "Admin", 3, "", "Login", loginRequest, &res); err != nil {
+		client.Close()
+		return nil, errors.Codef(errors.CodeConnectionFailed, "%w", err)
+	}
+
+	ct, err := names.ParseControllerTag(res.ControllerTag)
+	if err == nil {
+		ctl.SetTag(ct)
+	}
+	if res.ServerVersion != "" {
+		ctl.AgentVersion = res.ServerVersion
+	}
+	ctl.Addresses = dbmodel.HostPorts(res.Servers)
+	facades := make(map[string]bool)
+	bestFacadeVersions := make(map[string]int)
+	for _, fv := range res.Facades {
+		sort.Sort(sort.Reverse(sort.IntSlice(fv.Versions)))
+		bestFacadeVersions[fv.Name] = fv.Versions[0]
+		for _, v := range fv.Versions {
+			facades[fmt.Sprintf("%s\x1f%d", fv.Name, v)] = true
+		}
+	}
+
+	serviceUser := &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
+	monitorC := make(chan struct{})
+	broken := new(uint32)
+	go pinger(client, ct.Id(), monitorC, broken)
+	return &Connection{
+		ctx:                ctx,
+		client:             client,
+		user:               serviceUser,
 		facadeVersions:     facades,
 		bestFacadeVersions: bestFacadeVersions,
 		monitorC:           monitorC,
@@ -312,12 +424,15 @@ func (c *Connection) Context() context.Context {
 }
 
 func (c *Connection) authorizationHeader(modelTag names.ModelTag, extraHeaders http.Header) (http.Header, error) {
-	user := c.user
-	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: c.dialer.AdminUsername}}
+	var jwtString string
+	var err error
+	if c.user == nil || c.user.Identity.Name == c.dialer.AdminUsername {
+		// Service connection: mint a superuser token under the admin identity.
+		jwtString, err = c.dialer.newServiceJWTToken(c.ctx, c.ctl, modelTag)
+	} else {
+		// User connection: mint a caller-scoped token.
+		jwtString, err = c.dialer.newCallerJWTToken(c.ctx, c.ctl, modelTag, c.user)
 	}
-
-	jwtString, err := c.dialer.newControllerJWTToken(c.ctx, c.ctl, modelTag, user.ResourceTag().String())
 	if err != nil {
 		return nil, err
 	}

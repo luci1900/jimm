@@ -107,7 +107,7 @@ func (w *Watcher) dialController(ctx context.Context, ctl *dbmodel.Controller) (
 	currentControllerVersion := ctl.AgentVersion
 
 	// connect to the controller
-	api, err = w.Dialer.Dial(ctx, ctl, names.ModelTag{}, nil)
+	api, err = w.Dialer.DialAsService(ctx, ctl, names.ModelTag{})
 	if err != nil {
 		ctl.UnavailableSince = db.Now()
 		updateController = true

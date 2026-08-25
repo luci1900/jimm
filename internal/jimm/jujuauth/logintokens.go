@@ -107,6 +107,56 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, user *o
 	})
 }
 
+// BuildAccessMap resolves the caller's OpenFGA permissions for the given
+// controller (and optional model) and returns a JWT access-claim map.
+//
+// If mt is the zero value (empty ID) the model-access lookup is skipped,
+// which is appropriate for controller-scoped or cloud-scoped operations that
+// are not tied to a single model.
+//
+// The returned map contains at least the controller access entry, plus one
+// entry per cloud known to the controller, and (when mt is non-zero) the
+// model access entry.
+func BuildAccessMap(
+	ctx context.Context,
+	user *openfga.User,
+	mt names.ModelTag,
+	ct names.ControllerTag,
+	ctl dbmodel.Controller,
+	accessChecker GeneratorAccessChecker,
+) (map[string]string, error) {
+	accessMap := make(map[string]string)
+
+	if mt.Id() != "" {
+		modelAccess, err := accessChecker.GetUserModelAccess(ctx, user, mt)
+		if err != nil {
+			zapctx.Error(ctx, "model access check failed", zap.Error(err))
+			return nil, err
+		}
+		accessMap[mt.String()] = modelAccess
+	}
+
+	controllerAccess, err := accessChecker.GetUserControllerAccess(ctx, user, ct)
+	if err != nil {
+		return nil, err
+	}
+	accessMap[ct.String()] = controllerAccess
+
+	clouds := make(map[names.CloudTag]bool)
+	for _, cloudRegion := range ctl.CloudRegions {
+		clouds[cloudRegion.CloudRegion.Cloud.ResourceTag()] = true
+	}
+	for cloudTag := range clouds {
+		accessLevel, err := accessChecker.GetUserCloudAccess(ctx, user, cloudTag)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check user's cloud access: %w", err)
+		}
+		accessMap[cloudTag.String()] = accessLevel
+	}
+
+	return accessMap, nil
+}
+
 // MakeLoginToken authorizes the user and returns a JWT containing claims about user's access
 // to the controller, model and all clouds that the controller knows about.
 func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openfga.User) ([]byte, error) {
@@ -119,47 +169,24 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 	}
 	auth.user = user
 
-	// Recreate the accessMapCache to prevent leaking permissions across multiple login requests.
-	auth.accessMapCache = make(map[string]string)
-	var authErr error
-
-	var modelAccess string
 	if auth.mt.Id() == "" {
 		return nil, errors.New("model not set")
 	}
-	modelAccess, authErr = auth.accessChecker.GetUserModelAccess(ctx, auth.user, auth.mt)
-	if authErr != nil {
-		zapctx.Error(ctx, "model access check failed", zap.Error(authErr))
-		return nil, authErr
-	}
-	auth.accessMapCache[auth.mt.String()] = modelAccess
-
 	if auth.ct.Id() == "" {
 		return nil, errors.New("controller not set")
 	}
-	var controllerAccess string
-	controllerAccess, authErr = auth.accessChecker.GetUserControllerAccess(ctx, auth.user, auth.ct)
-	if authErr != nil {
-		return nil, authErr
-	}
-	auth.accessMapCache[auth.ct.String()] = controllerAccess
 
 	var ctl dbmodel.Controller
 	ctl.SetTag(auth.ct)
-	err := auth.database.GetController(ctx, &ctl)
-	if err != nil {
+	if err := auth.database.GetController(ctx, &ctl); err != nil {
 		return nil, fmt.Errorf("failed to fetch controller: %w", err)
 	}
-	clouds := make(map[names.CloudTag]bool)
-	for _, cloudRegion := range ctl.CloudRegions {
-		clouds[cloudRegion.CloudRegion.Cloud.ResourceTag()] = true
-	}
-	for cloudTag := range clouds {
-		accessLevel, err := auth.accessChecker.GetUserCloudAccess(ctx, auth.user, cloudTag)
-		if err != nil {
-			return nil, fmt.Errorf("failed to check user's cloud access: %w", err)
-		}
-		auth.accessMapCache[cloudTag.String()] = accessLevel
+
+	// Recreate the accessMapCache to prevent leaking permissions across multiple login requests.
+	var err error
+	auth.accessMapCache, err = BuildAccessMap(ctx, auth.user, auth.mt, auth.ct, ctl, auth.accessChecker)
+	if err != nil {
+		return nil, err
 	}
 
 	return auth.jwtService.NewJWT(ctx, jimmjwx.JWTParams{

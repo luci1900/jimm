@@ -194,6 +194,7 @@ func New(p Parameters) (*JIMM, error) {
 	j.PermissionManager = permissionManager
 
 	j.JujuAuthFactory = jujuauth.NewFactory(j.Database, j.JWTService, permissionManager)
+
 	jujuManager, err := juju.NewJujuManager(
 		j.Database,
 		j.OpenFGAClient,
@@ -375,4 +376,10 @@ func NewDialerAdapter(dialer *jujuclient.Dialer) *DialerAdapter {
 // to the Juju controller and returns a juju.API connection.
 func (d *DialerAdapter) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (juju.API, error) {
 	return d.dialer.Dial(ctx, ctl, modelTag, user)
+}
+
+// DialAsService implements the juju.Dialer interface for the DialerAdapter.
+// It dials the controller using JIMM's own service identity.
+func (d *DialerAdapter) DialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (juju.API, error) {
+	return d.dialer.DialAsService(ctx, ctl, modelTag)
 }

@@ -82,3 +82,42 @@ func (c *MockDialerDialCall) DoAndReturn(f func(context.Context, *dbmodel.Contro
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
+
+// DialAsService mocks base method.
+func (m *MockDialer) DialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (juju.API, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DialAsService", ctx, ctl, modelTag)
+	ret0, _ := ret[0].(juju.API)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DialAsService indicates an expected call of DialAsService.
+func (mr *MockDialerMockRecorder) DialAsService(ctx, ctl, modelTag any) *MockDialerDialAsServiceCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialAsService", reflect.TypeOf((*MockDialer)(nil).DialAsService), ctx, ctl, modelTag)
+	return &MockDialerDialAsServiceCall{Call: call}
+}
+
+// MockDialerDialAsServiceCall wrap *gomock.Call
+type MockDialerDialAsServiceCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockDialerDialAsServiceCall) Return(arg0 juju.API, arg1 error) *MockDialerDialAsServiceCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockDialerDialAsServiceCall) Do(f func(context.Context, *dbmodel.Controller, names.ModelTag) (juju.API, error)) *MockDialerDialAsServiceCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockDialerDialAsServiceCall) DoAndReturn(f func(context.Context, *dbmodel.Controller, names.ModelTag) (juju.API, error)) *MockDialerDialAsServiceCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}

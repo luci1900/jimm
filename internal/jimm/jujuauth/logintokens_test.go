@@ -149,6 +149,7 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 	}, {
 		about:    "model access check fails",
 		username: "eve@canonical.com",
+		database: &testDatabase{},
 		accessChecker: &testAccessChecker{
 			modelAccessCheckErr: errors.New("a test error"),
 		},
@@ -157,6 +158,7 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 	}, {
 		about:    "controller access check fails",
 		username: "eve@canonical.com",
+		database: &testDatabase{},
 		accessChecker: &testAccessChecker{
 			modelAccess: map[string]string{
 				mt.String(): "admin",

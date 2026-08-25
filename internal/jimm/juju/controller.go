@@ -632,7 +632,7 @@ func (j *JujuManager) UpdateMigratedModel(ctx context.Context, user *openfga.Use
 	}
 
 	// check the model is known to the controller
-	api, err := j.dial(ctx, &targetController, names.ModelTag{}, nil)
+	api, err := j.dialAsService(ctx, &targetController, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -731,7 +731,7 @@ func (j *JujuManager) initiateMigration(ctx context.Context, user *openfga.User,
 		}
 	}
 
-	api, err := j.dial(ctx, &model.Controller, names.ModelTag{}, nil)
+	api, err := j.dialAsService(ctx, &model.Controller, names.ModelTag{})
 	if err != nil {
 		rollbackMigrationMode()
 		return result, fmt.Errorf("failed to dial the controller: %w", err)

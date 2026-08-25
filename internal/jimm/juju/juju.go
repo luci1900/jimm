@@ -88,6 +88,16 @@ func (j *JujuManager) dial(ctx context.Context, ctl *dbmodel.Controller, modelTa
 	return j.Dialer.Dial(ctx, ctl, modelTag, user)
 }
 
+// dialAsService dials the controller using JIMM's own service identity.
+// Use this for internal housekeeping that has no associated user.
+func (j *JujuManager) dialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (API, error) {
+	if j == nil || j.Dialer == nil {
+		return nil, errors.Codef(errors.CodeConnectionFailed, "no dialer configured")
+	}
+
+	return j.Dialer.DialAsService(ctx, ctl, modelTag)
+}
+
 // ResourceTag returns JIMM's controller tag stating its UUID.
 func (j *JujuManager) ResourceTag() names.ControllerTag {
 	return j.resourceTag

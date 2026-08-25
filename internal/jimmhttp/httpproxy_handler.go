@@ -26,7 +26,7 @@ type JujuManager interface {
 
 // LoginTokenProvider mints a Juju login token for a user operating on a model and controller.
 type LoginTokenProvider interface {
-	NewSuperuserLoginToken(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User) ([]byte, error)
+	NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error)
 }
 
 // HTTPProxyHandler is an handler that provides proxying capabilities.
@@ -104,11 +104,13 @@ func (hph *HTTPProxyHandler) ProxyHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// Mint a superuser token to avoid a bug in Juju 3.6.23 and below that causes Juju to reject tokens
-	// that have sufficient model permissions, as a workaround we mint a controller superuser token.
+	// Mint a login token scoped to the caller's real permissions. For
+	// controllers below the fix boundary (Juju <=3.6.23), a superuser
+	// token is used as a fallback due to a Juju bug where model-admin
+	// JWT claims are not honoured.
 	mt := names.NewModelTag(modelUUID)
 	ct := names.NewControllerTag(controllerDetails.ControllerUUID)
-	jwt, err := hph.loginTokenProvider.NewSuperuserLoginToken(ctx, mt, ct, user)
+	jwt, err := hph.loginTokenProvider.NewLoginTokenForController(ctx, mt, ct, user, controllerDetails.AgentVersion)
 	if err != nil {
 		writeError(ctx, w, http.StatusInternalServerError, err, "failed to generate login token")
 		return

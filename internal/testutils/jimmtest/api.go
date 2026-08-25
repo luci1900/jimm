@@ -108,6 +108,14 @@ func (m ModelDialerMap) Dial(ctx context.Context, ctl *dbmodel.Controller, mt na
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }
 
+// DialAsService implements juju.Dialer.
+func (m ModelDialerMap) DialAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
+	if d, ok := m[mt.Id()]; ok {
+		return d.DialAsService(ctx, ctl, mt)
+	}
+	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
+}
+
 // A DialerMap implements a juju.Dialer that uses a different Dialer for
 // each controller. The DialerMap is keyed by controller name.
 type DialerMap map[string]juju.Dialer
@@ -116,6 +124,14 @@ type DialerMap map[string]juju.Dialer
 func (m DialerMap) Dial(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag, u *openfga.User) (juju.API, error) {
 	if d, ok := m[ctl.Name]; ok {
 		return d.Dial(ctx, ctl, mt, u)
+	}
+	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
+}
+
+// DialAsService implements juju.Dialer.
+func (m DialerMap) DialAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
+	if d, ok := m[ctl.Name]; ok {
+		return d.DialAsService(ctx, ctl, mt)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }
