@@ -1,0 +1,186 @@
+// Copyright 2026 Canonical.
+
+package jujuauth_test
+
+import (
+	"database/sql"
+	"encoding/json"
+	"testing"
+
+	qt "github.com/frankban/quicktest"
+	"github.com/google/uuid"
+	"github.com/juju/names/v5"
+	"github.com/lestrrat-go/jwx/v2/jwt"
+
+	"github.com/canonical/jimm/v3/internal/dbmodel"
+	"github.com/canonical/jimm/v3/internal/openfga"
+	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
+	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
+)
+
+// TestScopedLoginTokenForNonAdminUser verifies that NewScopedLoginToken
+// mints a JWT carrying the caller's real OpenFGA-derived permissions
+// (controller: login, cloud: add-model, model: write) rather than the
+// old hardcoded superuser claim. This is the core behavioural guarantee
+// of the de-proxying change: non-admin users must not receive
+// controller-superuser tokens.
+func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
+	c := qt.New(t)
+	env := jimmtest.SetupJimmEnv(c)
+	ctx := c.Context()
+
+	// Create a non-admin user (bob) with can_addmodel on the controller
+	// and writer on a model, but NOT administrator on the controller.
+	bobEmail := "bob@canonical.com"
+	env.AddUser(c, bobEmail)
+	bobIdentity, err := dbmodel.NewIdentity(bobEmail)
+	c.Assert(err, qt.IsNil)
+	err = env.JIMM.Database.GetIdentity(ctx, bobIdentity)
+	c.Assert(err, qt.IsNil)
+	bob := env.NewUser(bobIdentity)
+
+	// Add a controller to the DB so buildAccessMap can fetch it.
+	controllerUUID := uuid.New().String()
+	controllerTag := names.NewControllerTag(controllerUUID)
+	ctl := &dbmodel.Controller{
+		UUID:          controllerUUID,
+		Name:          "test-controller",
+		CACertificate: "test-ca-cert",
+	}
+	err = env.JIMM.Database.AddController(ctx, ctl)
+	c.Assert(err, qt.IsNil)
+
+	// Grant bob can_addmodel on the controller (not administrator).
+	err = env.OFGAClient.AddRelation(ctx, openfga.Tuple{
+		Object:   ofganames.ConvertTag(names.NewUserTag(bobEmail)),
+		Relation: ofganames.CanAddModelRelation,
+		Target:   ofganames.ConvertTag(controllerTag),
+	})
+	c.Assert(err, qt.IsNil)
+
+	// Create a model owned by bob and grant bob writer access.
+	modelUUID := uuid.New().String()
+	modelTag := names.NewModelTag(modelUUID)
+	model := &dbmodel.Model{
+		Name:              "test-model",
+		UUID:              sql.NullString{String: modelUUID, Valid: true},
+		OwnerIdentityName: bobEmail,
+		ControllerID:      ctl.ID,
+	}
+	err = env.JIMM.Database.AddModel(ctx, model)
+	c.Assert(err, qt.IsNil)
+
+	err = env.OFGAClient.AddRelation(ctx, openfga.Tuple{
+		Object:   ofganames.ConvertTag(names.NewUserTag(bobEmail)),
+		Relation: ofganames.WriterRelation,
+		Target:   ofganames.ConvertTag(modelTag),
+	})
+	c.Assert(err, qt.IsNil)
+
+	// Mint a scoped login token for bob.
+	factory := env.JIMM.JujuAuthFactory
+	token, err := factory.NewScopedLoginToken(ctx, modelTag, ctl, bob)
+	c.Assert(err, qt.IsNil)
+
+	// Decode the JWT and inspect the access claim.
+	parsed, err := jwt.Parse(token, jwt.WithVerify(false), jwt.WithValidate(false))
+	c.Assert(err, qt.IsNil)
+
+	// The "sub" must be bob, not the JIMM admin identity.
+	c.Assert(parsed.Subject(), qt.Equals, bobIdentity.ResourceTag().String())
+
+	access := decodeAccess(c, parsed)
+
+	// Controller access must be "login" (the non-admin level), NOT "superuser".
+	c.Assert(access[controllerTag.String()], qt.Equals, "login",
+		qt.Commentf("non-admin user must not receive controller superuser access"))
+
+	// Model access must be "write" (the granted level), NOT "admin".
+	c.Assert(access[modelTag.String()], qt.Equals, "write",
+		qt.Commentf("model access must reflect the user's real OpenFGA permission"))
+
+	// The old hardcoded superuser claim must NOT be present anywhere.
+	for tag, level := range access {
+		if level == "superuser" {
+			c.Fatalf("non-admin user received superuser access on %s", tag)
+		}
+	}
+}
+
+// TestScopedLoginTokenForAdminUser verifies that an admin user still
+// receives controller superuser access in the scoped token, matching
+// the old hardcoded behaviour for the admin case.
+func TestScopedLoginTokenForAdminUser(t *testing.T) {
+	c := qt.New(t)
+	env := jimmtest.SetupJimmEnv(c)
+	ctx := c.Context()
+
+	// alice is the JIMM admin.
+	aliceEmail := "alice@canonical.com"
+	env.AddAdminUser(c, aliceEmail)
+	aliceIdentity, err := dbmodel.NewIdentity(aliceEmail)
+	c.Assert(err, qt.IsNil)
+	err = env.JIMM.Database.GetIdentity(ctx, aliceIdentity)
+	c.Assert(err, qt.IsNil)
+	alice := env.NewUser(aliceIdentity)
+
+	// Add a controller.
+	controllerUUID := uuid.New().String()
+	controllerTag := names.NewControllerTag(controllerUUID)
+	ctl := &dbmodel.Controller{
+		UUID:          controllerUUID,
+		Name:          "test-controller-admin",
+		CACertificate: "test-ca-cert",
+	}
+	err = env.JIMM.Database.AddController(ctx, ctl)
+	c.Assert(err, qt.IsNil)
+
+	// Create a model owned by alice and grant admin access.
+	modelUUID := uuid.New().String()
+	modelTag := names.NewModelTag(modelUUID)
+	model := &dbmodel.Model{
+		Name:              "test-model-admin",
+		UUID:              sql.NullString{String: modelUUID, Valid: true},
+		OwnerIdentityName: aliceEmail,
+		ControllerID:      ctl.ID,
+	}
+	err = env.JIMM.Database.AddModel(ctx, model)
+	c.Assert(err, qt.IsNil)
+
+	err = env.OFGAClient.AddRelation(ctx, openfga.Tuple{
+		Object:   ofganames.ConvertTag(names.NewUserTag(aliceEmail)),
+		Relation: ofganames.AdministratorRelation,
+		Target:   ofganames.ConvertTag(modelTag),
+	})
+	c.Assert(err, qt.IsNil)
+
+	// Mint a scoped login token for alice.
+	factory := env.JIMM.JujuAuthFactory
+	token, err := factory.NewScopedLoginToken(ctx, modelTag, ctl, alice)
+	c.Assert(err, qt.IsNil)
+
+	// Decode and inspect.
+	parsed, err := jwt.Parse(token, jwt.WithVerify(false), jwt.WithValidate(false))
+	c.Assert(err, qt.IsNil)
+
+	access := decodeAccess(c, parsed)
+
+	// Admin gets controller superuser (matches old hardcoded behaviour).
+	c.Assert(access[controllerTag.String()], qt.Equals, "superuser",
+		qt.Commentf("admin user must receive controller superuser access"))
+	c.Assert(access[modelTag.String()], qt.Equals, "admin",
+		qt.Commentf("admin user with model administrator relation must receive model admin"))
+}
+
+// decodeAccess extracts the "access" claim from a parsed JWT as a
+// map[string]string.
+func decodeAccess(c *qt.C, parsed jwt.Token) map[string]string {
+	accessRaw, ok := parsed.Get("access")
+	c.Assert(ok, qt.IsTrue, qt.Commentf("JWT missing access claim"))
+	accessBytes, err := json.Marshal(accessRaw)
+	c.Assert(err, qt.IsNil)
+	var access map[string]string
+	err = json.Unmarshal(accessBytes, &access)
+	c.Assert(err, qt.IsNil)
+	return access
+}
