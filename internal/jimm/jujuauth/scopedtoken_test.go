@@ -40,11 +40,16 @@ func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
 	bob := env.NewUser(bobIdentity)
 
 	// Add a controller to the DB so buildAccessMap can fetch it.
+	// A cloud row must exist first to satisfy the controllers_cloud_name_fkey.
+	cloudName := "test-cloud"
+	err = env.JIMM.Database.AddCloud(ctx, &dbmodel.Cloud{Name: cloudName, Type: "lxd"})
+	c.Assert(err, qt.IsNil)
 	controllerUUID := uuid.New().String()
 	controllerTag := names.NewControllerTag(controllerUUID)
 	ctl := &dbmodel.Controller{
 		UUID:          controllerUUID,
 		Name:          "test-controller",
+		CloudName:     cloudName,
 		CACertificate: "test-ca-cert",
 	}
 	err = env.JIMM.Database.AddController(ctx, ctl)
@@ -125,11 +130,15 @@ func TestScopedLoginTokenForAdminUser(t *testing.T) {
 	alice := env.NewUser(aliceIdentity)
 
 	// Add a controller.
+	cloudNameAdmin := "test-cloud-admin"
+	err = env.JIMM.Database.AddCloud(ctx, &dbmodel.Cloud{Name: cloudNameAdmin, Type: "lxd"})
+	c.Assert(err, qt.IsNil)
 	controllerUUID := uuid.New().String()
 	controllerTag := names.NewControllerTag(controllerUUID)
 	ctl := &dbmodel.Controller{
 		UUID:          controllerUUID,
 		Name:          "test-controller-admin",
+		CloudName:     cloudNameAdmin,
 		CACertificate: "test-ca-cert",
 	}
 	err = env.JIMM.Database.AddController(ctx, ctl)
