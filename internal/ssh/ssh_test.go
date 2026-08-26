@@ -279,7 +279,7 @@ func (s *sshSuite) TestInvalidVirtualHostname(c *qt.C) {
 		c.Check(fm.DestAddr, qt.Equals, "model1")
 	}
 	_, err := client.Dial("tcp", fmt.Sprintf("%s:%d", "model1", 1))
-	c.Assert(err, qt.ErrorMatches, `ssh: rejected: connect failed \("failed to parse destination hostname"\`)
+	c.Assert(err, qt.ErrorMatches, `ssh: rejected: connect failed \("failed to parse destination hostname"\)`)
 }
 
 func (s *sshSuite) TestSSHServerMaxConnections(c *qt.C) {
