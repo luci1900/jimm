@@ -79,6 +79,13 @@ func (d *Dialer) Dial(_ context.Context, ctl *dbmodel.Controller, _ names.ModelT
 	}, nil
 }
 
+// DialAsService implements juju.Dialer. It dials as JIMM's service identity.
+func (d *Dialer) DialAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
+	// Delegate to Dial with a nil user since the Dialer test double does
+	// not distinguish user vs service identity for JWT minting.
+	return d.Dial(ctx, ctl, mt, nil)
+}
+
 // IsClosed returns true if all opened connections have been closed.
 func (d *Dialer) IsClosed() bool {
 	return atomic.LoadInt64(&d.open) == 0

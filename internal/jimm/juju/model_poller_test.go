@@ -59,6 +59,13 @@ func (d *perControllerDialer) Dial(_ context.Context, ctl *dbmodel.Controller, _
 	}, nil
 }
 
+// DialAsService implements juju.Dialer. It delegates to Dial since the
+// perControllerDialer test double does not distinguish user vs service
+// identity for JWT minting.
+func (d *perControllerDialer) DialAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
+	return d.Dial(ctx, ctl, mt, nil)
+}
+
 // openedCounts returns a snapshot of the dial counts per controller.
 func (d *perControllerDialer) openedCounts() map[string]int {
 	d.mu.Lock()
