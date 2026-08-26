@@ -136,6 +136,16 @@ func TestScopedLoginTokenForAdminUser(t *testing.T) {
 	err = env.JIMM.Database.AddController(ctx, ctl)
 	c.Assert(err, qt.IsNil)
 
+	// Grant alice administrator access on the test controller so that
+	// GetControllerAccess returns "superuser" (matching the old hardcoded
+	// behaviour for controller admins).
+	err = env.OFGAClient.AddRelation(ctx, openfga.Tuple{
+		Object:   ofganames.ConvertTag(names.NewUserTag(aliceEmail)),
+		Relation: ofganames.AdministratorRelation,
+		Target:   ofganames.ConvertTag(controllerTag),
+	})
+	c.Assert(err, qt.IsNil)
+
 	// Grant alice admin access on a model (only the tag is needed for the
 	// OpenFGA permission check; no DB row is required).
 	modelUUID := uuid.New().String()
