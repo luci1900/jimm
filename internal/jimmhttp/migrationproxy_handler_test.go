@@ -36,6 +36,7 @@ func TestMigrationHTTPProxyHandler(t *testing.T) {
 	var gotModelTag names.ModelTag
 	var gotControllerTag names.ControllerTag
 	var gotUser *openfga.User
+	var gotAgentVersion string
 	callCount := 0
 
 	fakeController := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,11 +57,12 @@ func TestMigrationHTTPProxyHandler(t *testing.T) {
 			}, nil
 		},
 	}
-	loginTokens := loginTokenProvider{NewSuperuserLoginToken_: func(ctx context.Context, gotMT names.ModelTag, gotCT names.ControllerTag, gotU *openfga.User) ([]byte, error) {
+	loginTokens := loginTokenProvider{NewLoginTokenForController_: func(ctx context.Context, gotMT names.ModelTag, gotCT names.ControllerTag, gotU *openfga.User, gotAV string) ([]byte, error) {
 		callCount++
 		gotModelTag = gotMT
 		gotControllerTag = gotCT
 		gotUser = gotU
+		gotAgentVersion = gotAV
 		return []byte("test-token"), nil
 	}}
 	migrationProxier := jimmhttp.NewMigrationHTTPProxyHandler(nil, &ctrlService, loginTokens)
@@ -123,4 +125,5 @@ func TestMigrationHTTPProxyHandler(t *testing.T) {
 	c.Assert(gotModelTag, qt.Equals, modelTag)
 	c.Assert(gotControllerTag, qt.Equals, controllerTag)
 	c.Assert(gotUser, qt.Equals, user)
+	c.Assert(gotAgentVersion, qt.Equals, "")
 }
