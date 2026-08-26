@@ -3,7 +3,6 @@
 package jujuauth_test
 
 import (
-	"database/sql"
 	"encoding/json"
 	"testing"
 
@@ -63,17 +62,10 @@ func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	// Create a model owned by bob and grant bob writer access.
+	// Grant bob writer access on a model (only the tag is needed for the
+	// OpenFGA permission check; no DB row is required).
 	modelUUID := uuid.New().String()
 	modelTag := names.NewModelTag(modelUUID)
-	model := &dbmodel.Model{
-		Name:              "test-model",
-		UUID:              sql.NullString{String: modelUUID, Valid: true},
-		OwnerIdentityName: bobEmail,
-		ControllerID:      ctl.ID,
-	}
-	err = env.JIMM.Database.AddModel(ctx, model)
-	c.Assert(err, qt.IsNil)
 
 	err = env.OFGAClient.AddRelation(ctx, openfga.Tuple{
 		Object:   ofganames.ConvertTag(names.NewUserTag(bobEmail)),
@@ -144,17 +136,10 @@ func TestScopedLoginTokenForAdminUser(t *testing.T) {
 	err = env.JIMM.Database.AddController(ctx, ctl)
 	c.Assert(err, qt.IsNil)
 
-	// Create a model owned by alice and grant admin access.
+	// Grant alice admin access on a model (only the tag is needed for the
+	// OpenFGA permission check; no DB row is required).
 	modelUUID := uuid.New().String()
 	modelTag := names.NewModelTag(modelUUID)
-	model := &dbmodel.Model{
-		Name:              "test-model-admin",
-		UUID:              sql.NullString{String: modelUUID, Valid: true},
-		OwnerIdentityName: aliceEmail,
-		ControllerID:      ctl.ID,
-	}
-	err = env.JIMM.Database.AddModel(ctx, model)
-	c.Assert(err, qt.IsNil)
 
 	err = env.OFGAClient.AddRelation(ctx, openfga.Tuple{
 		Object:   ofganames.ConvertTag(names.NewUserTag(aliceEmail)),
