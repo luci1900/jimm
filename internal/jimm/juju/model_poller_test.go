@@ -44,7 +44,7 @@ func newPerControllerDialer(api juju.API) *perControllerDialer {
 	}
 }
 
-func (d *perControllerDialer) Dial(_ context.Context, ctl *dbmodel.Controller, _ names.ModelTag, _ *openfga.User) (juju.API, error) {
+func (d *perControllerDialer) DialModel(_ context.Context, ctl *dbmodel.Controller, _ names.ModelTag, _ *openfga.User) (juju.API, error) {
 	name := ctl.Name
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -59,11 +59,25 @@ func (d *perControllerDialer) Dial(_ context.Context, ctl *dbmodel.Controller, _
 	}, nil
 }
 
-// DialAsService implements juju.Dialer. It delegates to Dial since the
-// perControllerDialer test double does not distinguish user vs service
+// DialController implements juju.Dialer. It delegates to DialModel since the
+// perControllerDialer test double does not distinguish connection scope or
+// user vs service identity for JWT minting.
+func (d *perControllerDialer) DialController(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag, user *openfga.User) (juju.API, error) {
+	return d.DialModel(ctx, ctl, mt, user)
+}
+
+// DialModelAsService implements juju.Dialer. It delegates to DialModel since
+// the perControllerDialer test double does not distinguish user vs service
 // identity for JWT minting.
-func (d *perControllerDialer) DialAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
-	return d.Dial(ctx, ctl, mt, nil)
+func (d *perControllerDialer) DialModelAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
+	return d.DialModel(ctx, ctl, mt, nil)
+}
+
+// DialControllerAsService implements juju.Dialer. It delegates to DialModel
+// since the perControllerDialer test double does not distinguish connection
+// scope or user vs service identity for JWT minting.
+func (d *perControllerDialer) DialControllerAsService(ctx context.Context, ctl *dbmodel.Controller) (juju.API, error) {
+	return d.DialModel(ctx, ctl, names.ModelTag{}, nil)
 }
 
 // openedCounts returns a snapshot of the dial counts per controller.

@@ -347,7 +347,7 @@ func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, ta
 // Dials as the JIMM service identity after enforcing authorisation, since
 // users lack the required permission on the backing controller.
 func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Controller, tag names.CloudTag, cloud jujucloud.Cloud, force bool) (*jujucloud.Cloud, error) {
-	api, err := j.dialAsService(ctx, ctl, names.ModelTag{})
+	api, err := j.dialControllerAsService(ctx, ctl)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (j *JujuManager) doCloudAdmin(ctx context.Context, user *openfga.User, ct n
 		}
 		return fmt.Errorf("cloud administration not available for %s", ct.Id())
 	}
-	api, err := j.dialAsService(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{})
+	api, err := j.dialControllerAsService(ctx, &c.Regions[0].Controllers[0].Controller)
 	if err != nil {
 		return err
 	}
@@ -565,7 +565,7 @@ func (j *JujuManager) RemoveCloudFromController(ctx context.Context, user *openf
 		return errors.Codef(errors.CodeNotFound, "cloud not hosted by controller")
 	}
 
-	api, err := j.dialAsService(ctx, &controller, names.ModelTag{})
+	api, err := j.dialControllerAsService(ctx, &controller)
 	if err != nil {
 		return err
 	}

@@ -121,14 +121,32 @@ func (d *Dialer) createServiceLoginRequest(ctx context.Context, ctl *dbmodel.Con
 	}, nil
 }
 
-// Dial implements jimm.Dialer. The user must be non-nil; use DialAsService for
+// DialModel implements jimm.Dialer. It creates a model-scoped connection on
+// behalf of a real user. The user must be non-nil; use DialModelAsService for
 // JIMM's own internal operations that have no associated user.
-func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
 	if user == nil {
-		return nil, errors.New("Dial requires a non-nil user; use DialAsService for JIMM internal operations")
+		return nil, errors.New("DialModel requires a non-nil user; use DialModelAsService for JIMM internal operations")
 	}
+	return d.dial(ctx, ctl, modelTag, modelTag, user)
+}
 
-	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
+// DialController implements jimm.Dialer. It creates a controller-scoped
+// connection (so controller-level facades are available) whose JWT carries
+// the user's access claims for the given model.
+func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+	if user == nil {
+		return nil, errors.New("DialController requires a non-nil user")
+	}
+	return d.dial(ctx, ctl, names.ModelTag{}, modelTag, user)
+}
+
+// dial establishes a connection and logs in as the given user. The
+// connModelTag scopes the connection (empty means controller-scoped); the
+// jwtModelTag determines which model's access claims are embedded in the
+// login JWT.
+func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag, jwtModelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+	conn, err := rpc.Dial(ctx, ctl, connModelTag, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +157,7 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	client := rpc.NewClient(conn)
 
 	var loginRequest *jujuparams.LoginRequest
-	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
+	loginRequest, err = d.createLoginRequest(ctx, ctl, jwtModelTag, user)
 	if err != nil {
 		client.Close()
 		return nil, err
@@ -182,16 +200,31 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 		broken:             broken,
 		dialer:             d,
 		ctl:                ctl,
-		mt:                 modelTag,
+		mt:                 connModelTag,
 	}, nil
 }
 
-// DialAsService dials the given controller on behalf of JIMM itself (no user).
-// It mints a superuser token under the JIMM service identity (jaas-<uuid>@external).
-// Use this for internal housekeeping operations such as the watcher, upgrade
-// worker, model-status polling, and controller/model admin tasks that are not
+// DialModelAsService dials the given model on behalf of JIMM itself (no
+// user). It mints a superuser token under the JIMM service identity
+// (jaas-<uuid>@external). Use this for internal housekeeping operations,
+// such as model-status polling, that are not initiated by a real user.
+func (d *Dialer) DialModelAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+	return d.dialAsService(ctx, ctl, modelTag)
+}
+
+// DialControllerAsService dials the given controller on behalf of JIMM
+// itself (no user), using a controller-scoped connection. It mints a
+// superuser token under the JIMM service identity (jaas-<uuid>@external).
+// Use this for internal housekeeping operations such as the watcher,
+// upgrade worker, and controller administration tasks that are not
 // initiated by a real user.
-func (d *Dialer) DialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+func (d *Dialer) DialControllerAsService(ctx context.Context, ctl *dbmodel.Controller) (*Connection, error) {
+	return d.dialAsService(ctx, ctl, names.ModelTag{})
+}
+
+// dialAsService dials the given controller/model on behalf of JIMM itself
+// (no user), minting a superuser token under the JIMM service identity.
+func (d *Dialer) dialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
 	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
 	if err != nil {
 		return nil, err

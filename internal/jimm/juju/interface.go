@@ -22,22 +22,40 @@ import (
 	"github.com/canonical/jimm/v3/internal/openfga"
 )
 
-// A Dialer provides a connection to a controller.
+// A Dialer provides a connection to a controller. The four methods are
+// organised along two axes: connection scope (model vs controller) and
+// identity (real user vs JIMM's own service identity). After successfully
+// dialing the controller the UUID, AgentVersion and HostPorts fields in the
+// given controller should be updated to the values provided by the
+// controller.
 type Dialer interface {
-	// Dial creates an API connection to a controller on behalf of a real
-	// user. The user must not be nil. If the given model-tag is non-zero
-	// the connection will be to that model, otherwise the connection is
-	// to the controller. After successfully dialing the controller the
-	// UUID, AgentVersion and HostPorts fields in the given controller
-	// should be updated to the values provided by the controller.
-	Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
+	// DialModel creates a model-scoped API connection on behalf of a real
+	// user. The user and modelTag must not be zero-valued. The JWT carries
+	// the user's access claims for the given model.
+	DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
 
-	// DialAsService creates an API connection to a controller using
+	// DialController creates a controller-scoped API connection on behalf
+	// of a real user, with the JWT carrying the user's access claims for
+	// the given model (if modelTag is non-zero). This is used for
+	// operations that call controller-level facades (e.g. ModelManager)
+	// with a model UUID argument: the connection must be controller-scoped,
+	// but the Juju permission check requires the user's model access in
+	// the JWT.
+	DialController(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
+
+	// DialModelAsService creates a model-scoped API connection using
 	// JIMM's own service identity (no user). It mints a superuser token
 	// under the JIMM admin username and is intended solely for internal
-	// housekeeping operations (watcher, upgrade, model-status polling,
-	// etc.) that are not initiated by a real user.
-	DialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (API, error)
+	// housekeeping operations (e.g. model-status polling) that are not
+	// initiated by a real user.
+	DialModelAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (API, error)
+
+	// DialControllerAsService creates a controller-scoped API connection
+	// using JIMM's own service identity (no user). It mints a superuser
+	// token under the JIMM admin username and is intended solely for
+	// internal housekeeping operations (watcher, upgrade, controller
+	// administration, etc.) that are not initiated by a real user.
+	DialControllerAsService(ctx context.Context, ctl *dbmodel.Controller) (API, error)
 }
 
 // An API is the interface JIMM uses to access the API on a controller.
