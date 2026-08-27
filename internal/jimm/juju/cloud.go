@@ -291,7 +291,7 @@ func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, ta
 	shuffleRegionControllers(region.Controllers)
 	controller := region.Controllers[0].Controller
 
-	ccloud, err := j.addControllerCloud(ctx, &controller, user, tag, cloud, force)
+	ccloud, err := j.addControllerCloud(ctx, &controller, tag, cloud, force)
 	if err != nil {
 		// TODO(mhilton) remove the added cloud if adding it to the controller failed.
 		return err
@@ -343,8 +343,8 @@ func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, ta
 // addControllerCloud returns the definition of the cloud retrieved from
 // the controller. No error will be returned if the cloud already exists on
 // the controller or the user already has access to the cloud.
-func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Controller, user *openfga.User, tag names.CloudTag, cloud jujucloud.Cloud, force bool) (*jujucloud.Cloud, error) {
-	api, err := j.dial(ctx, ctl, names.ModelTag{}, user)
+func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Controller, tag names.CloudTag, cloud jujucloud.Cloud, force bool) (*jujucloud.Cloud, error) {
+	api, err := j.dialAsService(ctx, ctl, names.ModelTag{})
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +401,7 @@ func (j *JujuManager) doCloudAdmin(ctx context.Context, user *openfga.User, ct n
 		}
 		return fmt.Errorf("cloud administration not available for %s", ct.Id())
 	}
-	api, err := j.dial(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{}, user)
+	api, err := j.dialAsService(ctx, &c.Regions[0].Controllers[0].Controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func (j *JujuManager) RemoveCloudFromController(ctx context.Context, user *openf
 		return errors.Codef(errors.CodeNotFound, "cloud not hosted by controller")
 	}
 
-	api, err := j.dial(ctx, &controller, names.ModelTag{}, user)
+	api, err := j.dialAsService(ctx, &controller, names.ModelTag{})
 	if err != nil {
 		return err
 	}
@@ -677,7 +677,7 @@ func (j *JujuManager) addCloudToDatabase(ctx context.Context, controller *dbmode
 	dbCloud.FromJujuCloud(cloud)
 	dbCloud.Name = tag.Id()
 
-	ccloud, err := j.addControllerCloud(ctx, controller, user, tag, cloud, force)
+	ccloud, err := j.addControllerCloud(ctx, controller, tag, cloud, force)
 	if err != nil {
 		return dbCloud, err
 	}
