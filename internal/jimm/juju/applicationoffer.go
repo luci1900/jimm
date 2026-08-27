@@ -76,7 +76,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 	if err == nil {
 		// The offer exists in JIMM's database, check against the Juju controller
 		// It's possible for an offer record in JIMM to dangle
-		checkAPI, dialErr := j.dialController(ctx, &model.Controller, names.ModelTag{}, user)
+		checkAPI, dialErr := j.dialController(ctx, &model.Controller, model.ResourceTag(), user)
 		if dialErr != nil {
 			return dialErr
 		}
@@ -100,7 +100,7 @@ func (j *JujuManager) Offer(ctx context.Context, user *openfga.User, offer AddAp
 		return err
 	}
 
-	api, err := j.dialController(ctx, &model.Controller, names.ModelTag{}, user)
+	api, err := j.dialController(ctx, &model.Controller, model.ResourceTag(), user)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (j *JujuManager) GetApplicationOfferConsumeDetails(ctx context.Context, use
 		return errors.Codef(errors.CodeNotFound, "not found")
 	}
 
-	api, err := j.dialController(ctx, &offer.Model.Controller, names.ModelTag{}, user)
+	api, err := j.dialController(ctx, &offer.Model.Controller, offer.Model.ResourceTag(), user)
 	if err != nil {
 		return err
 	}
@@ -385,7 +385,7 @@ func (j *JujuManager) GetApplicationOffer(ctx context.Context, user *openfga.Use
 	// controller. The all-watcher events do not include enough
 	// information to reasonably keep the local database up-to-date,
 	// and it would be non-trivial to make it do so.
-	api, err := j.dialController(ctx, &offer.Model.Controller, names.ModelTag{}, user)
+	api, err := j.dialController(ctx, &offer.Model.Controller, offer.Model.ResourceTag(), user)
 	if err != nil {
 		return nil, err
 	}
@@ -614,7 +614,7 @@ func (j *JujuManager) doApplicationOfferAdmin(ctx context.Context, user *openfga
 		return errors.Codef(errors.CodeUnauthorized, "unauthorized")
 	}
 	// add offer admin claim
-	api, err := j.dialController(ctx, &offer.Model.Controller, names.ModelTag{}, user)
+	api, err := j.dialController(ctx, &offer.Model.Controller, offer.Model.ResourceTag(), user)
 	if err != nil {
 		return err
 	}
