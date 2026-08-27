@@ -4,7 +4,6 @@ package jujuauth
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/juju/names/v5"
 	"github.com/juju/version/v2"
@@ -75,18 +74,22 @@ func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.Mod
 }
 
 // NewScopedLoginToken mints a caller-scoped login token for the given user
-// on the specified controller. The controller's CloudRegions are fetched
-// from the database so cloud-access claims can be resolved.
+// on the specified controller. If the controller is already persisted, its
+// CloudRegions are fetched from the database so cloud-access claims can be
+// resolved; otherwise the passed-in controller is used as-is (which may
+// not yet have CloudRegions populated, so cloud claims may be omitted).
 //
 // The model tag is optional: pass a zero-value names.ModelTag when the
 // operation is not model-specific (e.g. cloud or controller-level calls).
 func (f *Factory) NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
 	// Fetch the controller with CloudRegions populated so buildAccessMap can
-	// enumerate clouds and resolve cloud-access claims.
+	// enumerate clouds and resolve cloud-access claims. Fall back to the
+	// passed-in controller if it is not yet persisted (e.g. during AddController,
+	// which dials the controller before storing it).
 	ctlWithClouds := dbmodel.Controller{}
 	ctlWithClouds.SetTag(ctl.ResourceTag())
 	if err := f.db.GetController(ctx, &ctlWithClouds); err != nil {
-		return nil, fmt.Errorf("failed to fetch controller for access map: %w", err)
+		ctlWithClouds = *ctl
 	}
 	accessMap, err := buildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), ctlWithClouds, f.accessChecker)
 	if err != nil {
