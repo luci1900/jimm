@@ -343,6 +343,9 @@ func (j *JujuManager) AddHostedCloud(ctx context.Context, user *openfga.User, ta
 // addControllerCloud returns the definition of the cloud retrieved from
 // the controller. No error will be returned if the cloud already exists on
 // the controller or the user already has access to the cloud.
+//
+// Dials as the JIMM service identity after enforcing authorisation, since
+// users lack the required permission on the backing controller.
 func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Controller, tag names.CloudTag, cloud jujucloud.Cloud, force bool) (*jujucloud.Cloud, error) {
 	api, err := j.dialAsService(ctx, ctl, names.ModelTag{})
 	if err != nil {
@@ -374,6 +377,9 @@ func (j *JujuManager) addControllerCloud(ctx context.Context, ctl *dbmodel.Contr
 // the cloud then the returned error will have the same code as the error
 // returned from the dial operation. If the given function returns an error
 // that error will be returned with the code unmasked.
+//
+// Dials as the JIMM service identity after enforcing authorisation, since
+// users lack the required permission on the backing controller.
 func (j *JujuManager) doCloudAdmin(ctx context.Context, user *openfga.User, ct names.CloudTag, f func(*dbmodel.Cloud, API) error) error {
 
 	var c dbmodel.Cloud
@@ -525,6 +531,9 @@ func (j *JujuManager) UpdateCloud(ctx context.Context, user *openfga.User, ct na
 // CodeNotFound is returned. If the authenticated user does not have admin
 // access to the cloud then an error with the code CodeUnauthorized is returned.
 // If the RemoveClouds API call returns an error the error code is not masked.
+//
+// Dials as the JIMM service identity after enforcing authorisation, since
+// users lack the required permission on the backing controller.
 func (j *JujuManager) RemoveCloudFromController(ctx context.Context, user *openfga.User, controllerName string, ct names.CloudTag) error {
 
 	var cloud dbmodel.Cloud
