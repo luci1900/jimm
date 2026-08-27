@@ -553,10 +553,11 @@ func (j *JujuManager) queryControllersForOffers(ctx context.Context, user *openf
 
 	for _, ctl := range controllers {
 		eg.Go(func() error {
-			// Return early if a single controller has an error
-			// to avoid misleading clients about what exists which
-			// could cause unneeded reconciliation.
-			api, err := j.dialController(ctx, ctl, names.ModelTag{}, user)
+			// Spans multiple models, so a single caller-scoped JWT can't
+			// satisfy Juju's per-model check. enrichOfferDetails below
+			// re-authorizes each offer against OpenFGA.
+			// TODO: revisit dialing as service here.
+			api, err := j.dialControllerAsService(ctx, ctl)
 			if err != nil {
 				return err
 			}
