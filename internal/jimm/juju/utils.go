@@ -60,9 +60,12 @@ func (j *JujuManager) getControllerByName(ctx context.Context, controllerName st
 	return &controller, nil
 }
 
-// dialController dials a controller.
-func (j *JujuManager) dialController(ctx context.Context, ctl *dbmodel.Controller, user *openfga.User) (API, error) {
-	api, err := j.dial(ctx, ctl, names.ModelTag{}, user)
+// dialController dials a controller. Controller-level operations (adding
+// controllers, fetching cloud specs, polling model summaries) are performed
+// using JIMM's own service identity, not the caller's, because they require
+// controller-level access that the caller may not have.
+func (j *JujuManager) dialController(ctx context.Context, ctl *dbmodel.Controller) (API, error) {
+	api, err := j.dialAsService(ctx, ctl, names.ModelTag{})
 	if err != nil {
 		zapctx.Error(ctx, "failed to dial the controller", zaputil.Error(err))
 		return nil, err

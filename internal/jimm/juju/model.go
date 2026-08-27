@@ -708,7 +708,7 @@ func (j *JujuManager) UpgradeController(ctx context.Context, user *openfga.User,
 		return version.Number{}, err
 	}
 
-	api, err := j.dialController(ctx, controller, user)
+	api, err := j.dialController(ctx, controller)
 	if err != nil {
 		return version.Number{}, err
 	}

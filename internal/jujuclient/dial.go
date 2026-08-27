@@ -74,7 +74,7 @@ func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller
 	}
 	jwt, err := d.JWTService.NewJWT(ctx, jimmjwx.JWTParams{
 		Controller: ctl.ResourceTag().Id(),
-		User:       d.AdminUsername,
+		User:       names.NewUserTag(d.AdminUsername).String(),
 		Access:     permissions,
 	})
 	if err != nil {
@@ -115,7 +115,7 @@ func (d *Dialer) createServiceLoginRequest(ctx context.Context, ctl *dbmodel.Con
 		return nil, err
 	}
 	return &jujuparams.LoginRequest{
-		AuthTag:       d.AdminUsername,
+		AuthTag:       names.NewUserTag(d.AdminUsername).String(),
 		ClientVersion: jimmversion.ControllerVersion,
 		Token:         jwtString,
 	}, nil
