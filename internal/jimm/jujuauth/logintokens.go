@@ -133,7 +133,10 @@ func buildAccessMap(
 			zapctx.Error(ctx, "model access check failed", zap.Error(err))
 			return nil, err
 		}
-		accessMap[mt.String()] = modelAccess
+		// Skip empty access (no direct model relation); Juju rejects empty values.
+		if modelAccess != "" {
+			accessMap[mt.String()] = modelAccess
+		}
 	}
 
 	controllerAccess, err := accessChecker.GetUserControllerAccess(ctx, user, ct)

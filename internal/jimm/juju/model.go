@@ -818,22 +818,36 @@ func (j *JujuManager) ChangeModelCredential(ctx context.Context, user *openfga.U
 		return err
 	}
 
-	var m *dbmodel.Model
+	var m dbmodel.Model
+	m.SetTag(modelTag)
+	if err := j.Database.GetModel(ctx, &m); err != nil {
+		return err
+	}
+
 	attrs, err := j.getCloudCredentialAttributes(ctx, &credential)
 	if err != nil {
 		return err
 	}
+	// The forced credential update requires controller superuser access
+	// (Juju rejects force=true from non-admin users), so it is performed
+	// using JIMM's own service identity rather than the caller's scoped
+	// connection. The subsequent ChangeModelCredential call is performed
+	// as the caller via doModelAdmin, which enforces model-admin access.
+	svcAPI, err := j.dialControllerAsService(ctx, &m.Controller)
+	if err != nil {
+		return err
+	}
+	_, err = j.forceUpdateControllerCloudCredential(ctx, &credential, attrs, svcAPI)
+	svcAPI.Close()
+	if err != nil {
+		return err
+	}
 	err = j.doModelAdmin(ctx, user, modelTag, func(model *dbmodel.Model, api API) error {
-		_, err = j.forceUpdateControllerCloudCredential(ctx, &credential, attrs, api)
-		if err != nil {
-			return err
-		}
-
 		err = api.ChangeModelCredential(ctx, modelTag, cloudCredentialTag)
 		if err != nil {
 			return err
 		}
-		m = model
+		m = *model
 		return nil
 	})
 	if err != nil {
@@ -842,7 +856,7 @@ func (j *JujuManager) ChangeModelCredential(ctx context.Context, user *openfga.U
 
 	m.CloudCredential = credential
 	m.CloudCredentialID = credential.ID
-	err = j.Database.UpdateModel(ctx, m)
+	err = j.Database.UpdateModel(ctx, &m)
 	if err != nil {
 		return err
 	}
