@@ -515,7 +515,7 @@ func (j *JujuManager) recoverCredential(ctx context.Context, credential *dbmodel
 		}
 		seen[ctl.ID] = true
 
-		api, dialErr := j.dialController(ctx, &ctl, names.ModelTag{}, ownerUser)
+		api, dialErr := j.dialController(ctx, &ctl, nil, ownerUser)
 		if dialErr != nil {
 			lastErr = dialErr
 			continue

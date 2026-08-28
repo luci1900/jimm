@@ -61,8 +61,16 @@ func (d *perControllerDialer) DialModel(_ context.Context, ctl *dbmodel.Controll
 
 // DialController implements juju.Dialer. It delegates to DialModel since the
 // perControllerDialer test double does not distinguish connection scope or
-// user vs service identity for JWT minting.
-func (d *perControllerDialer) DialController(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag, user *openfga.User) (juju.API, error) {
+// user vs service identity for JWT minting. Only the first model tag found
+// among targets (if any) is used.
+func (d *perControllerDialer) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (juju.API, error) {
+	var mt names.ModelTag
+	for _, t := range targets {
+		if m, ok := t.(names.ModelTag); ok {
+			mt = m
+			break
+		}
+	}
 	return d.DialModel(ctx, ctl, mt, user)
 }
 

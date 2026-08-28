@@ -79,9 +79,11 @@ func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.Mod
 // resolved; otherwise the passed-in controller is used as-is (which may
 // not yet have CloudRegions populated, so cloud claims may be omitted).
 //
-// The model tag is optional: pass a zero-value names.ModelTag when the
-// operation is not model-specific (e.g. cloud or controller-level calls).
-func (f *Factory) NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+// targets may contain any mix of model and application-offer tags whose
+// access levels should be embedded in the token; pass no targets when the
+// operation is not tied to a specific resource (e.g. cloud or
+// controller-level calls).
+func (f *Factory) NewScopedLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
 	// Fetch the controller with CloudRegions populated so buildAccessMap can
 	// enumerate clouds and resolve cloud-access claims. Fall back to the
 	// passed-in controller if it is not yet persisted (e.g. during AddController,
@@ -91,7 +93,7 @@ func (f *Factory) NewScopedLoginToken(ctx context.Context, modelTag names.ModelT
 	if err := f.db.GetController(ctx, &ctlWithClouds); err != nil {
 		ctlWithClouds = *ctl
 	}
-	accessMap, err := buildAccessMap(ctx, user, modelTag, ctl.ResourceTag(), ctlWithClouds, f.accessChecker)
+	accessMap, err := buildAccessMap(ctx, user, targets, ctl.ResourceTag(), ctlWithClouds, f.accessChecker)
 	if err != nil {
 		return nil, err
 	}

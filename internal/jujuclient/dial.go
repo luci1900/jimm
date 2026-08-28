@@ -36,10 +36,10 @@ import (
 )
 
 // ScopedTokenMinter mints a caller-scoped JWT for a user operating on a
-// specific controller and (optional) model. It is satisfied by
-// *jujuauth.Factory.
+// specific controller and set of target resources (models, application
+// offers, etc.). It is satisfied by *jujuauth.Factory.
 type ScopedTokenMinter interface {
-	NewScopedLoginToken(ctx context.Context, modelTag names.ModelTag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
+	NewScopedLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
 // A Dialer is an implementation of a jimm.Dialer that adapts a juju API
@@ -84,18 +84,18 @@ func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller
 }
 
 // newCallerJWTToken mints a caller-scoped JWT reflecting the user's real
-// OpenFGA-derived permissions on the given controller and optional model.
-func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (string, error) {
-	jwt, err := d.TokenMinter.NewScopedLoginToken(ctx, modelTag, ctl, user)
+// OpenFGA-derived permissions on the given controller and target resources.
+func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (string, error) {
+	jwt, err := d.TokenMinter.NewScopedLoginToken(ctx, targets, ctl, user)
 	if err != nil {
 		return "", err
 	}
 	return base64.StdEncoding.EncodeToString(jwt), nil
 }
 
-// createLoginRequest creates a jujuparams.LoginRequest for the given controller, model and user.
-func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*jujuparams.LoginRequest, error) {
-	jwtString, err := d.newCallerJWTToken(ctx, ctl, modelTag, user)
+// createLoginRequest creates a jujuparams.LoginRequest for the given controller, target resources and user.
+func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (*jujuparams.LoginRequest, error) {
+	jwtString, err := d.newCallerJWTToken(ctx, ctl, targets, user)
 	if err != nil {
 		return nil, err
 	}
@@ -128,24 +128,25 @@ func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTa
 	if user == nil {
 		return nil, errors.New("DialModel requires a non-nil user; use DialModelAsService for JIMM internal operations")
 	}
-	return d.dial(ctx, ctl, modelTag, modelTag, user)
+	return d.dial(ctx, ctl, modelTag, []names.Tag{modelTag}, user)
 }
 
 // DialController implements jimm.Dialer. It creates a controller-scoped
 // connection (so controller-level facades are available) whose JWT carries
-// the user's access claims for the given model.
-func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+// the user's access claims for the given target resources (models,
+// application offers, etc.).
+func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (*Connection, error) {
 	if user == nil {
 		return nil, errors.New("DialController requires a non-nil user")
 	}
-	return d.dial(ctx, ctl, names.ModelTag{}, modelTag, user)
+	return d.dial(ctx, ctl, names.ModelTag{}, targets, user)
 }
 
 // dial establishes a connection and logs in as the given user. The
 // connModelTag scopes the connection (empty means controller-scoped); the
-// jwtModelTag determines which model's access claims are embedded in the
+// jwtTargets determine which resources' access claims are embedded in the
 // login JWT.
-func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag, jwtModelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag names.ModelTag, jwtTargets []names.Tag, user *openfga.User) (*Connection, error) {
 	conn, err := rpc.Dial(ctx, ctl, connModelTag, "", nil, nil)
 	if err != nil {
 		return nil, err
@@ -157,7 +158,7 @@ func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag
 	client := rpc.NewClient(conn)
 
 	var loginRequest *jujuparams.LoginRequest
-	loginRequest, err = d.createLoginRequest(ctx, ctl, jwtModelTag, user)
+	loginRequest, err = d.createLoginRequest(ctx, ctl, jwtTargets, user)
 	if err != nil {
 		client.Close()
 		return nil, err
@@ -450,7 +451,11 @@ func (c *Connection) authorizationHeader(modelTag names.ModelTag, extraHeaders h
 		jwtString, err = c.dialer.newServiceJWTToken(c.ctx, c.ctl, modelTag)
 	} else {
 		// User connection: mint a caller-scoped token.
-		jwtString, err = c.dialer.newCallerJWTToken(c.ctx, c.ctl, modelTag, c.user)
+		var targets []names.Tag
+		if modelTag.Id() != "" {
+			targets = []names.Tag{modelTag}
+		}
+		jwtString, err = c.dialer.newCallerJWTToken(c.ctx, c.ctl, targets, c.user)
 	}
 	if err != nil {
 		return nil, err

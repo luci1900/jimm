@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	jujuparams "github.com/juju/juju/rpc/params"
-	"github.com/juju/names/v5"
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
@@ -93,7 +92,7 @@ func (s streamControllerProxier) ServeWS(ctx context.Context, clientConn *websoc
 		return
 	}
 
-	api, err := s.jimm.Dialer.DialController(ctx, &model.Controller, names.ModelTag{}, user)
+	api, err := s.jimm.Dialer.DialController(ctx, &model.Controller, nil, user)
 	if err != nil {
 		zapctx.Error(ctx, "failed to dial controller", zap.Error(err))
 		writeError(fmt.Sprintf("failed to dial controller: %s", err.Error()), errors.CodeConnectionFailed)

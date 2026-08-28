@@ -33,6 +33,7 @@ type GeneratorDatabase interface {
 // generator to obtain user's access rights to various entities.
 type GeneratorAccessChecker interface {
 	GetUserModelAccess(context.Context, *openfga.User, names.ModelTag) (string, error)
+	GetUserApplicationOfferAccess(context.Context, *openfga.User, names.ApplicationOfferTag) (string, error)
 	GetUserControllerAccess(context.Context, *openfga.User, names.ControllerTag) (string, error)
 	GetUserCloudAccess(context.Context, *openfga.User, names.CloudTag) (string, error)
 	CheckPermission(context.Context, *openfga.User, map[string]string, map[string]any) (map[string]string, error)
@@ -108,34 +109,48 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, user *o
 }
 
 // buildAccessMap resolves the caller's OpenFGA permissions for the given
-// controller (and optional model) and returns a JWT access-claim map.
+// controller and the given targets, and returns a JWT access-claim map.
 //
-// If mt is the zero value (empty ID) the model-access lookup is skipped,
-// which is appropriate for controller-scoped or cloud-scoped operations that
-// are not tied to a single model.
+// targets may contain any mix of names.ModelTag and
+// names.ApplicationOfferTag values; each is resolved to the caller's real
+// access level via accessChecker and added to the map. Unrecognised tag
+// kinds are ignored. Empty access levels are skipped since Juju rejects
+// empty claim values.
 //
-// The returned map contains at least the controller access entry, plus one
-// entry per cloud known to the controller, and (when mt is non-zero) the
-// model access entry.
+// The returned map always contains the controller access entry, plus one
+// entry per cloud known to the controller.
 func buildAccessMap(
 	ctx context.Context,
 	user *openfga.User,
-	mt names.ModelTag,
+	targets []names.Tag,
 	ct names.ControllerTag,
 	ctl dbmodel.Controller,
 	accessChecker GeneratorAccessChecker,
 ) (map[string]string, error) {
 	accessMap := make(map[string]string)
 
-	if mt.Id() != "" {
-		modelAccess, err := accessChecker.GetUserModelAccess(ctx, user, mt)
-		if err != nil {
-			zapctx.Error(ctx, "model access check failed", zap.Error(err))
-			return nil, err
-		}
-		// Skip empty access (no direct model relation); Juju rejects empty values.
-		if modelAccess != "" {
-			accessMap[mt.String()] = modelAccess
+	for _, target := range targets {
+		switch tag := target.(type) {
+		case names.ModelTag:
+			modelAccess, err := accessChecker.GetUserModelAccess(ctx, user, tag)
+			if err != nil {
+				zapctx.Error(ctx, "model access check failed", zap.Error(err))
+				return nil, err
+			}
+			// Skip empty access (no direct model relation); Juju rejects empty values.
+			if modelAccess != "" {
+				accessMap[tag.String()] = modelAccess
+			}
+		case names.ApplicationOfferTag:
+			offerAccess, err := accessChecker.GetUserApplicationOfferAccess(ctx, user, tag)
+			if err != nil {
+				zapctx.Error(ctx, "application offer access check failed", zap.Error(err))
+				return nil, err
+			}
+			// Skip empty access (no direct offer relation); Juju rejects empty values.
+			if offerAccess != "" {
+				accessMap[tag.String()] = offerAccess
+			}
 		}
 	}
 
@@ -182,9 +197,14 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 		return nil, fmt.Errorf("failed to fetch controller: %w", err)
 	}
 
+	var targets []names.Tag
+	if auth.mt.Id() != "" {
+		targets = []names.Tag{auth.mt}
+	}
+
 	// Recreate the accessMapCache to prevent leaking permissions across multiple login requests.
 	var err error
-	auth.accessMapCache, err = buildAccessMap(ctx, auth.user, auth.mt, auth.ct, ctl, auth.accessChecker)
+	auth.accessMapCache, err = buildAccessMap(ctx, auth.user, targets, auth.ct, ctl, auth.accessChecker)
 	if err != nil {
 		return nil, err
 	}

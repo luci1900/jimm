@@ -76,7 +76,7 @@ func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
 
 	// Mint a scoped login token for bob.
 	factory := env.JIMM.JujuAuthFactory
-	token, err := factory.NewScopedLoginToken(ctx, modelTag, ctl, bob)
+	token, err := factory.NewScopedLoginToken(ctx, []names.Tag{modelTag}, ctl, bob)
 	c.Assert(err, qt.IsNil)
 
 	// Decode the JWT and inspect the access claim.
@@ -160,7 +160,7 @@ func TestScopedLoginTokenForAdminUser(t *testing.T) {
 
 	// Mint a scoped login token for alice.
 	factory := env.JIMM.JujuAuthFactory
-	token, err := factory.NewScopedLoginToken(ctx, modelTag, ctl, alice)
+	token, err := factory.NewScopedLoginToken(ctx, []names.Tag{modelTag}, ctl, alice)
 	c.Assert(err, qt.IsNil)
 
 	// Decode and inspect.

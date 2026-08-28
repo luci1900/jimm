@@ -27,14 +27,15 @@ type PermissionManager struct {
 	ListObjectRelations_    func(ctx context.Context, user *openfga.User, object string, pageSize int32, continuationToken pagination.EntitlementToken) ([]openfga.Tuple, pagination.EntitlementToken, error)
 	ListResources_          func(ctx context.Context, user *openfga.User, filter pagination.LimitOffsetPagination, namePrefixFilter, typeFilter string) ([]db.Resource, error)
 
-	GetJimmControllerAccess_ func(ctx context.Context, user *openfga.User, tag names.UserTag) (string, error)
-	GetUserCloudAccess_      func(ctx context.Context, user *openfga.User, cloud names.CloudTag) (string, error)
-	GetUserControllerAccess_ func(ctx context.Context, user *openfga.User, controller names.ControllerTag) (string, error)
-	GetUserModelAccess_      func(ctx context.Context, user *openfga.User, model names.ModelTag) (string, error)
-	GrantAuditLogAccess_     func(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error
-	GrantCloudAccess_        func(ctx context.Context, user *openfga.User, ct names.CloudTag, ut names.UserTag, access string) error
-	GrantModelAccess_        func(ctx context.Context, user *openfga.User, mt names.ModelTag, ut names.UserTag, access jujuparams.UserAccessPermission) error
-	GrantOfferAccess_        func(ctx context.Context, u *openfga.User, offerURL string, ut names.UserTag, access jujuparams.OfferAccessPermission) error
+	GetJimmControllerAccess_       func(ctx context.Context, user *openfga.User, tag names.UserTag) (string, error)
+	GetUserCloudAccess_            func(ctx context.Context, user *openfga.User, cloud names.CloudTag) (string, error)
+	GetUserControllerAccess_       func(ctx context.Context, user *openfga.User, controller names.ControllerTag) (string, error)
+	GetUserModelAccess_            func(ctx context.Context, user *openfga.User, model names.ModelTag) (string, error)
+	GetUserApplicationOfferAccess_ func(ctx context.Context, user *openfga.User, offer names.ApplicationOfferTag) (string, error)
+	GrantAuditLogAccess_           func(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error
+	GrantCloudAccess_              func(ctx context.Context, user *openfga.User, ct names.CloudTag, ut names.UserTag, access string) error
+	GrantModelAccess_              func(ctx context.Context, user *openfga.User, mt names.ModelTag, ut names.UserTag, access jujuparams.UserAccessPermission) error
+	GrantOfferAccess_              func(ctx context.Context, u *openfga.User, offerURL string, ut names.UserTag, access jujuparams.OfferAccessPermission) error
 
 	RevokeAuditLogAccess_  func(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error
 	RevokeCloudAccess_     func(ctx context.Context, user *openfga.User, ct names.CloudTag, ut names.UserTag, access string) error
@@ -121,6 +122,13 @@ func (j *PermissionManager) GetUserModelAccess(ctx context.Context, user *openfg
 		return "", errors.New("not implemented")
 	}
 	return j.GetUserModelAccess_(ctx, user, model)
+}
+
+func (j *PermissionManager) GetUserApplicationOfferAccess(ctx context.Context, user *openfga.User, offer names.ApplicationOfferTag) (string, error) {
+	if j.GetUserApplicationOfferAccess_ == nil {
+		return "", errors.New("not implemented")
+	}
+	return j.GetUserApplicationOfferAccess_(ctx, user, offer)
 }
 
 func (j *PermissionManager) GrantAuditLogAccess(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error {

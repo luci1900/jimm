@@ -36,12 +36,13 @@ type Dialer interface {
 
 	// DialController creates a controller-scoped API connection on behalf
 	// of a real user, with the JWT carrying the user's access claims for
-	// the given model (if modelTag is non-zero). This is used for
-	// operations that call controller-level facades (e.g. ModelManager)
-	// with a model UUID argument: the connection must be controller-scoped,
-	// but the Juju permission check requires the user's model access in
-	// the JWT.
-	DialController(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
+	// the given target resources (models, application offers, etc.). This
+	// is used for operations that call controller-level facades (e.g.
+	// ModelManager) with a model UUID argument, or offer-related
+	// operations tied to a single offer: the connection must be
+	// controller-scoped, but the Juju permission check requires the
+	// user's access to the relevant resource(s) in the JWT.
+	DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (API, error)
 
 	// DialModelAsService creates a model-scoped API connection using
 	// JIMM's own service identity (no user). It mints a superuser token
