@@ -13,12 +13,11 @@ import (
 	context "context"
 	reflect "reflect"
 
-	names "github.com/juju/names/v5"
-	gomock "go.uber.org/mock/gomock"
-
 	dbmodel "github.com/canonical/jimm/v3/internal/dbmodel"
 	juju "github.com/canonical/jimm/v3/internal/jimm/juju"
 	openfga "github.com/canonical/jimm/v3/internal/openfga"
+	names "github.com/juju/names/v5"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockDialer is a mock of Dialer interface.
