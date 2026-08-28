@@ -92,7 +92,9 @@ func (s streamControllerProxier) ServeWS(ctx context.Context, clientConn *websoc
 		return
 	}
 
-	api, err := s.jimm.Dialer.DialController(ctx, &model.Controller, nil, user)
+	// Log transfer is authorized by the JIMM-admin check above, rather than a
+	// backing-controller permission granted to the initiating user.
+	api, err := s.jimm.Dialer.DialControllerAsService(ctx, &model.Controller)
 	if err != nil {
 		zapctx.Error(ctx, "failed to dial controller", zap.Error(err))
 		writeError(fmt.Sprintf("failed to dial controller: %s", err.Error()), errors.CodeConnectionFailed)
