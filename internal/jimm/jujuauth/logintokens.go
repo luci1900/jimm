@@ -108,14 +108,35 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, user *o
 	})
 }
 
+// resolveTargetAccess resolves the caller's access level for a single
+// target tag. Unrecognised tag kinds resolve to an empty access level.
+func resolveTargetAccess(ctx context.Context, user *openfga.User, target names.Tag, accessChecker GeneratorAccessChecker) (string, error) {
+	switch tag := target.(type) {
+	case names.ModelTag:
+		access, err := accessChecker.GetUserModelAccess(ctx, user, tag)
+		if err != nil {
+			zapctx.Error(ctx, "model access check failed", zap.Error(err))
+			return "", err
+		}
+		return access, nil
+	case names.ApplicationOfferTag:
+		access, err := accessChecker.GetUserApplicationOfferAccess(ctx, user, tag)
+		if err != nil {
+			zapctx.Error(ctx, "application offer access check failed", zap.Error(err))
+			return "", err
+		}
+		return access, nil
+	default:
+		return "", nil
+	}
+}
+
 // buildAccessMap resolves the caller's OpenFGA permissions for the given
 // controller and the given targets, and returns a JWT access-claim map.
 //
 // targets may contain any mix of names.ModelTag and
 // names.ApplicationOfferTag values; each is resolved to the caller's real
-// access level via accessChecker and added to the map. Unrecognised tag
-// kinds are ignored. Empty access levels are skipped since Juju rejects
-// empty claim values.
+// access level via accessChecker.
 //
 // The returned map always contains the controller access entry, plus one
 // entry per cloud known to the controller.
@@ -129,29 +150,28 @@ func buildAccessMap(
 ) (map[string]string, error) {
 	accessMap := make(map[string]string)
 
+	targetAccess := make(map[names.Tag]string, len(targets))
+	hasRealAccess := false
 	for _, target := range targets {
-		switch tag := target.(type) {
-		case names.ModelTag:
-			modelAccess, err := accessChecker.GetUserModelAccess(ctx, user, tag)
-			if err != nil {
-				zapctx.Error(ctx, "model access check failed", zap.Error(err))
-				return nil, err
-			}
-			// Skip empty access (no direct model relation); Juju rejects empty values.
-			if modelAccess != "" {
-				accessMap[tag.String()] = modelAccess
-			}
-		case names.ApplicationOfferTag:
-			offerAccess, err := accessChecker.GetUserApplicationOfferAccess(ctx, user, tag)
-			if err != nil {
-				zapctx.Error(ctx, "application offer access check failed", zap.Error(err))
-				return nil, err
-			}
-			// Skip empty access (no direct offer relation); Juju rejects empty values.
-			if offerAccess != "" {
-				accessMap[tag.String()] = offerAccess
-			}
+		access, err := resolveTargetAccess(ctx, user, target, accessChecker)
+		if err != nil {
+			return nil, err
 		}
+		targetAccess[target] = access
+		if access != "" {
+			hasRealAccess = true
+		}
+	}
+
+	// Juju rejects a present-but-empty claim as invalid, so empty claims are
+	// only omitted once another target grants real access; with a single
+	// target (e.g. a direct model login), an empty claim is kept so Juju
+	// denies it.
+	for target, access := range targetAccess {
+		if access == "" && hasRealAccess {
+			continue
+		}
+		accessMap[target.String()] = access
 	}
 
 	controllerAccess, err := accessChecker.GetUserControllerAccess(ctx, user, ct)
