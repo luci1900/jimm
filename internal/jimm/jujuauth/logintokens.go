@@ -85,21 +85,22 @@ func (auth *LoginTokenGenerator) GetUser() names.UserTag {
 	return names.UserTag{}
 }
 
-// makeSuperuserToken makes a token declaring the user is a controller superuser and model admin,
-// without actually checking if that's the case.
-func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, user *openfga.User) ([]byte, error) {
+// makeSuperuserToken makes a token declaring the user is a controller
+// superuser and model admin for the supplied model targets, without actually
+// checking if that's the case.
+func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, targets []names.Tag, user *openfga.User) ([]byte, error) {
 
 	if user == nil {
 		return nil, errors.New("user not specified")
 	}
 
-	if auth.mt.Id() == "" {
-		return nil, errors.New("model not set")
-	}
-
 	accessMap := make(map[string]string)
-	accessMap[auth.mt.String()] = "admin"
 	accessMap[auth.ct.String()] = "superuser"
+	for _, target := range targets {
+		if model, ok := target.(names.ModelTag); ok && model.Id() != "" {
+			accessMap[model.String()] = "admin"
+		}
+	}
 
 	return auth.jwtService.NewJWT(ctx, jimmjwx.JWTParams{
 		Controller: auth.ct.Id(),

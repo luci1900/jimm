@@ -70,7 +70,7 @@ func (f *Factory) NewLoginToken(ctx context.Context, modelTag names.ModelTag, co
 func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User) ([]byte, error) {
 	generator := f.NewLoginGenerator()
 	generator.SetTags(modelTag, controllerTag)
-	return generator.makeSuperuserToken(ctx, user)
+	return generator.makeSuperuserToken(ctx, []names.Tag{modelTag}, user)
 }
 
 // NewScopedLoginToken mints a caller-scoped login token for the given user
@@ -104,6 +104,20 @@ func (f *Factory) NewScopedLoginToken(ctx context.Context, targets []names.Tag, 
 	})
 }
 
+// NewCallerLoginToken returns a login token suitable for a real user's call
+// to the specified controller. Older Juju controllers do not correctly
+// honour model-level JWT claims, so unknown and older versions use the
+// compatibility superuser token.
+func (f *Factory) NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+	ctrlVersion, err := version.Parse(ctl.AgentVersion)
+	if err != nil || ctrlVersion.Compare(minJujuVersionForScopedToken) < 0 {
+		generator := f.NewLoginGenerator()
+		generator.SetTags(names.ModelTag{}, ctl.ResourceTag())
+		return generator.makeSuperuserToken(ctx, targets, user)
+	}
+	return f.NewScopedLoginToken(ctx, targets, ctl, user)
+}
+
 // NewLoginTokenForController mints a login token for the given user on the
 // specified controller. If the controller's agent version supports caller-scoped
 // tokens (>= minJujuVersionForScopedToken) a properly-scoped token is minted;
@@ -113,12 +127,8 @@ func (f *Factory) NewScopedLoginToken(ctx context.Context, targets []names.Tag, 
 // The model tag is required for both the caller-scoped and superuser fallback
 // paths.
 func (f *Factory) NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error) {
-	ctrlVersion, err := version.Parse(controllerAgentVersion)
-	if err != nil || ctrlVersion.Compare(minJujuVersionForScopedToken) < 0 {
-		// Unknown version or too old: use the superuser fallback.
-		return f.NewSuperuserLoginToken(ctx, modelTag, controllerTag, user)
-	}
-	return f.NewLoginToken(ctx, modelTag, controllerTag, user)
+	ctl := &dbmodel.Controller{UUID: controllerTag.Id(), AgentVersion: controllerAgentVersion}
+	return f.NewCallerLoginToken(ctx, []names.Tag{modelTag}, ctl, user)
 }
 
 // NewSSHGenerator returns a new token generator for Juju SSH connections.

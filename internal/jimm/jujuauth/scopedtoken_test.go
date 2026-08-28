@@ -176,6 +176,66 @@ func TestScopedLoginTokenForAdminUser(t *testing.T) {
 		qt.Commentf("admin user with model administrator relation must receive model admin"))
 }
 
+func TestCallerLoginTokenUsesCompatibilityTokenForOldController(t *testing.T) {
+	c := qt.New(t)
+	env := jimmtest.SetupJimmEnv(c)
+	ctx := c.Context()
+
+	identity, err := dbmodel.NewIdentity("alice@canonical.com")
+	c.Assert(err, qt.IsNil)
+	user := &openfga.User{Identity: identity}
+	controllerUUID := uuid.New().String()
+	controllerTag := names.NewControllerTag(controllerUUID)
+	modelTag := names.NewModelTag(uuid.New().String())
+
+	for _, version := range []string{"", "not-a-version", "3.6.23"} {
+		t.Run(version, func(t *testing.T) {
+			c := qt.New(t)
+			token, err := env.JIMM.JujuAuthFactory.NewCallerLoginToken(
+				ctx,
+				[]names.Tag{modelTag, names.NewApplicationOfferTag(uuid.New().String())},
+				&dbmodel.Controller{UUID: controllerUUID, AgentVersion: version},
+				user,
+			)
+			c.Assert(err, qt.IsNil)
+
+			parsed, err := jwt.Parse(token, jwt.WithVerify(false), jwt.WithValidate(false))
+			c.Assert(err, qt.IsNil)
+			c.Assert(parsed.Subject(), qt.Equals, user.Tag().String())
+			access := decodeAccess(c, parsed)
+			c.Assert(access, qt.DeepEquals, map[string]string{
+				controllerTag.String(): "superuser",
+				modelTag.String():      "admin",
+			})
+		})
+	}
+}
+
+func TestCallerLoginTokenAllowsControllerOnlyCompatibilityToken(t *testing.T) {
+	c := qt.New(t)
+	env := jimmtest.SetupJimmEnv(c)
+	ctx := c.Context()
+
+	identity, err := dbmodel.NewIdentity("alice@canonical.com")
+	c.Assert(err, qt.IsNil)
+	user := &openfga.User{Identity: identity}
+	controllerUUID := uuid.New().String()
+	controllerTag := names.NewControllerTag(controllerUUID)
+
+	token, err := env.JIMM.JujuAuthFactory.NewCallerLoginToken(
+		ctx, nil,
+		&dbmodel.Controller{UUID: controllerUUID, AgentVersion: "3.6.23"},
+		user,
+	)
+	c.Assert(err, qt.IsNil)
+
+	parsed, err := jwt.Parse(token, jwt.WithVerify(false), jwt.WithValidate(false))
+	c.Assert(err, qt.IsNil)
+	c.Assert(decodeAccess(c, parsed), qt.DeepEquals, map[string]string{
+		controllerTag.String(): "superuser",
+	})
+}
+
 // decodeAccess extracts the "access" claim from a parsed JWT as a
 // map[string]string.
 func decodeAccess(c *qt.C, parsed jwt.Token) map[string]string {

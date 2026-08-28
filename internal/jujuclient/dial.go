@@ -35,25 +35,25 @@ import (
 	jimmversion "github.com/canonical/jimm/v3/version"
 )
 
-// ScopedTokenMinter mints a caller-scoped JWT for a user operating on a
+// CallerTokenMinter mints a caller JWT for a user operating on a
 // specific controller and set of target resources (models, application
 // offers, etc.). It is satisfied by *jujuauth.Factory.
-type ScopedTokenMinter interface {
-	NewScopedLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
+type CallerTokenMinter interface {
+	NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
 // A Dialer is an implementation of a jimm.Dialer that adapts a juju API
 // connection to provide a jimm API.
 type Dialer struct {
 	// TokenMinter mints caller-scoped JWT tokens for on-behalf-of-user dials.
-	TokenMinter ScopedTokenMinter
+	TokenMinter CallerTokenMinter
 	// JWTService signs superuser JWT tokens for JIMM service-identity dials.
 	JWTService    *jimmjwx.JWTService
 	AdminUsername string
 }
 
 // NewDialer creates a new Dialer from dependencies.
-func NewDialer(jwtService *jimmjwx.JWTService, tokenMinter ScopedTokenMinter, controllerUUID string) *Dialer {
+func NewDialer(jwtService *jimmjwx.JWTService, tokenMinter CallerTokenMinter, controllerUUID string) *Dialer {
 	return &Dialer{
 		JWTService:  jwtService,
 		TokenMinter: tokenMinter,
@@ -86,7 +86,7 @@ func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller
 // newCallerJWTToken mints a caller-scoped JWT reflecting the user's real
 // OpenFGA-derived permissions on the given controller and target resources.
 func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (string, error) {
-	jwt, err := d.TokenMinter.NewScopedLoginToken(ctx, targets, ctl, user)
+	jwt, err := d.TokenMinter.NewCallerLoginToken(ctx, targets, ctl, user)
 	if err != nil {
 		return "", err
 	}
