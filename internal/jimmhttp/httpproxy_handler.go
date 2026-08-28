@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/juju/names/v5"
 
+	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimm/juju"
 	"github.com/canonical/jimm/v3/internal/middleware"
@@ -24,9 +25,9 @@ type JujuManager interface {
 	ControllerDetailsForIncomingModel(ctx context.Context, modelUUID string) (juju.ControllerConnectionDetails, error)
 }
 
-// LoginTokenProvider mints a Juju login token for a user operating on a model and controller.
+// LoginTokenProvider mints a Juju login token for a user operating on a controller.
 type LoginTokenProvider interface {
-	NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error)
+	NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
 // HTTPProxyHandler is an handler that provides proxying capabilities.
@@ -109,8 +110,8 @@ func (hph *HTTPProxyHandler) ProxyHTTP(w http.ResponseWriter, req *http.Request)
 	// token is used as a fallback due to a Juju bug where model-admin
 	// JWT claims are not honoured.
 	mt := names.NewModelTag(modelUUID)
-	ct := names.NewControllerTag(controllerDetails.ControllerUUID)
-	jwt, err := hph.loginTokenProvider.NewLoginTokenForController(ctx, mt, ct, user, controllerDetails.AgentVersion)
+	ctl := &dbmodel.Controller{UUID: controllerDetails.ControllerUUID, AgentVersion: controllerDetails.AgentVersion}
+	jwt, err := hph.loginTokenProvider.NewCallerLoginToken(ctx, []names.Tag{mt}, ctl, user)
 	if err != nil {
 		writeError(ctx, w, http.StatusInternalServerError, err, "failed to generate login token")
 		return

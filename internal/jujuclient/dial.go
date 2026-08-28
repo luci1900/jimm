@@ -128,7 +128,11 @@ func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTa
 	if user == nil {
 		return nil, errors.New("DialModel requires a non-nil user; use DialModelAsService for JIMM internal operations")
 	}
-	return d.dial(ctx, ctl, modelTag, []names.Tag{modelTag}, user)
+	loginRequest, err := d.createLoginRequest(ctx, ctl, []names.Tag{modelTag}, user)
+	if err != nil {
+		return nil, err
+	}
+	return d.dial(ctx, ctl, modelTag, user, loginRequest, false)
 }
 
 // DialController implements jimm.Dialer. It creates a controller-scoped
@@ -137,32 +141,30 @@ func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTa
 // application offers, etc.).
 func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (*Connection, error) {
 	if user == nil {
-		return nil, errors.New("DialController requires a non-nil user")
+		return nil, errors.New("DialController requires a non-nil user; use DialControllerAsService for JIMM internal operations")
 	}
-	return d.dial(ctx, ctl, names.ModelTag{}, targets, user)
+	loginRequest, err := d.createLoginRequest(ctx, ctl, targets, user)
+	if err != nil {
+		return nil, err
+	}
+	return d.dial(ctx, ctl, names.ModelTag{}, user, loginRequest, false)
 }
 
-// dial establishes a connection and logs in as the given user. The
-// connModelTag scopes the connection (empty means controller-scoped); the
-// jwtTargets determine which resources' access claims are embedded in the
-// login JWT.
-func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag names.ModelTag, jwtTargets []names.Tag, user *openfga.User) (*Connection, error) {
+// dial establishes a connection and logs in with the given login request.
+// The connModelTag scopes the connection (empty means controller-scoped);
+// the user is recorded on the connection for later token minting (e.g.
+// authorization headers). asService marks whether the connection uses
+// JIMM's own service identity rather than a real user.
+func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag names.ModelTag, user *openfga.User, loginRequest *jujuparams.LoginRequest, asService bool) (*Connection, error) {
 	conn, err := rpc.Dial(ctx, ctl, connModelTag, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
 	if conn == nil {
-		return nil, errors.Codef(errors.CodeConnectionFailed, "%w", err)
+		return nil, errors.Codef(errors.CodeConnectionFailed, "no connection established")
 	}
 
 	client := rpc.NewClient(conn)
-
-	var loginRequest *jujuparams.LoginRequest
-	loginRequest, err = d.createLoginRequest(ctx, ctl, jwtTargets, user)
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
 
 	var res jujuparams.LoginResult
 	if err := client.Call(ctx, "Admin", 3, "", "Login", loginRequest, &res); err != nil {
@@ -202,6 +204,7 @@ func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag
 		dialer:             d,
 		ctl:                ctl,
 		mt:                 connModelTag,
+		asService:          asService,
 	}, nil
 }
 
@@ -226,62 +229,12 @@ func (d *Dialer) DialControllerAsService(ctx context.Context, ctl *dbmodel.Contr
 // dialAsService dials the given controller/model on behalf of JIMM itself
 // (no user), minting a superuser token under the JIMM service identity.
 func (d *Dialer) dialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
-	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	if conn == nil {
-		return nil, errors.Codef(errors.CodeConnectionFailed, "%w", err)
-	}
-
-	client := rpc.NewClient(conn)
-
 	loginRequest, err := d.createServiceLoginRequest(ctx, ctl, modelTag)
 	if err != nil {
-		client.Close()
 		return nil, err
 	}
-
-	var res jujuparams.LoginResult
-	if err := client.Call(ctx, "Admin", 3, "", "Login", loginRequest, &res); err != nil {
-		client.Close()
-		return nil, errors.Codef(errors.CodeConnectionFailed, "%w", err)
-	}
-
-	ct, err := names.ParseControllerTag(res.ControllerTag)
-	if err == nil {
-		ctl.SetTag(ct)
-	}
-	if res.ServerVersion != "" {
-		ctl.AgentVersion = res.ServerVersion
-	}
-	ctl.Addresses = dbmodel.HostPorts(res.Servers)
-	facades := make(map[string]bool)
-	bestFacadeVersions := make(map[string]int)
-	for _, fv := range res.Facades {
-		sort.Sort(sort.Reverse(sort.IntSlice(fv.Versions)))
-		bestFacadeVersions[fv.Name] = fv.Versions[0]
-		for _, v := range fv.Versions {
-			facades[fmt.Sprintf("%s\x1f%d", fv.Name, v)] = true
-		}
-	}
-
 	serviceUser := &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
-	monitorC := make(chan struct{})
-	broken := new(uint32)
-	go pinger(client, ct.Id(), monitorC, broken)
-	return &Connection{
-		ctx:                ctx,
-		client:             client,
-		user:               serviceUser,
-		facadeVersions:     facades,
-		bestFacadeVersions: bestFacadeVersions,
-		monitorC:           monitorC,
-		broken:             broken,
-		dialer:             d,
-		ctl:                ctl,
-		mt:                 modelTag,
-	}, nil
+	return d.dial(ctx, ctl, modelTag, serviceUser, loginRequest, true)
 }
 
 const pingTimeout = 15 * time.Second
@@ -338,6 +291,11 @@ type Connection struct {
 	user   *openfga.User
 	ctl    *dbmodel.Controller
 	mt     names.ModelTag
+	// asService is true when the connection was established under JIMM's
+	// own service identity (via dialAsService), as opposed to on behalf of
+	// a real user. It determines which token type is minted for
+	// authorization headers.
+	asService bool
 }
 
 // Close closes the connection.
@@ -446,7 +404,7 @@ func (c *Connection) Context() context.Context {
 func (c *Connection) authorizationHeader(modelTag names.ModelTag, extraHeaders http.Header) (http.Header, error) {
 	var jwtString string
 	var err error
-	if c.user == nil || c.user.Identity.Name == c.dialer.AdminUsername {
+	if c.asService {
 		// Service connection: mint a superuser token under the admin identity.
 		jwtString, err = c.dialer.newServiceJWTToken(c.ctx, c.ctl, modelTag)
 	} else {

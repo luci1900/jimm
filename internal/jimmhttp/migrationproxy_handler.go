@@ -13,6 +13,7 @@ import (
 	"github.com/juju/zaputil/zapctx"
 	"go.uber.org/zap"
 
+	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/middleware"
 	"github.com/canonical/jimm/v3/internal/rpc"
@@ -95,8 +96,8 @@ func (hph *MigrationHTTPProxyHandler) ProxyHTTP(w http.ResponseWriter, req *http
 	// token is used as a fallback due to a Juju bug where model-admin
 	// JWT claims are not honoured.
 	mt := names.NewModelTag(modelUUID)
-	ct := names.NewControllerTag(controllerDetails.ControllerUUID)
-	jwt, err := hph.loginTokenProvider.NewLoginTokenForController(ctx, mt, ct, user, controllerDetails.AgentVersion)
+	ctl := &dbmodel.Controller{UUID: controllerDetails.ControllerUUID, AgentVersion: controllerDetails.AgentVersion}
+	jwt, err := hph.loginTokenProvider.NewCallerLoginToken(ctx, []names.Tag{mt}, ctl, user)
 	if err != nil {
 		writeError(ctx, w, http.StatusInternalServerError, err, "failed to generate login token")
 		return

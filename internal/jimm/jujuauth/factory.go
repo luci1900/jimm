@@ -20,8 +20,8 @@ import (
 // fallback token must be minted for them instead.
 //
 // TODO(de-proxy): Once the minimum supported Juju controller version
-// exceeds this boundary, remove NewSuperuserLoginToken and
-// makeSuperuserToken entirely.
+// exceeds this boundary, remove the superuser fallback in
+// NewCallerLoginToken and makeSuperuserToken entirely.
 var minJujuVersionForScopedToken = version.MustParse("3.6.24")
 
 // Factory holds the necessary components for producing
@@ -58,19 +58,6 @@ func (f *Factory) NewLoginToken(ctx context.Context, modelTag names.ModelTag, co
 	generator := f.NewLoginGenerator()
 	generator.SetTags(modelTag, controllerTag)
 	return generator.MakeLoginToken(ctx, user)
-}
-
-// NewSuperuserLoginToken creates a login token for the provided user with controller superuser and model admin permissions.
-//
-// NB: Avoid using this method and prefer NewLoginTokenForController to mint a token with the
-// user's real permissions when the controller version supports it.
-//
-// This is only used as a fallback for avoiding a bug in Juju 3.6.23 and below where Juju does
-// not correctly check the model admin permission for a JWT.
-func (f *Factory) NewSuperuserLoginToken(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User) ([]byte, error) {
-	generator := f.NewLoginGenerator()
-	generator.SetTags(modelTag, controllerTag)
-	return generator.makeSuperuserToken(ctx, []names.Tag{modelTag}, user)
 }
 
 // NewScopedLoginToken mints a caller-scoped login token for the given user
@@ -116,19 +103,6 @@ func (f *Factory) NewCallerLoginToken(ctx context.Context, targets []names.Tag, 
 		return generator.makeSuperuserToken(ctx, targets, user)
 	}
 	return f.NewScopedLoginToken(ctx, targets, ctl, user)
-}
-
-// NewLoginTokenForController mints a login token for the given user on the
-// specified controller. If the controller's agent version supports caller-scoped
-// tokens (>= minJujuVersionForScopedToken) a properly-scoped token is minted;
-// otherwise a superuser token is returned as a fallback for older Juju versions
-// that do not correctly honour model-level JWT claims.
-//
-// The model tag is required for both the caller-scoped and superuser fallback
-// paths.
-func (f *Factory) NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error) {
-	ctl := &dbmodel.Controller{UUID: controllerTag.Id(), AgentVersion: controllerAgentVersion}
-	return f.NewCallerLoginToken(ctx, []names.Tag{modelTag}, ctl, user)
 }
 
 // NewSSHGenerator returns a new token generator for Juju SSH connections.

@@ -58,12 +58,12 @@ func TestHTTPProxyHandler(t *testing.T) {
 			}, nil
 		},
 	}
-	loginTokens := loginTokenProvider{NewLoginTokenForController_: func(ctx context.Context, gotMT names.ModelTag, gotCT names.ControllerTag, gotU *openfga.User, gotAV string) ([]byte, error) {
+	loginTokens := loginTokenProvider{NewCallerLoginToken_: func(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, gotU *openfga.User) ([]byte, error) {
 		callCount++
-		gotModelTag = gotMT
-		gotControllerTag = gotCT
+		gotModelTag = targets[0].(names.ModelTag)
+		gotControllerTag = ctl.ResourceTag()
 		gotUser = gotU
-		gotAgentVersion = gotAV
+		gotAgentVersion = ctl.AgentVersion
 		return []byte("test-token"), nil
 	}}
 	httpProxier := jimmhttp.NewHTTPProxyHandler(nil, &ctrlService, loginTokens)
@@ -127,9 +127,9 @@ func TestHTTPProxyHandler(t *testing.T) {
 }
 
 type loginTokenProvider struct {
-	NewLoginTokenForController_ func(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error)
+	NewCallerLoginToken_ func(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
-func (p loginTokenProvider) NewLoginTokenForController(ctx context.Context, modelTag names.ModelTag, controllerTag names.ControllerTag, user *openfga.User, controllerAgentVersion string) ([]byte, error) {
-	return p.NewLoginTokenForController_(ctx, modelTag, controllerTag, user, controllerAgentVersion)
+func (p loginTokenProvider) NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+	return p.NewCallerLoginToken_(ctx, targets, ctl, user)
 }

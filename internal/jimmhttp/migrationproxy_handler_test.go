@@ -57,12 +57,12 @@ func TestMigrationHTTPProxyHandler(t *testing.T) {
 			}, nil
 		},
 	}
-	loginTokens := loginTokenProvider{NewLoginTokenForController_: func(ctx context.Context, gotMT names.ModelTag, gotCT names.ControllerTag, gotU *openfga.User, gotAV string) ([]byte, error) {
+	loginTokens := loginTokenProvider{NewCallerLoginToken_: func(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, gotU *openfga.User) ([]byte, error) {
 		callCount++
-		gotModelTag = gotMT
-		gotControllerTag = gotCT
+		gotModelTag = targets[0].(names.ModelTag)
+		gotControllerTag = ctl.ResourceTag()
 		gotUser = gotU
-		gotAgentVersion = gotAV
+		gotAgentVersion = ctl.AgentVersion
 		return []byte("test-token"), nil
 	}}
 	migrationProxier := jimmhttp.NewMigrationHTTPProxyHandler(nil, &ctrlService, loginTokens)

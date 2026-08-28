@@ -5,9 +5,6 @@ package juju
 import (
 	"context"
 
-	"github.com/juju/zaputil"
-	"github.com/juju/zaputil/zapctx"
-
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/openfga"
@@ -57,21 +54,4 @@ func (j *JujuManager) getControllerByName(ctx context.Context, controllerName st
 		return nil, errors.Codef(errors.CodeNotFound, "controller not found")
 	}
 	return &controller, nil
-}
-
-// dialControllerAsServiceLogged dials a controller. Controller-level
-// operations (adding controllers, fetching cloud specs, polling model
-// summaries) are performed using JIMM's own service identity, not the
-// caller's, because they require controller-level access that the caller
-// may not have.
-//
-// Dials as the JIMM service identity after enforcing authorisation, since
-// users lack the required permission on the backing controller.
-func (j *JujuManager) dialControllerAsServiceLogged(ctx context.Context, ctl *dbmodel.Controller) (API, error) {
-	api, err := j.dialControllerAsService(ctx, ctl)
-	if err != nil {
-		zapctx.Error(ctx, "failed to dial the controller", zaputil.Error(err))
-		return nil, err
-	}
-	return api, nil
 }
