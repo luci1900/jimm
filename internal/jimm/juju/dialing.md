@@ -30,8 +30,8 @@ User-triggered, but JIMM is the acting party.
 
 ### JIMM-admin operations
 
-Authorized by JIMM, but the admin holds no OpenFGA relations on the
-backing controller's resources, so there are no claims to mint.
+User-triggered, but the admin holds no OpenFGA relations on the backing
+controller's resources, so there are no claims to mint.
 
 - `jimm.go` `FullModelStatus`
 - `model.go` `UpgradeController`: upgrades the controller model, which
@@ -39,7 +39,7 @@ backing controller's resources, so there are no claims to mint.
 - `controller.go` `ControllerConfig`
 - `model_status_parser.go`
 
-### Workarounds 
+### Facade permission gaps
 
 JIMM enforces authorization, but the backing facade needs more than
 the caller holds.
