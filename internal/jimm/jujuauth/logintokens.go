@@ -165,10 +165,11 @@ func buildAccessMap(
 		}
 	}
 
-	// Juju rejects a present-but-empty claim as invalid, so empty claims are
-	// only omitted once another resource tag grants real access; with a
-	// single resource tag (e.g. a direct model login), an empty claim is
-	// kept so Juju denies it.
+	// Juju rejects the entire login if any access claim in the JWT is
+	// present but empty. So when the user holds real access to at least
+	// one tag, empty claims are dropped to avoid invalidating the whole
+	// token. When all claims are empty, one is kept so Juju itself
+	// denies the login.
 	for target, access := range targetAccess {
 		if access == "" && hasRealAccess {
 			continue

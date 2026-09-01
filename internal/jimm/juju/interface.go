@@ -28,6 +28,17 @@ import (
 // dialing the controller the UUID, AgentVersion and HostPorts fields in the
 // given controller should be updated to the values provided by the
 // controller.
+//
+// When to use which method:
+//
+//   - DialModel / DialController: dial as the real user, with the JWT
+//     scoped to their own access. Prefer these wherever possible.
+//
+//   - DialModelAsService / DialControllerAsService: dial as JIMM's
+//     service identity (superuser). Use only for internal housekeeping
+//     with no real user or when the backing controller's facade
+//     demands more permission than the caller holds. Every AsService
+//     call is a potential gap to close in Juju's permission model.
 type Dialer interface {
 	// DialModel creates a model-scoped API connection on behalf of a real
 	// user. The user and modelTag must not be zero-valued. The JWT carries
@@ -42,6 +53,12 @@ type Dialer interface {
 	// operations tied to a single offer: the connection must be
 	// controller-scoped, but the Juju permission check requires the
 	// user's access to the relevant resource(s) in the JWT.
+	//
+	// resourceTags is a generalisation of DialModel's modelTag: pass any
+	// mix of model and application-offer tags whose access levels should
+	// be resolved via OpenFGA and embedded as JWT access claims. Pass no
+	// resourceTags when the operation is not tied to a specific resource
+	// (e.g. cloud or controller-level calls).
 	DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (API, error)
 
 	// DialModelAsService creates a model-scoped API connection using
