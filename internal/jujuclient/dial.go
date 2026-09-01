@@ -87,10 +87,74 @@ func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller
 	}, nil
 }
 
-// Dial implements jimm.Dialer.
-func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+// DialModel implements jimm.Dialer. It creates a model-scoped
+// connection on behalf of a real user. The user must be non-nil; use
+// DialModelAsService for JIMM's own internal operations that have no
+// associated user.
+func (d *Dialer) DialModel(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+	if user == nil {
+		return nil, errors.New("DialModel requires a non-nil user")
+	}
+	loginRequest, err := d.createLoginRequest(ctx, ctl, modelTag, user)
+	if err != nil {
+		return nil, err
+	}
+	return d.dial(ctx, ctl, modelTag, user, loginRequest)
+}
 
-	conn, err := rpc.Dial(ctx, ctl, modelTag, "", nil, nil)
+// DialController implements jimm.Dialer. It creates a controller-scoped
+// connection (so controller-level facades are available) on behalf of a
+// real user. The user must be non-nil; use DialControllerAsService for
+// JIMM's own internal operations that have no associated user.
+// TODO(luci1900): refactor to pass in resource tags for scoped JWT minting.
+func (d *Dialer) DialController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (*Connection, error) {
+	if user == nil {
+		return nil, errors.New("DialController requires a non-nil user")
+	}
+	modelTag := names.ModelTag{}
+	loginRequest, err := d.createLoginRequest(ctx, ctl, modelTag, user)
+	if err != nil {
+		return nil, err
+	}
+	return d.dial(ctx, ctl, modelTag, user, loginRequest)
+}
+
+// DialModelAsService implements jimm.Dialer. It dials the given model
+// on behalf of JIMM itself (no user), using JIMM's service identity
+// (jaas-<uuid>@external). Use this for internal housekeeping operations,
+// such as model-status polling, that are not initiated by a real user.
+func (d *Dialer) DialModelAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+	return d.dialAsService(ctx, ctl, modelTag)
+}
+
+// DialControllerAsService implements jimm.Dialer. It dials the given
+// controller on behalf of JIMM itself (no user), using a
+// controller-scoped connection and JIMM's service identity
+// (jaas-<uuid>@external). Use this for internal housekeeping operations
+// such as the watcher, upgrade worker, and controller administration
+// tasks that are not initiated by a real user.
+func (d *Dialer) DialControllerAsService(ctx context.Context, ctl *dbmodel.Controller) (*Connection, error) {
+	return d.dialAsService(ctx, ctl, names.ModelTag{})
+}
+
+// dialAsService dials the given controller/model on behalf of JIMM
+// itself (no user), using JIMM's service identity.
+func (d *Dialer) dialAsService(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
+	user := &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
+	loginRequest, err := d.createLoginRequest(ctx, ctl, modelTag, user)
+	if err != nil {
+		return nil, err
+	}
+	return d.dial(ctx, ctl, modelTag, user, loginRequest)
+}
+
+// dial establishes a connection and logs in with the given login request.
+// The connModelTag scopes the connection (empty means controller-scoped)
+// and the user is recorded on the connection for later token minting
+// (e.g. authorization headers).
+func (d *Dialer) dial(ctx context.Context, ctl *dbmodel.Controller, connModelTag names.ModelTag, user *openfga.User, loginRequest *jujuparams.LoginRequest) (*Connection, error) {
+
+	conn, err := rpc.Dial(ctx, ctl, connModelTag, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -99,17 +163,6 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 	}
 
 	client := rpc.NewClient(conn)
-
-	if user == nil {
-		user = &openfga.User{Identity: &dbmodel.Identity{Name: d.AdminUsername}}
-	}
-
-	var loginRequest *jujuparams.LoginRequest
-	loginRequest, err = d.createLoginRequest(ctx, ctl, modelTag, user)
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
 
 	var res jujuparams.LoginResult
 	if err := client.Call(ctx, "Admin", 3, "", "Login", loginRequest, &res); err != nil {
@@ -148,7 +201,7 @@ func (d *Dialer) Dial(ctx context.Context, ctl *dbmodel.Controller, modelTag nam
 		broken:             broken,
 		dialer:             d,
 		ctl:                ctl,
-		mt:                 modelTag,
+		mt:                 connModelTag,
 	}, nil
 }
 
