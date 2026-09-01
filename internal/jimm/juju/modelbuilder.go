@@ -546,6 +546,8 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	}
 
 	if b.credential != nil {
+		// TODO(luci1900): dial as the user once Juju allows force=true
+		// for non-admins.
 		svcAPI, err := b.jujuManager.dialControllerAsService(b.ctx, b.controller)
 		if err != nil {
 			b.err = err
@@ -607,6 +609,8 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	// what lets JIMM's service identity manage the model later (e.g.
 	// migration). Without it Juju returns a different result on migrated
 	// models.
+	// TODO(luci1900): dial as the user once Juju lets users grant JIMM
+	// model access themselves.
 	svcAPI, err := b.jujuManager.dialControllerAsService(b.ctx, b.controller)
 	if err != nil {
 		zapctx.Error(b.ctx, "leaked model", zap.String("model", info.UUID), zaputil.Error(err))

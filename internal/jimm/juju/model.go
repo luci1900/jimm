@@ -833,6 +833,8 @@ func (j *JujuManager) ChangeModelCredential(ctx context.Context, user *openfga.U
 	// using JIMM's own service identity rather than the caller's scoped
 	// connection. The subsequent ChangeModelCredential call is performed
 	// as the caller via doModelAdmin, which enforces model-admin access.
+	// TODO(luci1900): dial as the user once Juju allows force=true for
+	// non-admins.
 	svcAPI, err := j.dialControllerAsService(ctx, &m.Controller)
 	if err != nil {
 		return err

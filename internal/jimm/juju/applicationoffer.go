@@ -556,7 +556,8 @@ func (j *JujuManager) queryControllersForOffers(ctx context.Context, user *openf
 			// Spans multiple models, so a single caller-scoped JWT can't
 			// satisfy Juju's per-model check. enrichOfferDetails below
 			// re-authorizes each offer against OpenFGA.
-			// TODO: revisit dialing as service here.
+			// TODO(luci1900): dial as the user once Juju supports
+			// multi-model offer queries with scoped tokens.
 			api, err := j.dialControllerAsService(ctx, ctl)
 			if err != nil {
 				return err
