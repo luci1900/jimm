@@ -5,6 +5,7 @@ package openfga
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/canonical/ofga"
 	"github.com/juju/juju/rpc/params"
@@ -214,6 +215,97 @@ func (u *User) GetModelAccess(ctx context.Context, resource names.ModelTag) Rela
 	}
 
 	return ofganames.NoRelation
+}
+
+// GetAccessBatch resolves the user's access to all the given resources in
+// a single batched OpenFGA request (chunked at BatchCheckSize). The
+// returned map is keyed by resource tag string; each value is the user's
+// highest relation to that resource, or NoRelation.
+//
+// Supported resource kinds are model, application offer, controller and
+// cloud tags; other kinds resolve to NoRelation. Unrecognised kinds are
+// skipped, mirroring the per-resource access getters.
+func (u *User) GetAccessBatch(ctx context.Context, resources ...names.Tag) (map[string]Relation, error) {
+	contextualTuples, err := u.ContextualTuples()
+	if err != nil {
+		return nil, err
+	}
+
+	// relationsForKind lists the relations to check for a resource kind,
+	// ordered from highest to lowest access level.
+	relationsForKind := func(kind string) []Relation {
+		switch kind {
+		case names.ModelTagKind:
+			return []Relation{ofganames.AdministratorRelation, ofganames.WriterRelation, ofganames.ReaderRelation}
+		case names.ApplicationOfferTagKind:
+			return []Relation{ofganames.AdministratorRelation, ofganames.ConsumerRelation, ofganames.ReaderRelation}
+		case names.ControllerTagKind:
+			return []Relation{ofganames.AdministratorRelation}
+		case names.CloudTagKind:
+			return []Relation{ofganames.AdministratorRelation, ofganames.CanAddModelRelation}
+		default:
+			return nil
+		}
+	}
+
+	// Build the batch: one check per (resource, relation) pair. The
+	// correlation ID is the check's index (OpenFGA restricts correlation
+	// IDs to [\w\d-]{1,36}), which maps results back to their check.
+	type check struct {
+		tuple   TupleWithCorrelationId
+		tagStr  string
+		isFirst bool // first check for this resource, i.e. highest relation
+	}
+	batch := make([]check, 0, len(resources)*3)
+	for _, resource := range resources {
+		tagStr := resource.String()
+		first := true
+		for _, relation := range relationsForKind(resource.Kind()) {
+			batch = append(batch, check{
+				tuple: TupleWithCorrelationId{
+					Tuple: &Tuple{
+						Object:   ofganames.ConvertTag(u.ResourceTag()),
+						Relation: relation,
+						Target:   ofganames.ConvertGenericTag(resource),
+					},
+					CorrelationId:    strconv.Itoa(len(batch)),
+					ContextualTuples: contextualTuples,
+				},
+				tagStr:  tagStr,
+				isFirst: first,
+			})
+			first = false
+		}
+	}
+	if len(batch) == 0 {
+		return map[string]Relation{}, nil
+	}
+
+	tuples := make([]TupleWithCorrelationId, len(batch))
+	for i, c := range batch {
+		tuples[i] = c.tuple
+	}
+	results, err := u.client.BatchCheckRelations(ctx, tuples)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reduce the boolean results to the highest granted relation per
+	// resource. Relations were added highest-first, so the first true
+	// result wins.
+	access := make(map[string]Relation, len(resources))
+	for _, resource := range resources {
+		access[resource.String()] = ofganames.NoRelation
+	}
+	for i, c := range batch {
+		if !results[strconv.Itoa(i)] {
+			continue
+		}
+		if access[c.tagStr] == ofganames.NoRelation {
+			access[c.tagStr] = c.tuple.Relation
+		}
+	}
+	return access, nil
 }
 
 // GetApplicationOfferAccess returns the relation the user has with the specified application offer.

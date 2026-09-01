@@ -151,6 +151,13 @@ func (j *PermissionManager) GetUserApplicationOfferAccess(ctx context.Context, u
 	return ToOfferAccessString(accessLevel), nil
 }
 
+// GetUserAccessBatch resolves the user's access to all the given resources
+// in a single batched OpenFGA request. The returned map is keyed by
+// resource tag string.
+func (j *PermissionManager) GetUserAccessBatch(ctx context.Context, user *openfga.User, resources []names.Tag) (map[string]openfga.Relation, error) {
+	return user.GetAccessBatch(ctx, resources...)
+}
+
 // GrantAuditLogAccess grants audit log access for the target user.
 func (j *PermissionManager) GrantAuditLogAccess(ctx context.Context, user *openfga.User, targetUserTag names.UserTag) error {
 

@@ -16,6 +16,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/jimm/jujuauth"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
+	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 )
 
 // testDatabase is a database implementation intended for testing the token generator.
@@ -34,56 +35,33 @@ func (tdb *testDatabase) GetController(ctx context.Context, controller *dbmodel.
 }
 
 // testAccessChecker is an access checker implementation intended for testing the
-// token generator.
+// token generator. The access map is keyed by resource tag string and holds
+// OpenFGA relation names (e.g. "administrator", "writer", "can_addmodel").
 type testAccessChecker struct {
-	controllerAccess         map[string]string
-	controllerAccessCheckErr error
-	modelAccess              map[string]string
-	modelAccessCheckErr      error
-	offerAccess              map[string]string
-	offerAccessCheckErr      error
-	cloudAccess              map[string]string
-	cloudAccessCheckErr      error
-	permissions              map[string]string
-	permissionCheckErr       error
+	access      map[string]openfga.Relation
+	accessErr   error
+	permissions map[string]string
+	permErr     error
 }
 
-// GetUserModelAccess implements the GetUserModelAccess method of the JWTGeneratorAccessChecker interface.
-func (tac *testAccessChecker) GetUserModelAccess(ctx context.Context, user *openfga.User, mt names.ModelTag) (string, error) {
-	if tac.modelAccessCheckErr != nil {
-		return "", tac.modelAccessCheckErr
+// GetUserAccessBatch implements the GetUserAccessBatch method of the
+// JWTGeneratorAccessChecker interface. It returns the preconfigured
+// relation for every requested resource.
+func (tac *testAccessChecker) GetUserAccessBatch(ctx context.Context, user *openfga.User, resources []names.Tag) (map[string]openfga.Relation, error) {
+	if tac.accessErr != nil {
+		return nil, tac.accessErr
 	}
-	return tac.modelAccess[mt.String()], nil
-}
-
-// GetUserApplicationOfferAccess implements the GetUserApplicationOfferAccess method of the JWTGeneratorAccessChecker interface.
-func (tac *testAccessChecker) GetUserApplicationOfferAccess(ctx context.Context, user *openfga.User, ot names.ApplicationOfferTag) (string, error) {
-	if tac.offerAccessCheckErr != nil {
-		return "", tac.offerAccessCheckErr
+	access := make(map[string]openfga.Relation, len(resources))
+	for _, r := range resources {
+		access[r.String()] = tac.access[r.String()]
 	}
-	return tac.offerAccess[ot.String()], nil
-}
-
-// GetUserControllerAccess implements the GetUserControllerAccess method of the JWTGeneratorAccessChecker interface.
-func (tac *testAccessChecker) GetUserControllerAccess(ctx context.Context, user *openfga.User, ct names.ControllerTag) (string, error) {
-	if tac.controllerAccessCheckErr != nil {
-		return "", tac.controllerAccessCheckErr
-	}
-	return tac.controllerAccess[ct.String()], nil
-}
-
-// GetUserCloudAccess implements the GetUserCloudAccess method of the JWTGeneratorAccessChecker interface.
-func (tac *testAccessChecker) GetUserCloudAccess(ctx context.Context, user *openfga.User, ct names.CloudTag) (string, error) {
-	if tac.cloudAccessCheckErr != nil {
-		return "", tac.cloudAccessCheckErr
-	}
-	return tac.cloudAccess[ct.String()], nil
+	return access, nil
 }
 
 // CheckPermission implements the CheckPermission methods of the JWTGeneratorAccessChecker interface.
 func (tac *testAccessChecker) CheckPermission(ctx context.Context, user *openfga.User, accessMap map[string]string, permissions map[string]any) (map[string]string, error) {
-	if tac.permissionCheckErr != nil {
-		return nil, tac.permissionCheckErr
+	if tac.permErr != nil {
+		return nil, tac.permErr
 	}
 	access := make(map[string]string)
 	maps.Copy(access, accessMap)
@@ -140,14 +118,10 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 			},
 		},
 		accessChecker: &testAccessChecker{
-			modelAccess: map[string]string{
-				mt.String(): "admin",
-			},
-			controllerAccess: map[string]string{
-				ct.String(): "superuser",
-			},
-			cloudAccess: map[string]string{
-				names.NewCloudTag("test-cloud").String(): "add-model",
+			access: map[string]openfga.Relation{
+				mt.String():                              ofganames.AdministratorRelation,
+				ct.String():                              ofganames.AdministratorRelation,
+				names.NewCloudTag("test-cloud").String(): ofganames.CanAddModelRelation,
 			},
 		},
 		jwtService: &testJWTService{},
@@ -161,24 +135,13 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 			},
 		},
 	}, {
-		about:    "model access check fails",
+		about:    "access check fails",
 		username: "eve@canonical.com",
 		database: &testDatabase{},
 		accessChecker: &testAccessChecker{
-			modelAccessCheckErr: errors.New("a test error"),
+			accessErr: errors.New("a test error"),
 		},
 		jwtService:    &testJWTService{},
-		expectedError: "a test error",
-	}, {
-		about:    "controller access check fails",
-		username: "eve@canonical.com",
-		database: &testDatabase{},
-		accessChecker: &testAccessChecker{
-			modelAccess: map[string]string{
-				mt.String(): "admin",
-			},
-			controllerAccessCheckErr: errors.New("a test error"),
-		},
 		expectedError: "a test error",
 	}, {
 		about:    "get controller from db fails",
@@ -187,38 +150,12 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 			err: errors.New("a test error"),
 		},
 		accessChecker: &testAccessChecker{
-			modelAccess: map[string]string{
-				mt.String(): "admin",
-			},
-			controllerAccess: map[string]string{
-				ct.String(): "superuser",
+			access: map[string]openfga.Relation{
+				mt.String(): ofganames.AdministratorRelation,
+				ct.String(): ofganames.AdministratorRelation,
 			},
 		},
 		expectedError: "failed to fetch controller: a test error",
-	}, {
-		about:    "cloud access check fails",
-		username: "eve@canonical.com",
-		database: &testDatabase{
-			ctl: dbmodel.Controller{
-				CloudRegions: []dbmodel.CloudRegionControllerPriority{{
-					CloudRegion: dbmodel.CloudRegion{
-						Cloud: dbmodel.Cloud{
-							Name: "test-cloud",
-						},
-					},
-				}},
-			},
-		},
-		accessChecker: &testAccessChecker{
-			modelAccess: map[string]string{
-				mt.String(): "admin",
-			},
-			controllerAccess: map[string]string{
-				ct.String(): "superuser",
-			},
-			cloudAccessCheckErr: errors.New("a test error"),
-		},
-		expectedError: "failed to check user's cloud access: a test error",
 	}, {
 		about:    "jwt service errors out",
 		username: "eve@canonical.com",
@@ -234,14 +171,10 @@ func TestJWTGeneratorMakeLoginToken(t *testing.T) {
 			},
 		},
 		accessChecker: &testAccessChecker{
-			modelAccess: map[string]string{
-				mt.String(): "admin",
-			},
-			controllerAccess: map[string]string{
-				ct.String(): "superuser",
-			},
-			cloudAccess: map[string]string{
-				names.NewCloudTag("test-cloud").String(): "add-model",
+			access: map[string]openfga.Relation{
+				mt.String():                              ofganames.AdministratorRelation,
+				ct.String():                              ofganames.AdministratorRelation,
+				names.NewCloudTag("test-cloud").String(): ofganames.CanAddModelRelation,
 			},
 		},
 		jwtService: &testJWTService{
@@ -339,17 +272,13 @@ func TestJWTGeneratorMakeToken(t *testing.T) {
 			},
 			test.jwtService,
 			&testAccessChecker{
-				modelAccess: map[string]string{
-					mt.String(): "admin",
+				access: map[string]openfga.Relation{
+					mt.String():                              ofganames.AdministratorRelation,
+					ct.String():                              ofganames.AdministratorRelation,
+					names.NewCloudTag("test-cloud").String(): ofganames.CanAddModelRelation,
 				},
-				controllerAccess: map[string]string{
-					ct.String(): "superuser",
-				},
-				cloudAccess: map[string]string{
-					names.NewCloudTag("test-cloud").String(): "add-model",
-				},
-				permissions:        test.checkPermissions,
-				permissionCheckErr: test.checkPermissionsError,
+				permissions: test.checkPermissions,
+				permErr:     test.checkPermissionsError,
 			},
 		)
 		generator := authFactory.NewLoginGenerator()
@@ -370,4 +299,107 @@ func TestJWTGeneratorMakeToken(t *testing.T) {
 			c.Assert(test.jwtService.params, qt.DeepEquals, test.expectedJWTParams)
 		}
 	}
+}
+
+// TestBuildAccessMapEmptyClaims verifies the empty-claim handling: Juju
+// rejects a token containing a present-but-empty access claim, so claims
+// for resources the user cannot access are dropped when the user holds
+// real access elsewhere, and kept (so Juju denies the login) when all
+// resource-tag claims are empty.
+func TestBuildAccessMapEmptyClaims(t *testing.T) {
+	c := qt.New(t)
+
+	ct := names.NewControllerTag(uuid.New().String())
+	cloudTag := names.NewCloudTag("test-cloud")
+	ctl := dbmodel.Controller{
+		CloudRegions: []dbmodel.CloudRegionControllerPriority{{
+			CloudRegion: dbmodel.CloudRegion{
+				Cloud: dbmodel.Cloud{Name: "test-cloud"},
+			},
+		}},
+	}
+
+	i, err := dbmodel.NewIdentity("eve@canonical.com")
+	c.Assert(err, qt.IsNil)
+	user := &openfga.User{Identity: i}
+
+	c.Run("empty claims dropped when user has real access", func(c *qt.C) {
+		modelWithAccess := names.NewModelTag(uuid.New().String())
+		modelNoAccess := names.NewModelTag(uuid.New().String())
+		offerNoAccess := names.NewApplicationOfferTag(uuid.New().String())
+
+		checker := &testAccessChecker{
+			access: map[string]openfga.Relation{
+				modelWithAccess.String(): ofganames.WriterRelation,
+				// modelNoAccess and offerNoAccess intentionally absent:
+				// the user has no access, so they resolve to NoRelation.
+				ct.String():       ofganames.AdministratorRelation,
+				cloudTag.String(): ofganames.CanAddModelRelation,
+			},
+		}
+
+		accessMap, err := jujuauth.BuildAccessMapForTest(
+			context.Background(), user,
+			[]names.Tag{modelWithAccess, modelNoAccess, offerNoAccess},
+			ct, ctl, checker,
+		)
+		c.Assert(err, qt.IsNil)
+		c.Check(accessMap, qt.DeepEquals, map[string]string{
+			modelWithAccess.String(): "write",
+			// Empty claims dropped: the token must not carry them.
+			ct.String():       "superuser",
+			cloudTag.String(): "add-model",
+		})
+	})
+
+	c.Run("empty claim kept when user has no access at all", func(c *qt.C) {
+		modelNoAccess := names.NewModelTag(uuid.New().String())
+
+		checker := &testAccessChecker{
+			access: map[string]openfga.Relation{
+				ct.String():       ofganames.NoRelation,
+				cloudTag.String(): ofganames.NoRelation,
+			},
+		}
+
+		accessMap, err := jujuauth.BuildAccessMapForTest(
+			context.Background(), user,
+			[]names.Tag{modelNoAccess},
+			ct, ctl, checker,
+		)
+		c.Assert(err, qt.IsNil)
+		c.Check(accessMap, qt.DeepEquals, map[string]string{
+			// The empty claim is kept so Juju itself denies the login.
+			modelNoAccess.String(): "",
+			ct.String():            "login",
+			cloudTag.String():      "",
+		})
+	})
+
+	c.Run("mixed kinds resolve to their access strings", func(c *qt.C) {
+		model := names.NewModelTag(uuid.New().String())
+		offer := names.NewApplicationOfferTag(uuid.New().String())
+
+		checker := &testAccessChecker{
+			access: map[string]openfga.Relation{
+				model.String():    ofganames.AdministratorRelation,
+				offer.String():    ofganames.ConsumerRelation,
+				ct.String():       ofganames.AdministratorRelation,
+				cloudTag.String(): ofganames.AdministratorRelation,
+			},
+		}
+
+		accessMap, err := jujuauth.BuildAccessMapForTest(
+			context.Background(), user,
+			[]names.Tag{model, offer},
+			ct, ctl, checker,
+		)
+		c.Assert(err, qt.IsNil)
+		c.Check(accessMap, qt.DeepEquals, map[string]string{
+			model.String():    "admin",
+			offer.String():    "consume",
+			ct.String():       "superuser",
+			cloudTag.String(): "admin",
+		})
+	})
 }

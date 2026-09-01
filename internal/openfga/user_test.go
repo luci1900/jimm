@@ -797,3 +797,108 @@ func TestUnsetMultipleResourceAccesses(t *testing.T) {
 		c.Assert(retrieved, qt.HasLen, 0)
 	}
 }
+
+func TestGetAccessBatch(t *testing.T) {
+	c := qt.New(t)
+	s := SetupTest(c)
+	ctx := c.Context()
+
+	controller := names.NewControllerTag(uuid.NewString())
+	model1 := names.NewModelTag(uuid.NewString())
+	model2 := names.NewModelTag(uuid.NewString())
+	model3 := names.NewModelTag(uuid.NewString())
+	offer := names.NewApplicationOfferTag(uuid.NewString())
+	cloud := names.NewCloudTag("test-cloud")
+
+	eve := names.NewUserTag("eve")
+	tuples := []openfga.Tuple{{
+		// eve is admin on model1.
+		Object:   ofganames.ConvertTag(eve),
+		Relation: ofganames.AdministratorRelation,
+		Target:   ofganames.ConvertTag(model1),
+	}, {
+		// eve is writer on model2.
+		Object:   ofganames.ConvertTag(eve),
+		Relation: ofganames.WriterRelation,
+		Target:   ofganames.ConvertTag(model2),
+	}, {
+		// eve has no access on model3.
+		Object:   ofganames.ConvertTag(names.NewUserTag("adam")),
+		Relation: ofganames.ReaderRelation,
+		Target:   ofganames.ConvertTag(model3),
+	}, {
+		// eve is consumer on the offer.
+		Object:   ofganames.ConvertTag(eve),
+		Relation: ofganames.ConsumerRelation,
+		Target:   ofganames.ConvertTag(offer),
+	}, {
+		// eve is admin on the controller.
+		Object:   ofganames.ConvertTag(eve),
+		Relation: ofganames.AdministratorRelation,
+		Target:   ofganames.ConvertTag(controller),
+	}, {
+		// eve can add models on the cloud.
+		Object:   ofganames.ConvertTag(eve),
+		Relation: ofganames.CanAddModelRelation,
+		Target:   ofganames.ConvertTag(cloud),
+	}}
+	err := s.ofgaClient.AddRelation(ctx, tuples...)
+	c.Assert(err, qt.IsNil)
+
+	eveIdentity, err := dbmodel.NewIdentity(eve.Id())
+	c.Assert(err, qt.IsNil)
+	eveUser := openfga.NewUser(eveIdentity, s.ofgaClient)
+
+	access, err := eveUser.GetAccessBatch(ctx, model1, model2, model3, offer, controller, cloud)
+	c.Assert(err, qt.IsNil)
+	c.Assert(access, qt.DeepEquals, map[string]openfga.Relation{
+		model1.String():     ofganames.AdministratorRelation,
+		model2.String():     ofganames.WriterRelation,
+		model3.String():     ofganames.NoRelation,
+		offer.String():      ofganames.ConsumerRelation,
+		controller.String(): ofganames.AdministratorRelation,
+		cloud.String():      ofganames.CanAddModelRelation,
+	})
+}
+
+func TestGetAccessBatchWithGroupMembership(t *testing.T) {
+	c := qt.New(t)
+	s := SetupTest(c)
+	ctx := c.Context()
+
+	// eve gets model access via an IDP group, expressed as a contextual
+	// tuple rather than a persisted relation.
+	model := names.NewModelTag(uuid.NewString())
+	eve := names.NewUserTag("eve")
+	group := jimmnames.NewIdPGroupTag("model-admins")
+
+	err := s.ofgaClient.AddRelation(ctx, openfga.Tuple{
+		Object:   ofganames.ConvertTagWithRelation(group, ofganames.MemberRelation),
+		Relation: ofganames.AdministratorRelation,
+		Target:   ofganames.ConvertTag(model),
+	})
+	c.Assert(err, qt.IsNil)
+
+	eveIdentity, err := dbmodel.NewIdentity(eve.Id())
+	c.Assert(err, qt.IsNil)
+	eveUser := openfga.NewUser(eveIdentity, s.ofgaClient)
+	eveUser.SetIDPGroups([]string{"model-admins"})
+
+	access, err := eveUser.GetAccessBatch(ctx, model)
+	c.Assert(err, qt.IsNil)
+	c.Assert(access[model.String()], qt.Equals, ofganames.AdministratorRelation)
+}
+
+func TestGetAccessBatchEmpty(t *testing.T) {
+	c := qt.New(t)
+	s := SetupTest(c)
+	ctx := c.Context()
+
+	identity, err := dbmodel.NewIdentity("eve")
+	c.Assert(err, qt.IsNil)
+	user := openfga.NewUser(identity, s.ofgaClient)
+
+	access, err := user.GetAccessBatch(ctx)
+	c.Assert(err, qt.IsNil)
+	c.Assert(access, qt.DeepEquals, map[string]openfga.Relation{})
+}

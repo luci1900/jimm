@@ -13,14 +13,14 @@ import (
 	"fmt"
 	"sync"
 
+	jujuparams "github.com/juju/juju/rpc/params"
 	"github.com/juju/names/v5"
-	"github.com/juju/zaputil/zapctx"
-	"go.uber.org/zap"
 
 	"github.com/canonical/jimm/v3/internal/dbmodel"
 	"github.com/canonical/jimm/v3/internal/errors"
 	"github.com/canonical/jimm/v3/internal/jimmjwx"
 	"github.com/canonical/jimm/v3/internal/openfga"
+	ofganames "github.com/canonical/jimm/v3/internal/openfga/names"
 )
 
 // GeneratorDatabase specifies the database interface used by the
@@ -32,11 +32,8 @@ type GeneratorDatabase interface {
 // GeneratorAccessChecker specifies the access checker used by the JWT
 // generator to obtain user's access rights to various entities.
 type GeneratorAccessChecker interface {
-	GetUserModelAccess(context.Context, *openfga.User, names.ModelTag) (string, error)
-	GetUserApplicationOfferAccess(context.Context, *openfga.User, names.ApplicationOfferTag) (string, error)
-	GetUserControllerAccess(context.Context, *openfga.User, names.ControllerTag) (string, error)
-	GetUserCloudAccess(context.Context, *openfga.User, names.CloudTag) (string, error)
-	CheckPermission(context.Context, *openfga.User, map[string]string, map[string]any) (map[string]string, error)
+	GetUserAccessBatch(ctx context.Context, user *openfga.User, resources []names.Tag) (map[string]openfga.Relation, error)
+	CheckPermission(ctx context.Context, user *openfga.User, accessMap map[string]string, permissions map[string]any) (map[string]string, error)
 }
 
 // JWTService specifies the service JWT generator uses to generate JWTs.
@@ -89,7 +86,6 @@ func (auth *LoginTokenGenerator) GetUser() names.UserTag {
 // superuser and model admin for the supplied model resource tags, without
 // actually checking if that's the case.
 func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, resourceTags []names.Tag, user *openfga.User) ([]byte, error) {
-
 	if user == nil {
 		return nil, errors.New("user not specified")
 	}
@@ -109,27 +105,42 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, resourc
 	})
 }
 
-// resolveTargetAccess resolves the caller's access level for a single
-// target tag. Unrecognised tag kinds resolve to an empty access level.
-func resolveTargetAccess(ctx context.Context, user *openfga.User, target names.Tag, accessChecker GeneratorAccessChecker) (string, error) {
-	switch tag := target.(type) {
-	case names.ModelTag:
-		access, err := accessChecker.GetUserModelAccess(ctx, user, tag)
-		if err != nil {
-			zapctx.Error(ctx, "model access check failed", zap.Error(err))
-			return "", err
+// accessString maps a relation to the Juju access-level string used in JWT
+// access claims, based on the resource kind.
+func accessString(kind string, relation openfga.Relation) string {
+	switch kind {
+	case names.ModelTagKind:
+		switch relation {
+		case ofganames.AdministratorRelation:
+			return "admin"
+		case ofganames.WriterRelation:
+			return "write"
+		case ofganames.ReaderRelation:
+			return "read"
 		}
-		return access, nil
-	case names.ApplicationOfferTag:
-		access, err := accessChecker.GetUserApplicationOfferAccess(ctx, user, tag)
-		if err != nil {
-			zapctx.Error(ctx, "application offer access check failed", zap.Error(err))
-			return "", err
+	case names.ApplicationOfferTagKind:
+		switch relation {
+		case ofganames.AdministratorRelation:
+			return string(jujuparams.OfferAdminAccess)
+		case ofganames.ConsumerRelation:
+			return string(jujuparams.OfferConsumeAccess)
+		case ofganames.ReaderRelation:
+			return string(jujuparams.OfferReadAccess)
 		}
-		return access, nil
-	default:
-		return "", nil
+	case names.ControllerTagKind:
+		if relation == ofganames.AdministratorRelation {
+			return "superuser"
+		}
+		return "login"
+	case names.CloudTagKind:
+		switch relation {
+		case ofganames.AdministratorRelation:
+			return "admin"
+		case ofganames.CanAddModelRelation:
+			return "add-model"
+		}
 	}
+	return ""
 }
 
 // buildAccessMap resolves the caller's OpenFGA permissions for the given
@@ -138,7 +149,9 @@ func resolveTargetAccess(ctx context.Context, user *openfga.User, target names.T
 //
 // resourceTags may contain any mix of names.ModelTag and
 // names.ApplicationOfferTag values; each is resolved to the caller's real
-// access level via accessChecker.
+// access level. All permission checks (resource tags, the controller and
+// every cloud known to the controller) are issued as a single batched
+// OpenFGA request.
 //
 // The returned map always contains the controller access entry, plus one
 // entry per cloud known to the controller.
@@ -150,17 +163,28 @@ func buildAccessMap(
 	ctl dbmodel.Controller,
 	accessChecker GeneratorAccessChecker,
 ) (map[string]string, error) {
-	accessMap := make(map[string]string)
+	clouds := make(map[names.CloudTag]bool)
+	for _, cloudRegion := range ctl.CloudRegions {
+		clouds[cloudRegion.CloudRegion.Cloud.ResourceTag()] = true
+	}
 
-	targetAccess := make(map[names.Tag]string, len(resourceTags))
+	// Collect every resource whose access level is needed, then resolve
+	// them all in one batched OpenFGA request.
+	resources := make([]names.Tag, 0, len(resourceTags)+1+len(clouds))
+	resources = append(resources, resourceTags...)
+	resources = append(resources, ct)
+	for cloudTag := range clouds {
+		resources = append(resources, cloudTag)
+	}
+	access, err := accessChecker.GetUserAccessBatch(ctx, user, resources)
+	if err != nil {
+		return nil, err
+	}
+
+	accessMap := make(map[string]string, len(access))
 	hasRealAccess := false
 	for _, target := range resourceTags {
-		access, err := resolveTargetAccess(ctx, user, target, accessChecker)
-		if err != nil {
-			return nil, err
-		}
-		targetAccess[target] = access
-		if access != "" {
+		if access[target.String()] != ofganames.NoRelation {
 			hasRealAccess = true
 		}
 	}
@@ -170,29 +194,17 @@ func buildAccessMap(
 	// one tag, empty claims are dropped to avoid invalidating the whole
 	// token. When all claims are empty, one is kept so Juju itself
 	// denies the login.
-	for target, access := range targetAccess {
-		if access == "" && hasRealAccess {
+	for _, target := range resourceTags {
+		level := accessString(target.Kind(), access[target.String()])
+		if level == "" && hasRealAccess {
 			continue
 		}
-		accessMap[target.String()] = access
+		accessMap[target.String()] = level
 	}
 
-	controllerAccess, err := accessChecker.GetUserControllerAccess(ctx, user, ct)
-	if err != nil {
-		return nil, err
-	}
-	accessMap[ct.String()] = controllerAccess
-
-	clouds := make(map[names.CloudTag]bool)
-	for _, cloudRegion := range ctl.CloudRegions {
-		clouds[cloudRegion.CloudRegion.Cloud.ResourceTag()] = true
-	}
+	accessMap[ct.String()] = accessString(ct.Kind(), access[ct.String()])
 	for cloudTag := range clouds {
-		accessLevel, err := accessChecker.GetUserCloudAccess(ctx, user, cloudTag)
-		if err != nil {
-			return nil, fmt.Errorf("failed to check user's cloud access: %w", err)
-		}
-		accessMap[cloudTag.String()] = accessLevel
+		accessMap[cloudTag.String()] = accessString(cloudTag.Kind(), access[cloudTag.String()])
 	}
 
 	return accessMap, nil
