@@ -58,9 +58,9 @@ func TestHTTPProxyHandler(t *testing.T) {
 			}, nil
 		},
 	}
-	loginTokens := loginTokenProvider{NewCallerLoginToken_: func(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, gotU *openfga.User) ([]byte, error) {
+	loginTokens := loginTokenProvider{NewCallerLoginToken_: func(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, gotU *openfga.User) ([]byte, error) {
 		callCount++
-		gotModelTag = targets[0].(names.ModelTag)
+		gotModelTag = resourceTags[0].(names.ModelTag)
 		gotControllerTag = ctl.ResourceTag()
 		gotUser = gotU
 		gotAgentVersion = ctl.AgentVersion
@@ -127,9 +127,9 @@ func TestHTTPProxyHandler(t *testing.T) {
 }
 
 type loginTokenProvider struct {
-	NewCallerLoginToken_ func(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
+	NewCallerLoginToken_ func(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
-func (p loginTokenProvider) NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
-	return p.NewCallerLoginToken_(ctx, targets, ctl, user)
+func (p loginTokenProvider) NewCallerLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+	return p.NewCallerLoginToken_(ctx, resourceTags, ctl, user)
 }

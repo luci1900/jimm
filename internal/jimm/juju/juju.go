@@ -79,16 +79,16 @@ func NewJujuManager(
 
 // dialController dials the controller with a controller-scoped
 // connection whose JWT carries the user's access claims for the given
-// target resources (models, application offers, etc.). Use this for
+// resource tags (models, application offers, etc.). Use this for
 // operations that call controller-level facades (e.g. ModelManager) with
 // a model UUID argument, or offer-related operations tied to a single
 // offer.
-func (j *JujuManager) dialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (API, error) {
+func (j *JujuManager) dialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (API, error) {
 	if j == nil || j.Dialer == nil {
 		return nil, errors.Codef(errors.CodeConnectionFailed, "no dialer configured")
 	}
 
-	return j.Dialer.DialController(ctx, ctl, targets, user)
+	return j.Dialer.DialController(ctx, ctl, resourceTags, user)
 }
 
 // dialModelAsService dials the model using JIMM's own service identity.

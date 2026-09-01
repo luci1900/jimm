@@ -30,11 +30,11 @@ import (
 // the is no configured controller UUID.
 const DefaultControllerUUID = "982b16d9-a945-4762-b684-fd4fd885aa10"
 
-// firstModelTag returns the first names.ModelTag found in targets, or the
-// zero value if none is present. It is used by test doubles that only
+// firstModelTag returns the first names.ModelTag found in resourceTags, or
+// the zero value if none is present. It is used by test doubles that only
 // support keying on a single model tag.
-func firstModelTag(targets []names.Tag) names.ModelTag {
-	for _, t := range targets {
+func firstModelTag(resourceTags []names.Tag) names.ModelTag {
+	for _, t := range resourceTags {
 		if mt, ok := t.(names.ModelTag); ok {
 			return mt
 		}
@@ -92,10 +92,10 @@ func (d *Dialer) DialModel(_ context.Context, ctl *dbmodel.Controller, _ names.M
 }
 
 // DialController implements juju.Dialer. The test double does not
-// distinguish target resource kinds; it dials using the first model tag
-// found among targets (if any).
-func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, u *openfga.User) (juju.API, error) {
-	return d.DialModel(ctx, ctl, firstModelTag(targets), u)
+// distinguish resource tag kinds; it dials using the first model tag
+// found among resourceTags (if any).
+func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, u *openfga.User) (juju.API, error) {
+	return d.DialModel(ctx, ctl, firstModelTag(resourceTags), u)
 }
 
 // DialModelAsService implements juju.Dialer. It dials as JIMM's service identity.
@@ -140,10 +140,10 @@ func (m ModelDialerMap) DialModel(ctx context.Context, ctl *dbmodel.Controller, 
 }
 
 // DialController implements juju.Dialer.
-func (m ModelDialerMap) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, u *openfga.User) (juju.API, error) {
-	mt := firstModelTag(targets)
+func (m ModelDialerMap) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, u *openfga.User) (juju.API, error) {
+	mt := firstModelTag(resourceTags)
 	if d, ok := m[mt.Id()]; ok {
-		return d.DialController(ctx, ctl, targets, u)
+		return d.DialController(ctx, ctl, resourceTags, u)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }
@@ -177,9 +177,9 @@ func (m DialerMap) DialModel(ctx context.Context, ctl *dbmodel.Controller, mt na
 }
 
 // DialController implements juju.Dialer.
-func (m DialerMap) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, u *openfga.User) (juju.API, error) {
+func (m DialerMap) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, u *openfga.User) (juju.API, error) {
 	if d, ok := m[ctl.Name]; ok {
-		return d.DialController(ctx, ctl, targets, u)
+		return d.DialController(ctx, ctl, resourceTags, u)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }

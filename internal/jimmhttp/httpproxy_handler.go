@@ -27,7 +27,7 @@ type JujuManager interface {
 
 // LoginTokenProvider mints a Juju login token for a user operating on a controller.
 type LoginTokenProvider interface {
-	NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
+	NewCallerLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
 // HTTPProxyHandler is an handler that provides proxying capabilities.

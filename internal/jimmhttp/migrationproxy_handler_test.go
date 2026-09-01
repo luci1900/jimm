@@ -57,9 +57,9 @@ func TestMigrationHTTPProxyHandler(t *testing.T) {
 			}, nil
 		},
 	}
-	loginTokens := loginTokenProvider{NewCallerLoginToken_: func(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, gotU *openfga.User) ([]byte, error) {
+	loginTokens := loginTokenProvider{NewCallerLoginToken_: func(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, gotU *openfga.User) ([]byte, error) {
 		callCount++
-		gotModelTag = targets[0].(names.ModelTag)
+		gotModelTag = resourceTags[0].(names.ModelTag)
 		gotControllerTag = ctl.ResourceTag()
 		gotUser = gotU
 		gotAgentVersion = ctl.AgentVersion

@@ -380,9 +380,10 @@ func (d *DialerAdapter) DialModel(ctx context.Context, ctl *dbmodel.Controller, 
 
 // DialController implements the juju.Dialer interface for the DialerAdapter.
 // It dials the controller with a controller-scoped connection whose JWT
-// carries the user's access claims for the given target resources.
-func (d *DialerAdapter) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (juju.API, error) {
-	return d.dialer.DialController(ctx, ctl, targets, user)
+// carries the user's access claims for the given resource tags (models,
+// application offers, etc.).
+func (d *DialerAdapter) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (juju.API, error) {
+	return d.dialer.DialController(ctx, ctl, resourceTags, user)
 }
 
 // DialModelAsService implements the juju.Dialer interface for the

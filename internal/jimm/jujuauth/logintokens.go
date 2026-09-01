@@ -86,9 +86,9 @@ func (auth *LoginTokenGenerator) GetUser() names.UserTag {
 }
 
 // makeSuperuserToken makes a token declaring the user is a controller
-// superuser and model admin for the supplied model targets, without actually
-// checking if that's the case.
-func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, targets []names.Tag, user *openfga.User) ([]byte, error) {
+// superuser and model admin for the supplied model resource tags, without
+// actually checking if that's the case.
+func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, resourceTags []names.Tag, user *openfga.User) ([]byte, error) {
 
 	if user == nil {
 		return nil, errors.New("user not specified")
@@ -96,7 +96,7 @@ func (auth *LoginTokenGenerator) makeSuperuserToken(ctx context.Context, targets
 
 	accessMap := make(map[string]string)
 	accessMap[auth.ct.String()] = "superuser"
-	for _, target := range targets {
+	for _, target := range resourceTags {
 		if model, ok := target.(names.ModelTag); ok && model.Id() != "" {
 			accessMap[model.String()] = "admin"
 		}
@@ -133,9 +133,10 @@ func resolveTargetAccess(ctx context.Context, user *openfga.User, target names.T
 }
 
 // buildAccessMap resolves the caller's OpenFGA permissions for the given
-// controller and the given targets, and returns a JWT access-claim map.
+// controller and the given resource tags, and returns a JWT access-claim
+// map.
 //
-// targets may contain any mix of names.ModelTag and
+// resourceTags may contain any mix of names.ModelTag and
 // names.ApplicationOfferTag values; each is resolved to the caller's real
 // access level via accessChecker.
 //
@@ -144,16 +145,16 @@ func resolveTargetAccess(ctx context.Context, user *openfga.User, target names.T
 func buildAccessMap(
 	ctx context.Context,
 	user *openfga.User,
-	targets []names.Tag,
+	resourceTags []names.Tag,
 	ct names.ControllerTag,
 	ctl dbmodel.Controller,
 	accessChecker GeneratorAccessChecker,
 ) (map[string]string, error) {
 	accessMap := make(map[string]string)
 
-	targetAccess := make(map[names.Tag]string, len(targets))
+	targetAccess := make(map[names.Tag]string, len(resourceTags))
 	hasRealAccess := false
-	for _, target := range targets {
+	for _, target := range resourceTags {
 		access, err := resolveTargetAccess(ctx, user, target, accessChecker)
 		if err != nil {
 			return nil, err
@@ -165,9 +166,9 @@ func buildAccessMap(
 	}
 
 	// Juju rejects a present-but-empty claim as invalid, so empty claims are
-	// only omitted once another target grants real access; with a single
-	// target (e.g. a direct model login), an empty claim is kept so Juju
-	// denies it.
+	// only omitted once another resource tag grants real access; with a
+	// single resource tag (e.g. a direct model login), an empty claim is
+	// kept so Juju denies it.
 	for target, access := range targetAccess {
 		if access == "" && hasRealAccess {
 			continue
@@ -218,14 +219,14 @@ func (auth *LoginTokenGenerator) MakeLoginToken(ctx context.Context, user *openf
 		return nil, fmt.Errorf("failed to fetch controller: %w", err)
 	}
 
-	var targets []names.Tag
+	var resourceTags []names.Tag
 	if auth.mt.Id() != "" {
-		targets = []names.Tag{auth.mt}
+		resourceTags = []names.Tag{auth.mt}
 	}
 
 	// Recreate the accessMapCache to prevent leaking permissions across multiple login requests.
 	var err error
-	auth.accessMapCache, err = buildAccessMap(ctx, auth.user, targets, auth.ct, ctl, auth.accessChecker)
+	auth.accessMapCache, err = buildAccessMap(ctx, auth.user, resourceTags, auth.ct, ctl, auth.accessChecker)
 	if err != nil {
 		return nil, err
 	}

@@ -45,18 +45,18 @@ func (m *MockDialer) EXPECT() *MockDialerMockRecorder {
 }
 
 // DialController mocks base method.
-func (m *MockDialer) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (juju.API, error) {
+func (m *MockDialer) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (juju.API, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DialController", ctx, ctl, targets, user)
+	ret := m.ctrl.Call(m, "DialController", ctx, ctl, resourceTags, user)
 	ret0, _ := ret[0].(juju.API)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DialController indicates an expected call of DialController.
-func (mr *MockDialerMockRecorder) DialController(ctx, ctl, targets, user any) *MockDialerDialControllerCall {
+func (mr *MockDialerMockRecorder) DialController(ctx, ctl, resourceTags, user any) *MockDialerDialControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialController", reflect.TypeOf((*MockDialer)(nil).DialController), ctx, ctl, targets, user)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialController", reflect.TypeOf((*MockDialer)(nil).DialController), ctx, ctl, resourceTags, user)
 	return &MockDialerDialControllerCall{Call: call}
 }
 

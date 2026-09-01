@@ -66,11 +66,11 @@ func (f *Factory) NewLoginToken(ctx context.Context, modelTag names.ModelTag, co
 // resolved; otherwise the passed-in controller is used as-is (which may
 // not yet have CloudRegions populated, so cloud claims may be omitted).
 //
-// targets may contain any mix of model and application-offer tags whose
-// access levels should be embedded in the token; pass no targets when the
-// operation is not tied to a specific resource (e.g. cloud or
-// controller-level calls).
-func (f *Factory) NewScopedLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+// resourceTags may contain any mix of model and application-offer tags
+// whose access levels should be embedded in the token; pass no
+// resourceTags when the operation is not tied to a specific resource
+// (e.g. cloud or controller-level calls).
+func (f *Factory) NewScopedLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
 	// Fetch the controller with CloudRegions populated so buildAccessMap can
 	// enumerate clouds and resolve cloud-access claims. Fall back to the
 	// passed-in controller if it is not yet persisted (e.g. during AddController,
@@ -80,7 +80,7 @@ func (f *Factory) NewScopedLoginToken(ctx context.Context, targets []names.Tag, 
 	if err := f.db.GetController(ctx, &ctlWithClouds); err != nil {
 		ctlWithClouds = *ctl
 	}
-	accessMap, err := buildAccessMap(ctx, user, targets, ctl.ResourceTag(), ctlWithClouds, f.accessChecker)
+	accessMap, err := buildAccessMap(ctx, user, resourceTags, ctl.ResourceTag(), ctlWithClouds, f.accessChecker)
 	if err != nil {
 		return nil, err
 	}
@@ -95,14 +95,14 @@ func (f *Factory) NewScopedLoginToken(ctx context.Context, targets []names.Tag, 
 // to the specified controller. Older Juju controllers do not correctly
 // honour model-level JWT claims, so unknown and older versions use the
 // compatibility superuser token.
-func (f *Factory) NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+func (f *Factory) NewCallerLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
 	ctrlVersion, err := version.Parse(ctl.AgentVersion)
 	if err != nil || ctrlVersion.Compare(minJujuVersionForScopedToken) < 0 {
 		generator := f.NewLoginGenerator()
 		generator.SetTags(names.ModelTag{}, ctl.ResourceTag())
-		return generator.makeSuperuserToken(ctx, targets, user)
+		return generator.makeSuperuserToken(ctx, resourceTags, user)
 	}
-	return f.NewScopedLoginToken(ctx, targets, ctl, user)
+	return f.NewScopedLoginToken(ctx, resourceTags, ctl, user)
 }
 
 // NewSSHGenerator returns a new token generator for Juju SSH connections.

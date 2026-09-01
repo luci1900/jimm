@@ -36,10 +36,10 @@ import (
 )
 
 // CallerTokenMinter mints a caller JWT for a user operating on a
-// specific controller and set of target resources (models, application
+// specific controller and set of resource tags (models, application
 // offers, etc.). It is satisfied by *jujuauth.Factory.
 type CallerTokenMinter interface {
-	NewCallerLoginToken(ctx context.Context, targets []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
+	NewCallerLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error)
 }
 
 // A Dialer is an implementation of a jimm.Dialer that adapts a juju API
@@ -84,18 +84,19 @@ func (d *Dialer) newServiceJWTToken(ctx context.Context, ctl *dbmodel.Controller
 }
 
 // newCallerJWTToken mints a caller-scoped JWT reflecting the user's real
-// OpenFGA-derived permissions on the given controller and target resources.
-func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (string, error) {
-	jwt, err := d.TokenMinter.NewCallerLoginToken(ctx, targets, ctl, user)
+// OpenFGA-derived permissions on the given controller and resource tags.
+func (d *Dialer) newCallerJWTToken(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (string, error) {
+	jwt, err := d.TokenMinter.NewCallerLoginToken(ctx, resourceTags, ctl, user)
 	if err != nil {
 		return "", err
 	}
 	return base64.StdEncoding.EncodeToString(jwt), nil
 }
 
-// createLoginRequest creates a jujuparams.LoginRequest for the given controller, target resources and user.
-func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (*jujuparams.LoginRequest, error) {
-	jwtString, err := d.newCallerJWTToken(ctx, ctl, targets, user)
+// createLoginRequest creates a jujuparams.LoginRequest for the given
+// controller, resource tags and user.
+func (d *Dialer) createLoginRequest(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (*jujuparams.LoginRequest, error) {
+	jwtString, err := d.newCallerJWTToken(ctx, ctl, resourceTags, user)
 	if err != nil {
 		return nil, err
 	}
@@ -137,13 +138,13 @@ func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTa
 
 // DialController implements jimm.Dialer. It creates a controller-scoped
 // connection (so controller-level facades are available) whose JWT carries
-// the user's access claims for the given target resources (models,
+// the user's access claims for the given resource tags (models,
 // application offers, etc.).
-func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, targets []names.Tag, user *openfga.User) (*Connection, error) {
+func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (*Connection, error) {
 	if user == nil {
 		return nil, errors.New("DialController requires a non-nil user; use DialControllerAsService for JIMM internal operations")
 	}
-	loginRequest, err := d.createLoginRequest(ctx, ctl, targets, user)
+	loginRequest, err := d.createLoginRequest(ctx, ctl, resourceTags, user)
 	if err != nil {
 		return nil, err
 	}
@@ -409,11 +410,11 @@ func (c *Connection) authorizationHeader(modelTag names.ModelTag, extraHeaders h
 		jwtString, err = c.dialer.newServiceJWTToken(c.ctx, c.ctl, modelTag)
 	} else {
 		// User connection: mint a caller-scoped token.
-		var targets []names.Tag
+		var resourceTags []names.Tag
 		if modelTag.Id() != "" {
-			targets = []names.Tag{modelTag}
+			resourceTags = []names.Tag{modelTag}
 		}
-		jwtString, err = c.dialer.newCallerJWTToken(c.ctx, c.ctl, targets, c.user)
+		jwtString, err = c.dialer.newCallerJWTToken(c.ctx, c.ctl, resourceTags, c.user)
 	}
 	if err != nil {
 		return nil, err
