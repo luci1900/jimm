@@ -602,8 +602,11 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 	// will remain on the controller and will trigger the "already exists
 	// in the backend controller" message above when the user
 	// attempts to create a model with the same name again.
-	// TODO(JUJU-8869): We need to keep this despite encoding permissions in
-	// JWTs because Juju returns a different result on migrated models otherwise.
+	// TODO(JUJU-8869): We need to keep this despite encoding permissions
+	// in JWTs: the grant is controller-side state (not a claim) and it's
+	// what lets JIMM's service identity manage the model later (e.g.
+	// migration). Without it Juju returns a different result on migrated
+	// models.
 	svcAPI, err := b.jujuManager.dialControllerAsService(b.ctx, b.controller)
 	if err != nil {
 		zapctx.Error(b.ctx, "leaked model", zap.String("model", info.UUID), zaputil.Error(err))
