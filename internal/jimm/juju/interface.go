@@ -43,7 +43,7 @@ type Dialer interface {
 	// DialModel creates a model-scoped API connection on behalf of a real
 	// user. The user and modelTag must not be zero-valued. The JWT carries
 	// the user's access claims for the given model.
-	DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (API, error)
+	DialModel(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, modelTag names.ModelTag) (API, error)
 
 	// DialController creates a controller-scoped API connection on behalf
 	// of a real user, with the JWT carrying the user's access claims for
@@ -59,7 +59,7 @@ type Dialer interface {
 	// be resolved via OpenFGA and embedded as JWT access claims. Pass no
 	// resourceTags when the operation is not tied to a specific resource
 	// (e.g. cloud or controller-level calls).
-	DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (API, error)
+	DialController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (API, error)
 
 	// DialModelAsService creates a model-scoped API connection using
 	// JIMM's own service identity (no user). It mints a superuser token

@@ -561,7 +561,7 @@ func (b *modelBuilder) CreateControllerModel() *modelBuilder {
 		}
 	}
 
-	api, err := b.jujuManager.dialController(b.ctx, b.controller, nil, b.ofgaUser)
+	api, err := b.jujuManager.dialController(b.ctx, b.ofgaUser, b.controller)
 	if err != nil {
 		b.err = err
 		return b

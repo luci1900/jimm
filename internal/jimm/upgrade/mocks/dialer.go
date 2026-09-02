@@ -45,18 +45,23 @@ func (m *MockDialer) EXPECT() *MockDialerMockRecorder {
 }
 
 // DialController mocks base method.
-func (m *MockDialer) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (juju.API, error) {
+func (m *MockDialer) DialController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (juju.API, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DialController", ctx, ctl, resourceTags, user)
+	varargs := []any{ctx, user, ctl}
+	for _, a := range resourceTags {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DialController", varargs...)
 	ret0, _ := ret[0].(juju.API)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DialController indicates an expected call of DialController.
-func (mr *MockDialerMockRecorder) DialController(ctx, ctl, resourceTags, user any) *MockDialerDialControllerCall {
+func (mr *MockDialerMockRecorder) DialController(ctx, user, ctl any, resourceTags ...any) *MockDialerDialControllerCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialController", reflect.TypeOf((*MockDialer)(nil).DialController), ctx, ctl, resourceTags, user)
+	varargs := append([]any{ctx, user, ctl}, resourceTags...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialController", reflect.TypeOf((*MockDialer)(nil).DialController), varargs...)
 	return &MockDialerDialControllerCall{Call: call}
 }
 
@@ -72,13 +77,13 @@ func (c *MockDialerDialControllerCall) Return(arg0 juju.API, arg1 error) *MockDi
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockDialerDialControllerCall) Do(f func(context.Context, *dbmodel.Controller, []names.Tag, *openfga.User) (juju.API, error)) *MockDialerDialControllerCall {
+func (c *MockDialerDialControllerCall) Do(f func(context.Context, *openfga.User, *dbmodel.Controller, ...names.Tag) (juju.API, error)) *MockDialerDialControllerCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockDialerDialControllerCall) DoAndReturn(f func(context.Context, *dbmodel.Controller, []names.Tag, *openfga.User) (juju.API, error)) *MockDialerDialControllerCall {
+func (c *MockDialerDialControllerCall) DoAndReturn(f func(context.Context, *openfga.User, *dbmodel.Controller, ...names.Tag) (juju.API, error)) *MockDialerDialControllerCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -123,18 +128,18 @@ func (c *MockDialerDialControllerAsServiceCall) DoAndReturn(f func(context.Conte
 }
 
 // DialModel mocks base method.
-func (m *MockDialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (juju.API, error) {
+func (m *MockDialer) DialModel(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, modelTag names.ModelTag) (juju.API, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DialModel", ctx, ctl, modelTag, user)
+	ret := m.ctrl.Call(m, "DialModel", ctx, user, ctl, modelTag)
 	ret0, _ := ret[0].(juju.API)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DialModel indicates an expected call of DialModel.
-func (mr *MockDialerMockRecorder) DialModel(ctx, ctl, modelTag, user any) *MockDialerDialModelCall {
+func (mr *MockDialerMockRecorder) DialModel(ctx, user, ctl, modelTag any) *MockDialerDialModelCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialModel", reflect.TypeOf((*MockDialer)(nil).DialModel), ctx, ctl, modelTag, user)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DialModel", reflect.TypeOf((*MockDialer)(nil).DialModel), ctx, user, ctl, modelTag)
 	return &MockDialerDialModelCall{Call: call}
 }
 
@@ -150,13 +155,13 @@ func (c *MockDialerDialModelCall) Return(arg0 juju.API, arg1 error) *MockDialerD
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockDialerDialModelCall) Do(f func(context.Context, *dbmodel.Controller, names.ModelTag, *openfga.User) (juju.API, error)) *MockDialerDialModelCall {
+func (c *MockDialerDialModelCall) Do(f func(context.Context, *openfga.User, *dbmodel.Controller, names.ModelTag) (juju.API, error)) *MockDialerDialModelCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockDialerDialModelCall) DoAndReturn(f func(context.Context, *dbmodel.Controller, names.ModelTag, *openfga.User) (juju.API, error)) *MockDialerDialModelCall {
+func (c *MockDialerDialModelCall) DoAndReturn(f func(context.Context, *openfga.User, *dbmodel.Controller, names.ModelTag) (juju.API, error)) *MockDialerDialModelCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

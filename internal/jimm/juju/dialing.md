@@ -22,10 +22,10 @@ Not user-triggered in the first place.
 
 User-triggered, but JIMM is the acting party.
 
-- `migrationtarget.go`: Abort, CheckMachines, Import, AdoptResources,
-  LatestLogTime, Activate, StageImport
-- `controller.go`: fetchModelInfo, post-migration success check,
-  InitiateMigration
+- `migrationtarget.go`: Abort, CheckMachines, Prechecks, Import,
+  AdoptResources, LatestLogTime, Activate
+- `controller.go`: fetchModelInfo, UpdateMigratedModel
+  (post-migration success check), InitiateMigration
 - `jujuapi/streamcontrollerproxy.go`: migration log-transfer stream
 
 ### JIMM-admin operations
