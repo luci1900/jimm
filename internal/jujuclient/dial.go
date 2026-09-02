@@ -127,7 +127,7 @@ func (d *Dialer) createServiceLoginRequest(ctx context.Context, ctl *dbmodel.Con
 // JIMM's own internal operations that have no associated user.
 func (d *Dialer) DialModel(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
 	if user == nil {
-		return nil, errors.New("DialModel requires a non-nil user; use DialModelAsService for JIMM internal operations")
+		return nil, errors.New("DialModel requires a non-nil user")
 	}
 	loginRequest, err := d.createLoginRequest(ctx, ctl, []names.Tag{modelTag}, user)
 	if err != nil {
@@ -142,7 +142,7 @@ func (d *Dialer) DialModel(ctx context.Context, user *openfga.User, ctl *dbmodel
 // application offers, etc.).
 func (d *Dialer) DialController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (*Connection, error) {
 	if user == nil {
-		return nil, errors.New("DialController requires a non-nil user; use DialControllerAsService for JIMM internal operations")
+		return nil, errors.New("DialController requires a non-nil user")
 	}
 	loginRequest, err := d.createLoginRequest(ctx, ctl, resourceTags, user)
 	if err != nil {
