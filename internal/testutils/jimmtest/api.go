@@ -68,7 +68,7 @@ type Dialer struct {
 }
 
 // DialModel implements juju.Dialer.
-func (d *Dialer) DialModel(_ context.Context, ctl *dbmodel.Controller, _ names.ModelTag, _ *openfga.User) (juju.API, error) {
+func (d *Dialer) DialModel(_ context.Context, _ *openfga.User, ctl *dbmodel.Controller, _ names.ModelTag) (juju.API, error) {
 	if d.Err != nil {
 		return nil, d.Err
 	}
@@ -92,22 +92,22 @@ func (d *Dialer) DialModel(_ context.Context, ctl *dbmodel.Controller, _ names.M
 }
 
 // DialController implements juju.Dialer. The test double does not
-// distinguish resource tag kinds; it dials using the first model tag
-// found among resourceTags (if any).
-func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, u *openfga.User) (juju.API, error) {
-	return d.DialModel(ctx, ctl, firstModelTag(resourceTags), u)
+// distinguish connection scope or resource tags. It delegates to
+// DialModel with no model tag.
+func (d *Dialer) DialController(ctx context.Context, u *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (juju.API, error) {
+	return d.DialModel(ctx, u, ctl, names.ModelTag{})
 }
 
 // DialModelAsService implements juju.Dialer. It dials as JIMM's service identity.
 func (d *Dialer) DialModelAsService(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
 	// Delegate to DialModel with a nil user since the Dialer test double
 	// does not distinguish user vs service identity for JWT minting.
-	return d.DialModel(ctx, ctl, mt, nil)
+	return d.DialModel(ctx, nil, ctl, mt)
 }
 
 // DialControllerAsService implements juju.Dialer. It dials as JIMM's service identity.
 func (d *Dialer) DialControllerAsService(ctx context.Context, ctl *dbmodel.Controller) (juju.API, error) {
-	return d.DialModel(ctx, ctl, names.ModelTag{}, nil)
+	return d.DialModel(ctx, nil, ctl, names.ModelTag{})
 }
 
 // IsClosed returns true if all opened connections have been closed.
@@ -132,18 +132,18 @@ func (w apiWrapper) Close() error {
 type ModelDialerMap map[string]juju.Dialer
 
 // DialModel implements juju.Dialer.
-func (m ModelDialerMap) DialModel(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag, u *openfga.User) (juju.API, error) {
+func (m ModelDialerMap) DialModel(ctx context.Context, u *openfga.User, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
 	if d, ok := m[mt.Id()]; ok {
-		return d.DialModel(ctx, ctl, mt, u)
+		return d.DialModel(ctx, u, ctl, mt)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }
 
 // DialController implements juju.Dialer.
-func (m ModelDialerMap) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, u *openfga.User) (juju.API, error) {
+func (m ModelDialerMap) DialController(ctx context.Context, u *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (juju.API, error) {
 	mt := firstModelTag(resourceTags)
 	if d, ok := m[mt.Id()]; ok {
-		return d.DialController(ctx, ctl, resourceTags, u)
+		return d.DialController(ctx, u, ctl, resourceTags...)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }
@@ -169,17 +169,17 @@ func (m ModelDialerMap) DialControllerAsService(ctx context.Context, ctl *dbmode
 type DialerMap map[string]juju.Dialer
 
 // DialModel implements juju.Dialer.
-func (m DialerMap) DialModel(ctx context.Context, ctl *dbmodel.Controller, mt names.ModelTag, u *openfga.User) (juju.API, error) {
+func (m DialerMap) DialModel(ctx context.Context, u *openfga.User, ctl *dbmodel.Controller, mt names.ModelTag) (juju.API, error) {
 	if d, ok := m[ctl.Name]; ok {
-		return d.DialModel(ctx, ctl, mt, u)
+		return d.DialModel(ctx, u, ctl, mt)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }
 
 // DialController implements juju.Dialer.
-func (m DialerMap) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, u *openfga.User) (juju.API, error) {
+func (m DialerMap) DialController(ctx context.Context, u *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (juju.API, error) {
 	if d, ok := m[ctl.Name]; ok {
-		return d.DialController(ctx, ctl, resourceTags, u)
+		return d.DialController(ctx, u, ctl, resourceTags...)
 	}
 	return nil, fmt.Errorf("dialer not configured for controller %s", ctl.Name)
 }

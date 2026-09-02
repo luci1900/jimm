@@ -83,12 +83,12 @@ func NewJujuManager(
 // operations that call controller-level facades (e.g. ModelManager) with
 // a model UUID argument, or offer-related operations tied to a single
 // offer.
-func (j *JujuManager) dialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (API, error) {
+func (j *JujuManager) dialController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (API, error) {
 	if j == nil || j.Dialer == nil {
 		return nil, errors.Codef(errors.CodeConnectionFailed, "no dialer configured")
 	}
 
-	return j.Dialer.DialController(ctx, ctl, resourceTags, user)
+	return j.Dialer.DialController(ctx, user, ctl, resourceTags...)
 }
 
 // dialModelAsService dials the model using JIMM's own service identity.

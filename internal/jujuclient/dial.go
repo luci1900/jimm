@@ -125,7 +125,7 @@ func (d *Dialer) createServiceLoginRequest(ctx context.Context, ctl *dbmodel.Con
 // DialModel implements jimm.Dialer. It creates a model-scoped connection on
 // behalf of a real user. The user must be non-nil; use DialModelAsService for
 // JIMM's own internal operations that have no associated user.
-func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTag names.ModelTag, user *openfga.User) (*Connection, error) {
+func (d *Dialer) DialModel(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, modelTag names.ModelTag) (*Connection, error) {
 	if user == nil {
 		return nil, errors.New("DialModel requires a non-nil user; use DialModelAsService for JIMM internal operations")
 	}
@@ -140,7 +140,7 @@ func (d *Dialer) DialModel(ctx context.Context, ctl *dbmodel.Controller, modelTa
 // connection (so controller-level facades are available) whose JWT carries
 // the user's access claims for the given resource tags (models,
 // application offers, etc.).
-func (d *Dialer) DialController(ctx context.Context, ctl *dbmodel.Controller, resourceTags []names.Tag, user *openfga.User) (*Connection, error) {
+func (d *Dialer) DialController(ctx context.Context, user *openfga.User, ctl *dbmodel.Controller, resourceTags ...names.Tag) (*Connection, error) {
 	if user == nil {
 		return nil, errors.New("DialController requires a non-nil user; use DialControllerAsService for JIMM internal operations")
 	}
