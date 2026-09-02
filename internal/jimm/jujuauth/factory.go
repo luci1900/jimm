@@ -13,7 +13,7 @@ import (
 	"github.com/canonical/jimm/v3/internal/openfga"
 )
 
-// minJujuVersionForScopedToken is the first Juju controller version that
+// minJujuVersionForCallerToken is the first Juju controller version that
 // correctly honours model-level access in a JWT during permission checks.
 // Controllers older than this version incorrectly reject tokens that carry
 // model-admin access without a controller-superuser claim, so a superuser
@@ -22,7 +22,7 @@ import (
 // TODO(de-proxy): Once the minimum supported Juju controller version
 // exceeds this boundary, remove the superuser fallback in
 // NewCallerLoginToken and makeSuperuserToken entirely.
-var minJujuVersionForScopedToken = version.MustParse("3.6.24")
+var minJujuVersionForCallerToken = version.MustParse("3.6.24")
 
 // Factory holds the necessary components for producing
 // Juju authenticator objects. Currently a login token generator
@@ -60,17 +60,18 @@ func (f *Factory) NewLoginToken(ctx context.Context, modelTag names.ModelTag, co
 	return generator.MakeLoginToken(ctx, user)
 }
 
-// NewScopedLoginToken mints a caller-scoped login token for the given user
-// on the specified controller. If the controller is already persisted, its
-// CloudRegions are fetched from the database so cloud-access claims can be
-// resolved; otherwise the passed-in controller is used as-is (which may
-// not yet have CloudRegions populated, so cloud claims may be omitted).
+// NewCallerScopedLoginToken mints a login token carrying the caller's
+// real access for the given user on the specified controller. If the
+// controller is already persisted, its CloudRegions are fetched from the
+// database so cloud-access claims can be resolved; otherwise the
+// passed-in controller is used as-is (which may not yet have CloudRegions
+// populated, so cloud claims may be omitted).
 //
 // resourceTags may contain any mix of model and application-offer tags
-// whose access levels should be embedded in the token; pass no
+// whose access levels should be embedded in the token. Pass no
 // resourceTags when the operation is not tied to a specific resource
 // (e.g. cloud or controller-level calls).
-func (f *Factory) NewScopedLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
+func (f *Factory) NewCallerScopedLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
 	// Fetch the controller with CloudRegions populated so buildAccessMap can
 	// enumerate clouds and resolve cloud-access claims. Fall back to the
 	// passed-in controller if it is not yet persisted (e.g. during AddController,
@@ -97,12 +98,12 @@ func (f *Factory) NewScopedLoginToken(ctx context.Context, resourceTags []names.
 // compatibility superuser token.
 func (f *Factory) NewCallerLoginToken(ctx context.Context, resourceTags []names.Tag, ctl *dbmodel.Controller, user *openfga.User) ([]byte, error) {
 	ctrlVersion, err := version.Parse(ctl.AgentVersion)
-	if err != nil || ctrlVersion.Compare(minJujuVersionForScopedToken) < 0 {
+	if err != nil || ctrlVersion.Compare(minJujuVersionForCallerToken) < 0 {
 		generator := f.NewLoginGenerator()
 		generator.SetTags(names.ModelTag{}, ctl.ResourceTag())
 		return generator.makeSuperuserToken(ctx, resourceTags, user)
 	}
-	return f.NewScopedLoginToken(ctx, resourceTags, ctl, user)
+	return f.NewCallerScopedLoginToken(ctx, resourceTags, ctl, user)
 }
 
 // NewSSHGenerator returns a new token generator for Juju SSH connections.

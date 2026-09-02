@@ -32,7 +32,7 @@ import (
 // When to use which method:
 //
 //   - DialModel / DialController: dial as the real user, with the JWT
-//     scoped to their own access. Prefer these wherever possible.
+//     scoped to the caller's own access. Prefer these wherever possible.
 //
 //   - DialModelAsService / DialControllerAsService: dial as JIMM's
 //     service identity (superuser). Use only for internal housekeeping
