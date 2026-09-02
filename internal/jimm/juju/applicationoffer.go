@@ -557,7 +557,7 @@ func (j *JujuManager) queryControllersForOffers(ctx context.Context, user *openf
 			// satisfy Juju's per-model check. enrichOfferDetails below
 			// re-authorizes each offer against OpenFGA.
 			// TODO(luci1900): dial as the user once Juju supports
-			// multi-model offer queries with scoped tokens.
+			// multi-model offer queries with caller-scoped tokens.
 			api, err := j.dialControllerAsService(ctx, ctl)
 			if err != nil {
 				return err

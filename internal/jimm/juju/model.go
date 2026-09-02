@@ -828,11 +828,10 @@ func (j *JujuManager) ChangeModelCredential(ctx context.Context, user *openfga.U
 	if err != nil {
 		return err
 	}
-	// The forced credential update requires controller superuser access
-	// (Juju rejects force=true from non-admin users), so it is performed
-	// using JIMM's own service identity rather than the caller's scoped
-	// connection. The subsequent ChangeModelCredential call is performed
-	// as the caller via doModelAdmin, which enforces model-admin access.
+	// Juju rejects force=true from non-admin users, it requires superuser.
+	// We dial using JIMM's own service identity rather than the caller's.
+	// The subsequent ChangeModelCredential call is performed as the caller
+	// via doModelAdmin, which enforces model-admin access.
 	// TODO(luci1900): dial as the user once Juju allows force=true for
 	// non-admins.
 	svcAPI, err := j.dialControllerAsService(ctx, &m.Controller)

@@ -17,13 +17,13 @@ import (
 	"github.com/canonical/jimm/v3/internal/testutils/jimmtest"
 )
 
-// TestScopedLoginTokenForNonAdminUser verifies that NewScopedLoginToken
+// TestCallerScopedLoginTokenForNonAdminUser verifies that NewCallerScopedLoginToken
 // mints a JWT carrying the caller's real OpenFGA-derived permissions
 // (controller: login, cloud: add-model, model: write) rather than the
 // old hardcoded superuser claim. This is the core behavioural guarantee
 // of the de-proxying change: non-admin users must not receive
 // controller-superuser tokens.
-func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
+func TestCallerScopedLoginTokenForNonAdminUser(t *testing.T) {
 	c := qt.New(t)
 	env := jimmtest.SetupJimmEnv(c)
 	ctx := c.Context()
@@ -74,9 +74,9 @@ func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	// Mint a scoped login token for bob.
+	// Mint a caller-scoped login token for bob.
 	factory := env.JIMM.JujuAuthFactory
-	token, err := factory.NewScopedLoginToken(ctx, []names.Tag{modelTag}, ctl, bob)
+	token, err := factory.NewCallerScopedLoginToken(ctx, []names.Tag{modelTag}, ctl, bob)
 	c.Assert(err, qt.IsNil)
 
 	// Decode the JWT and inspect the access claim.
@@ -104,10 +104,10 @@ func TestScopedLoginTokenForNonAdminUser(t *testing.T) {
 	}
 }
 
-// TestScopedLoginTokenForAdminUser verifies that an admin user still
-// receives controller superuser access in the scoped token, matching
+// TestCallerScopedLoginTokenForAdminUser verifies that an admin user still
+// receives controller superuser access in the caller-scoped token, matching
 // the old hardcoded behaviour for the admin case.
-func TestScopedLoginTokenForAdminUser(t *testing.T) {
+func TestCallerScopedLoginTokenForAdminUser(t *testing.T) {
 	c := qt.New(t)
 	env := jimmtest.SetupJimmEnv(c)
 	ctx := c.Context()
@@ -158,9 +158,9 @@ func TestScopedLoginTokenForAdminUser(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	// Mint a scoped login token for alice.
+	// Mint a caller-scoped login token for alice.
 	factory := env.JIMM.JujuAuthFactory
-	token, err := factory.NewScopedLoginToken(ctx, []names.Tag{modelTag}, ctl, alice)
+	token, err := factory.NewCallerScopedLoginToken(ctx, []names.Tag{modelTag}, ctl, alice)
 	c.Assert(err, qt.IsNil)
 
 	// Decode and inspect.
