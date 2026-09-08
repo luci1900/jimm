@@ -203,7 +203,7 @@ func buildAccessMap(
 	accessMap[ct.String()] = accessString(ct.Kind(), access[ct.String()])
 	for cloudTag := range clouds {
 		level := accessString(cloudTag.Kind(), access[cloudTag.String()])
-		if level == "" {
+		if level == "" && hasRealAccess {
 			continue
 		}
 		accessMap[cloudTag.String()] = level
