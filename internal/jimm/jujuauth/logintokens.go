@@ -189,11 +189,9 @@ func buildAccessMap(
 		}
 	}
 
-	// Juju rejects the entire login if any access claim in the JWT is
-	// present but empty. So when the user holds real access to at least
-	// one tag, empty claims are dropped to avoid invalidating the whole
-	// token. When all claims are empty, one is kept so Juju itself
-	// denies the login.
+	// Juju rejects logins with empty access claims.
+	// Drop empty claims when the user holds real access to at least one tag.
+	// Otherwise, keep one so Juju itself denies the login.
 	for _, target := range resourceTags {
 		level := accessString(target.Kind(), access[target.String()])
 		if level == "" && hasRealAccess {
@@ -204,7 +202,11 @@ func buildAccessMap(
 
 	accessMap[ct.String()] = accessString(ct.Kind(), access[ct.String()])
 	for cloudTag := range clouds {
-		accessMap[cloudTag.String()] = accessString(cloudTag.Kind(), access[cloudTag.String()])
+		level := accessString(cloudTag.Kind(), access[cloudTag.String()])
+		if level == "" {
+			continue
+		}
+		accessMap[cloudTag.String()] = level
 	}
 
 	return accessMap, nil

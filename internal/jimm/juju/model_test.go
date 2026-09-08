@@ -3503,6 +3503,86 @@ func TestUpdateModelCredential(t *testing.T) {
 	}
 }
 
+// TestChangeModelCredentialNoForceWriteBeforeAuth ensures the force-write
+// to the backing controller does not happen before model-admin authorization.
+// A credential owner without model-admin access must not trigger any
+// controller-side mutation.
+func TestChangeModelCredentialNoForceWriteBeforeAuth(t *testing.T) {
+	c := qt.New(t)
+	ctx := context.Background()
+
+	// charlie owns the credential but has only write (not admin) access on
+	// the model. The owner check passes; doModelAdmin must reject.
+	const env = `clouds:
+- name: test-cloud
+  type: test-provider
+  regions:
+  - name: test-cloud-region
+cloud-credentials:
+- owner: alice@canonical.com
+  name: alice-cred
+  cloud: test-cloud
+- owner: charlie@canonical.com
+  name: charlie-cred
+  cloud: test-cloud
+controllers:
+- name: controller-1
+  uuid: 00000001-0000-0000-0000-000000000001
+  cloud: test-cloud
+  region: test-cloud-region
+models:
+- name: model-1
+  uuid: 00000002-0000-0000-0000-000000000001
+  controller: controller-1
+  cloud: test-cloud
+  region: test-cloud-region
+  cloud-credential: alice-cred
+  owner: alice@canonical.com
+  users:
+  - user: alice@canonical.com
+    access: admin
+  - user: charlie@canonical.com
+    access: write
+`
+
+	forceWriteCalled := false
+	dialer := &jimmtest.Dialer{
+		API: &jimmtest.API{
+			UpdateCloudsCredentialForce_: func(_ context.Context, _ jujuparams.TaggedCredential) ([]jujuparams.UpdateCredentialResult, error) {
+				forceWriteCalled = true
+				return []jujuparams.UpdateCredentialResult{{}}, nil
+			},
+		},
+	}
+	j := newTestJujuManager(c, &parameters{
+		Dialer: dialer,
+	})
+
+	testEnv := jimmtest.ParseEnvironment(c, env)
+	testEnv.PopulateDBAndPermissions(c, j.ResourceTag(), j.Database, j.OpenFGAClient)
+
+	dbUser := testEnv.User("charlie@canonical.com").DBObject(c, j.Database)
+	user := openfga.NewUser(&dbUser, j.OpenFGAClient)
+
+	testAttributes := map[string]string{"key": "value"}
+	credTag := names.NewCloudCredentialTag("test-cloud/charlie@canonical.com/charlie-cred")
+	err := j.CredentialStore.Put(ctx, credTag, testAttributes)
+	c.Assert(err, qt.IsNil)
+
+	err = j.ChangeModelCredential(
+		ctx,
+		user,
+		names.NewModelTag("00000002-0000-0000-0000-000000000001"),
+		credTag,
+	)
+	c.Check(err, qt.ErrorMatches, "unauthorized")
+	c.Check(errors.ErrorCode(err), qt.Equals, errors.CodeUnauthorized)
+
+	// The force-write must not run before model-admin authorization.
+	c.Check(forceWriteCalled, qt.IsFalse,
+		qt.Commentf("forceUpdateControllerCloudCredential must not run before model-admin authorization"))
+}
+
 func TestAddModelDeletedController(t *testing.T) {
 	c := qt.New(t)
 
